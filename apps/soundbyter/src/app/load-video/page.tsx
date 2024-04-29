@@ -1,12 +1,19 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState(
+    'https://www.youtube.com/watch?v=3gjdYKIUO_4&t=13s'
+  );
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
+  const [isLooping, setIsLooping] = useState(false);
   const playerRef = useRef<ReactPlayer>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -15,7 +22,30 @@ const LoadVideoPage = () => {
     // TODO: Validate the video URL if needed
   };
 
-  const handleExport = () => {
+  const handleLoopToggle = () => {
+    setIsLooping(!isLooping);
+  };
+
+  useEffect(() => {
+    if (isLooping && playerRef.current) {
+      const player = playerRef.current;
+      player.seekTo(startTime);
+      player.getInternalPlayer().playVideo();
+
+      const loopInterval = setInterval(() => {
+        if (player.getCurrentTime() >= endTime) {
+          player.seekTo(startTime);
+          player.getInternalPlayer().playVideo();
+        }
+      }, 100);
+
+      return () => {
+        clearInterval(loopInterval);
+      };
+    }
+  }, [isLooping, startTime, endTime]);
+
+  const handleExport = async () => {
     if (playerRef.current) {
       const duration = playerRef.current.getDuration();
       if (endTime <= duration) {
@@ -31,21 +61,32 @@ const LoadVideoPage = () => {
     <div>
       <h1>Load YouTube Video</h1>
       <form onSubmit={handleSubmit}>
-        <input
+        <Input
           type='text'
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder='Enter YouTube video URL'
           className='text-black'
         />
-        <button type='submit'>Load Video</button>
+        <Button type='submit'>Load Video</Button>
       </form>
       {videoUrl && (
         <div>
           <ReactPlayer url={videoUrl} controls ref={playerRef} />
+          <div className='pt-4'>
+            <Slider
+              min={0}
+              max={playerRef.current?.getDuration() || 0}
+              value={[startTime, endTime]}
+              onValueChange={(value) => {
+                setStartTime(value[0]);
+                setEndTime(value[1]);
+              }}
+            />
+          </div>
           <div>
-            <label>Start Time (in seconds):</label>
-            <input
+            <Label>Start Time (in seconds):</Label>
+            <Input
               className='text-black'
               type='number'
               value={startTime}
@@ -54,8 +95,8 @@ const LoadVideoPage = () => {
             />
           </div>
           <div>
-            <label>End Time (in seconds):</label>
-            <input
+            <Label>End Time (in seconds):</Label>
+            <Input
               className='text-black'
               type='number'
               value={endTime}
@@ -63,7 +104,10 @@ const LoadVideoPage = () => {
               step='0.1'
             />
           </div>
-          <button onClick={handleExport}>Export</button>
+          <Button onClick={handleLoopToggle}>
+            {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
+          </Button>
+          <Button onClick={handleExport}>Export</Button>
         </div>
       )}
     </div>
