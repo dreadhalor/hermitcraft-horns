@@ -16,7 +16,7 @@ const LoadVideoPage = () => {
   const [videoUrl, setVideoUrl] = useState(
     'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
   );
-  const { clipStart: startTime, clipEnd: endTime } = useApp();
+  const { clipStart, clipEnd } = useApp();
   const [isLooping, setIsLooping] = useState(false);
   const playerRef = useRef<ReactPlayer>(null);
   const [playerReady, setPlayerReady] = useState(false);
@@ -40,12 +40,12 @@ const LoadVideoPage = () => {
   useEffect(() => {
     if (isLooping && playerRef.current) {
       const player = playerRef.current;
-      player.seekTo(startTime);
+      player.seekTo(clipStart);
       player.getInternalPlayer().playVideo();
 
       const loopInterval = setInterval(() => {
-        if (player.getCurrentTime() >= endTime) {
-          player.seekTo(startTime);
+        if (player.getCurrentTime() >= clipEnd) {
+          player.seekTo(clipStart);
           player.getInternalPlayer().playVideo();
         }
       }, 100);
@@ -54,7 +54,7 @@ const LoadVideoPage = () => {
         clearInterval(loopInterval);
       };
     }
-  }, [isLooping, startTime, endTime]);
+  }, [isLooping, clipStart, clipEnd]);
 
   const { mutate, isLoading } = trpc.saveClip.useMutation({
     onSettled: () => {
@@ -65,15 +65,15 @@ const LoadVideoPage = () => {
   const handleExport = async () => {
     if (playerRef.current) {
       const duration = playerRef.current.getDuration();
-      if (endTime <= duration) {
+      if (clipEnd <= duration) {
         // TODO: Implement the export functionality
-        console.log(`Exporting video from ${startTime}s to ${endTime}s`);
-        const output: Clip = {
-          start: `${startTime}`,
-          end: `${endTime}`,
-          video: videoUrl,
-        };
-        mutate(output);
+        console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
+        // const output: Clip = {
+        //   start: `${clipStart}`,
+        //   end: `${clipEnd}`,
+        //   video: videoUrl,
+        // };
+        // mutate(output);
       } else {
         console.error('End time exceeds video duration');
       }
