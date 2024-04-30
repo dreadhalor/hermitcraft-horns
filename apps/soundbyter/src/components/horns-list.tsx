@@ -1,9 +1,7 @@
-'use client';
-
 import React from 'react';
 import { Card } from './ui/card';
 import { HornTile } from './horn-tile';
-import { trpc } from '@/trpc/client';
+import { trpcServer } from '@/trpc/server';
 
 export type Horn = {
   id: string;
@@ -37,17 +35,12 @@ const horns: Horn[] = [
   },
 ];
 
-export const HornsList = () => {
-  // const data = await fetch('http://localhost:3000/api/get-clips').then((res) =>
-  //   res.json(),
-  // );
-  const { data } = trpc.getClips.useQuery();
+export const HornsList = async () => {
+  const clips = await trpcServer.getClips();
 
-  console.log('ddddatttaaaa', data);
-  const clips = data ?? [];
-  const mappedClips = clips.map((clip: any, index: number) => ({
-    start: Number.parseInt(clip.start),
-    end: Number.parseInt(clip.end),
+  const mappedClips = clips.map((clip, index) => ({
+    start: clip.start,
+    end: clip.end,
     video: clip.video,
     user: clip.user,
     id: (index + 10).toString(),

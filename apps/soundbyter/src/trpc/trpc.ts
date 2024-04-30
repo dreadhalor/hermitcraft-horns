@@ -1,6 +1,8 @@
 import { initTRPC } from '@trpc/server';
 
-const t = initTRPC.create();
+type Context = {};
+
+const t = initTRPC.context<Context>().create();
 
 export const { createCallerFactory, router } = t;
 export const publicProcedure = t.procedure;

@@ -13,8 +13,12 @@ export const getUsers = async () => {
 
 export const getClips = async () => {
   const result = await db.query.clips.findMany();
-  console.log('resultttt', result);
-  return result;
+  const mapped = result.map((clip) => ({
+    ...clip,
+    start: parseFloat(clip.start),
+    end: parseFloat(clip.end),
+  }));
+  return mapped;
 };
 
 export type Clip = typeof schema.clips.$inferInsert;

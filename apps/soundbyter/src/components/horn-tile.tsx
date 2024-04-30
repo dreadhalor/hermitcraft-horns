@@ -13,7 +13,7 @@ export const HornTile = ({
   horn: { tagline, video, start, end },
 }: HornTileProps) => {
   const [playing, setPlaying] = useState(false);
-  const { url, setUrl, seekTo, play, setStart, setEnd } = useClipPlayer();
+  const { setUrl, seekTo, play, setStart, setEnd } = useClipPlayer();
 
   useEffect(() => {
     if (playing && video) {
