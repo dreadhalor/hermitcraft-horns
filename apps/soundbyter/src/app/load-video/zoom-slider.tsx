@@ -9,38 +9,35 @@ interface Props {
   playerRef: React.MutableRefObject<ReactPlayer | null>;
   playerReady: boolean;
 }
-export const ClipSlider = ({ playerRef, playerReady }: Props) => {
+export const ZoomSlider = ({ playerRef, playerReady }: Props) => {
   const [videoDuration, setVideoDuration] = React.useState(0);
-  const { zoomStart, zoomEnd, clipStart, setClipStart, clipEnd, setClipEnd } =
-    useApp();
+  const { zoomStart, setZoomStart, zoomEnd, setZoomEnd } = useApp();
 
   useEffect(() => {
     if (playerRef.current) {
       setVideoDuration(playerRef.current.getDuration());
+      setZoomEnd(playerRef.current.getDuration());
     }
-  }, [playerRef, playerReady]);
+  }, [playerRef, playerReady, setZoomEnd]);
 
   return (
     <>
-      <Label className='mb-1'>
-        Clip: {formatTime(clipStart)} &rarr; {formatTime(clipEnd)} (
-        {clipEnd - clipStart} seconds)
-      </Label>
+      <Label className='mb-1'>Zoom</Label>
       <SliderPrimitive.Root
         className={cn(
           'relative flex w-full touch-none select-none items-center',
           'pb-2',
         )}
-        min={zoomStart}
-        max={zoomEnd}
-        value={[clipStart, clipEnd]}
+        min={0}
+        max={videoDuration || 0}
+        value={[zoomStart, zoomEnd]}
         onValueChange={(value) => {
-          setClipStart(value[0]);
-          setClipEnd(value[1]);
+          setZoomStart(value[0]);
+          setZoomEnd(value[1]);
         }}
       >
         <SliderPrimitive.Track className='relative h-4 w-full grow overflow-hidden rounded-full bg-primary/20'>
-          <SliderPrimitive.Range className='absolute h-full bg-[hsl(0,50,50)]' />
+          <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,50,50)]' />
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
     </>

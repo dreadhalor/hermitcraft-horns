@@ -3,21 +3,16 @@ import ReactPlayer from 'react-player';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { useApp } from '@/providers/app-provider';
 
 interface Props {
   playerRef: React.MutableRefObject<ReactPlayer | null>;
-  playTime: number;
-  setPlayTime: (value: number) => void;
   playerReady: boolean;
 }
-export const VideoPlaySlider = ({
-  playerRef,
-  playTime,
-  setPlayTime,
-  playerReady,
-}: Props) => {
+export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
   const [playSliderValue, setPlaySliderValue] = useState(0);
+  const { zoomStart, zoomEnd, playTime, setPlayTime } = useApp();
 
   useEffect(() => {
     if (playerRef.current) {
@@ -68,8 +63,8 @@ export const VideoPlaySlider = ({
           'relative flex w-full touch-none select-none items-center',
           'pb-2',
         )}
-        min={0}
-        max={playerRef.current?.getDuration() || 0}
+        min={zoomStart}
+        max={zoomEnd}
         value={[playSliderValue]}
         onValueChange={([val]) => handlePlaySliderChange(val)}
         onValueCommit={([val]) => handlePlaySliderValueCommit(val)}

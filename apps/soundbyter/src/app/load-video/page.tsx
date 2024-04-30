@@ -6,18 +6,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { VideoPlaySlider } from './video-play-slider';
 import { ClipSlider } from './clip-slider';
+import { ZoomSlider } from './zoom-slider';
+import { CombinedSlider } from './combined-slider';
+import { useApp } from '@/providers/app-provider';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
-    'https://www.youtube.com/watch?v=3gjdYKIUO_4',
+    'https://www.youtube.com/watch?v=svwXNoXxM40',
   );
-  const [startTime, setStartTime] = useState(0);
-  const [endTime, setEndTime] = useState(0);
+  const { clipStart: startTime, clipEnd: endTime } = useApp();
   const [isLooping, setIsLooping] = useState(false);
   const playerRef = useRef<ReactPlayer>(null);
   const [playerReady, setPlayerReady] = useState(false);
-  const [playTime, setPlayTime] = useState(0);
 
   const [isClient, setIsClient] = useState(false);
 
@@ -86,6 +87,7 @@ const LoadVideoPage = () => {
               <ReactPlayer
                 url={videoUrl}
                 ref={playerRef}
+                controls
                 onReady={() => {
                   console.log('Player ready');
                   setPlayerReady(true);
@@ -95,22 +97,12 @@ const LoadVideoPage = () => {
             )}
           </div>
           <div className='flex flex-col px-2 pt-4'>
+            <CombinedSlider playerRef={playerRef} playerReady={playerReady} />
+            {/* <ZoomSlider playerRef={playerRef} playerReady={playerReady} /> */}
             {/* the elapsed time slider */}
-            <VideoPlaySlider
-              playerRef={playerRef}
-              playTime={playTime}
-              setPlayTime={setPlayTime}
-              playerReady={playerReady}
-            />
+            <VideoPlaySlider playerRef={playerRef} playerReady={playerReady} />
             {/* the clip trimming slider */}
-            <ClipSlider
-              playerRef={playerRef}
-              startTime={startTime}
-              setStartTime={setStartTime}
-              endTime={endTime}
-              setEndTime={setEndTime}
-              playerReady={playerReady}
-            />
+            <ClipSlider playerRef={playerRef} playerReady={playerReady} />
             <Button onClick={handleLoopToggle} className='my-2'>
               {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
             </Button>
