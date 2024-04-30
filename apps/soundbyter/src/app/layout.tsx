@@ -3,7 +3,6 @@ import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { AppProvider } from '../providers/app-provider';
-import { ClipPlayerProvider } from '@/providers/clip-player-provider';
 import { TRPCProvider } from '@/trpc/trpc-provider';
 
 const fontSans = FontSans({
@@ -30,9 +29,7 @@ export default function RootLayout({
         )}
       >
         <TRPCProvider>
-          <AppProvider>
-            <ClipPlayerProvider>{children}</ClipPlayerProvider>
-          </AppProvider>
+          <AppProvider>{children}</AppProvider>
         </TRPCProvider>
       </body>
     </html>

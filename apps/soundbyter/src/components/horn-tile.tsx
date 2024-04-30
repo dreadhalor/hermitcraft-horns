@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { Horn } from './horns-list';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useState } from 'react';
-import { useClipPlayer } from '@/providers/clip-player-provider';
 
 type HornTileProps = {
   horn: Horn;
@@ -13,19 +12,6 @@ export const HornTile = ({
   horn: { tagline, video, start, end },
 }: HornTileProps) => {
   const [playing, setPlaying] = useState(false);
-  const { setUrl, seekTo, play, setStart, setEnd } = useClipPlayer();
-
-  useEffect(() => {
-    if (playing && video) {
-      setUrl(video);
-      if (start && end) {
-        setStart(start);
-        setEnd(end);
-        seekTo(start);
-      }
-      play();
-    }
-  }, [playing, video, setUrl, seekTo, play, start, end, setStart, setEnd]);
 
   return (
     <div
