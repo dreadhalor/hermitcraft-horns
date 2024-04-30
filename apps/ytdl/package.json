@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ffmpeg-static": "^5.2.0",
     "ytdl-core": "^4.11.5"
   }
 }
