@@ -9,6 +9,7 @@ import { ClipSlider } from './sliders/clip-slider';
 import { CombinedSlider } from './sliders/combined-slider';
 import { useApp } from '@/providers/app-provider';
 import { Clip } from '@/../drizzle/db';
+import { trpc } from '@/trpc/client';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
@@ -55,6 +56,12 @@ const LoadVideoPage = () => {
     }
   }, [isLooping, startTime, endTime]);
 
+  const { mutate, isLoading } = trpc.saveClip.useMutation({
+    onSettled: () => {
+      console.log('Clip saved');
+    },
+  });
+
   const handleExport = async () => {
     if (playerRef.current) {
       const duration = playerRef.current.getDuration();
@@ -65,22 +72,8 @@ const LoadVideoPage = () => {
           start: `${startTime}`,
           end: `${endTime}`,
           video: videoUrl,
-          user: 0,
         };
-        fetch('/api/save-clip', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(output),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log(data);
-          })
-          .catch((error) => {
-            console.error(error);
-          });
+        mutate(output);
       } else {
         console.error('End time exceeds video duration');
       }
