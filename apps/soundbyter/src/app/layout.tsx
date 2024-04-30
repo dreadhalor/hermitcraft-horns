@@ -3,6 +3,7 @@ import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { AppProvider } from '../providers/app-provider';
+import { ClipPlayerProvider } from '@/providers/clip-player-provider';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -27,7 +28,9 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <AppProvider>{children}</AppProvider>
+        <AppProvider>
+          <ClipPlayerProvider>{children}</ClipPlayerProvider>
+        </AppProvider>
       </body>
     </html>
   );

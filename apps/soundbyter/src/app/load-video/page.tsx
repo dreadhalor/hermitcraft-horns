@@ -13,7 +13,7 @@ import { Clip } from '@/../drizzle/db';
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
-    'https://www.youtube.com/watch?v=svwXNoXxM40',
+    'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
   );
   const { clipStart: startTime, clipEnd: endTime } = useApp();
   const [isLooping, setIsLooping] = useState(false);

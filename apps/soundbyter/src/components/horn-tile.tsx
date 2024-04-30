@@ -3,13 +3,29 @@
 import Image from 'next/image';
 import { Horn } from './horns-list';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useClipPlayer } from '@/providers/clip-player-provider';
 
 type HornTileProps = {
   horn: Horn;
 };
-export const HornTile = ({ horn: { tagline } }: HornTileProps) => {
+export const HornTile = ({
+  horn: { tagline, video, start, end },
+}: HornTileProps) => {
   const [playing, setPlaying] = useState(false);
+  const { url, setUrl, seekTo, play, setStart, setEnd } = useClipPlayer();
+
+  useEffect(() => {
+    if (playing && video) {
+      setUrl(video);
+      if (start && end) {
+        setStart(start);
+        setEnd(end);
+        seekTo(start);
+      }
+      play();
+    }
+  }, [playing, video, setUrl, seekTo, play, start, end, setStart, setEnd]);
 
   return (
     <div
@@ -21,12 +37,7 @@ export const HornTile = ({ horn: { tagline } }: HornTileProps) => {
       )}
       <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
         <div className='relative h-full w-full overflow-hidden rounded-md'>
-          <Image
-            src={JoeHills}
-            alt='joe hills'
-            layout='fill'
-            objectFit='contain'
-          />
+          <Image src={JoeHills} alt='joe hills' fill objectFit='contain' />
         </div>
       </div>
       <div className='absolute inset-0 p-[8px]'>

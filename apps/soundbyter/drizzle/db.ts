@@ -13,7 +13,7 @@ export const getUsers = async () => {
 
 export const getClips = async () => {
   const result = await db.query.clips.findMany();
-  console.log('result', result);
+  console.log('resultttt', result);
   return result;
 };
 

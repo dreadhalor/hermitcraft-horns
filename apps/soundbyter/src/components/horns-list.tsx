@@ -40,23 +40,24 @@ export const HornsList = async () => {
   );
 
   console.log('ddddatttaaaa', data);
-  const [clip] = data.result;
-  const { start, end, video, user } = clip;
+  const clips = data.result;
+  const mappedClips = clips.map((clip: any, index: number) => ({
+    start: Number.parseInt(clip.start),
+    end: Number.parseInt(clip.end),
+    video: clip.video,
+    user: clip.user,
+    id: (index + 10).toString(),
+    title: 'Joe Hills',
+    tagline: `Test ${index}`,
+  }));
 
   return (
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px] text-white'>
       Popular
       <div className='grid w-full grid-cols-2 gap-[10px]'>
-        <HornTile
-          horn={{
-            start: Number.parseInt(start),
-            end: Number.parseInt(end),
-            video,
-            id: '0',
-            title: 'Joe Hills',
-            tagline: 'This is a test...',
-          }}
-        />
+        {mappedClips.map((clip: any) => (
+          <HornTile key={clip.id} horn={clip} />
+        ))}
         {horns.map((horn) => (
           <HornTile key={horn.id} horn={horn} />
         ))}
