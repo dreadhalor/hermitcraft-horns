@@ -1,5 +1,8 @@
 import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const outputFilename = 'audio_slice.mp3';
