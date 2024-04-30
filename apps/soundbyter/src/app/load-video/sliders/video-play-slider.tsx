@@ -11,8 +11,14 @@ interface Props {
 }
 export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
-  const [playSliderValue, setPlaySliderValue] = useState(0);
-  const { zoomStart, zoomEnd, playTime, setPlayTime } = useApp();
+  const {
+    zoomStart,
+    zoomEnd,
+    playTime,
+    setPlayTime,
+    playSliderValue,
+    setPlaySliderValue,
+  } = useApp();
 
   useEffect(() => {
     if (playerRef.current) {
@@ -28,13 +34,19 @@ export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
         clearInterval(interval);
       };
     }
-  }, [currentlySeeking, playerRef, setPlayTime, playerReady]);
+  }, [
+    currentlySeeking,
+    playerRef,
+    setPlayTime,
+    playerReady,
+    setPlaySliderValue,
+  ]);
 
   useEffect(() => {
     if (!currentlySeeking) {
       setPlaySliderValue(playTime);
     }
-  }, [playTime, currentlySeeking]);
+  }, [playTime, currentlySeeking, setPlaySliderValue]);
 
   const handlePlaySliderChange = (value: number) => {
     setPlaySliderValue(value);

@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
-import { VideoPlaySlider } from './video-play-slider';
-import { ClipSlider } from './clip-slider';
-import { ZoomSlider } from './zoom-slider';
-import { CombinedSlider } from './combined-slider';
+import { VideoPlaySlider } from './sliders/video-play-slider';
+import { ClipSlider } from './sliders/clip-slider';
+import { CombinedSlider } from './sliders/combined-slider';
 import { useApp } from '@/providers/app-provider';
 
 const LoadVideoPage = () => {

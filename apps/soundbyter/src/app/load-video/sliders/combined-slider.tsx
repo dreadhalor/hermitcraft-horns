@@ -16,7 +16,7 @@ export const CombinedSlider = ({ playerRef, playerReady }: Props) => {
     setZoomStart,
     zoomEnd,
     setZoomEnd,
-    playTime,
+    playSliderValue,
     clipStart,
     clipEnd,
   } = useApp();
@@ -56,7 +56,7 @@ export const CombinedSlider = ({ playerRef, playerReady }: Props) => {
           )}
           min={0}
           max={videoDuration || 0}
-          value={[playTime]}
+          value={[playSliderValue]}
         >
           <SliderPrimitive.Track className='relative h-4 w-full grow overflow-hidden rounded-full bg-primary/20'>
             <SliderPrimitive.Range className='absolute h-full bg-primary' />

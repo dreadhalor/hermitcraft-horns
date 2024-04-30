@@ -9,6 +9,8 @@ type AppContextType = {
   setZoomEnd: (value: number) => void;
   playTime: number;
   setPlayTime: (value: number) => void;
+  playSliderValue: number;
+  setPlaySliderValue: (value: number) => void;
   clipStart: number;
   setClipStart: (value: number) => void;
   clipEnd: number;
@@ -29,6 +31,7 @@ export const AppProvider = ({ children }: Props) => {
   const [zoomEnd, setZoomEnd] = useState(0);
 
   const [playTime, setPlayTime] = useState(0);
+  const [playSliderValue, setPlaySliderValue] = useState(0);
 
   const [clipStart, setClipStart] = useState(0);
   const [clipEnd, setClipEnd] = useState(0);
@@ -42,6 +45,8 @@ export const AppProvider = ({ children }: Props) => {
         setZoomEnd,
         playTime,
         setPlayTime,
+        playSliderValue,
+        setPlaySliderValue,
         clipStart,
         setClipStart,
         clipEnd,
