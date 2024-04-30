@@ -17,6 +17,11 @@
     "@radix-ui/react-slider": "^1.1.2",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tabs": "^1.0.4",
+    "@tanstack/react-query": "^4.36.1",
+    "@trpc/client": "10.45.2",
+    "@trpc/next": "10.45.2",
+    "@trpc/react-query": "10.45.2",
+    "@trpc/server": "10.45.2",
     "@types/pg": "^8.11.5",
     "@vercel/postgres": "^0.8.0",
     "class-variance-authority": "^0.7.0",
@@ -29,7 +34,8 @@
     "react-player": "^2.16.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "ytdl-core": "^4.11.5"
+    "ytdl-core": "^4.11.5",
+    "zod": "^3.23.5"
   },
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.24",

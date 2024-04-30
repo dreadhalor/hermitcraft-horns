@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { AppProvider } from '../providers/app-provider';
 import { ClipPlayerProvider } from '@/providers/clip-player-provider';
+import { TRPCProvider } from '@/trpc/trpc-provider';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -28,9 +29,11 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <AppProvider>
-          <ClipPlayerProvider>{children}</ClipPlayerProvider>
-        </AppProvider>
+        <TRPCProvider>
+          <AppProvider>
+            <ClipPlayerProvider>{children}</ClipPlayerProvider>
+          </AppProvider>
+        </TRPCProvider>
       </body>
     </html>
   );
