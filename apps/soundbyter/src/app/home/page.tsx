@@ -6,19 +6,19 @@ import { HornsList } from '@/components/horns-list';
 
 const Home = () => {
   return (
-    <main className='flex flex-col items-center p-[20px] gap-[20px]'>
+    <main className='flex flex-col items-center gap-[20px] p-[20px]'>
       <Image src={Banner} alt='banner' className='w-full' />
       <Tabs className='w-full' defaultValue='horns'>
-        <TabsList className='w-full grid grid-cols-2 bg-[#4665BA]'>
+        <TabsList className='grid w-full grid-cols-2 bg-[#4665BA]'>
           <TabsTrigger
             value='horns'
-            className='data-[state=active]:bg-[#354B87] text-muted data-[state=active]:text-white'
+            className='text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
           >
             Horns
           </TabsTrigger>
           <TabsTrigger
             value='videos'
-            className='data-[state=active]:bg-[#354B87] text-muted data-[state=active]:text-white'
+            className='text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
           >
             Videos
           </TabsTrigger>

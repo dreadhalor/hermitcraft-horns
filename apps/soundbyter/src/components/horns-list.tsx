@@ -1,50 +1,14 @@
-'use client';
-
 import React from 'react';
 import { Card } from './ui/card';
-import Image from 'next/image';
-import JoeHills from '@/assets/hermits/joehills.jpeg';
+import { HornTile } from './horn-tile';
 
-type Horn = {
+export type Horn = {
   id: string;
   title: string;
   tagline: string;
-};
-type HornTileProps = {
-  horn: Horn;
-};
-const HornTile = ({ horn: { tagline } }: HornTileProps) => {
-  const [playing, setPlaying] = React.useState(false);
-
-  return (
-    <div
-      className='relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-white'
-      onClick={() => setPlaying((prev) => !prev)}
-    >
-      {playing && (
-        <div className='absolute inset-0 rounded-lg border-2 border-white'></div>
-      )}
-      <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
-        <div className='relative h-full w-full overflow-hidden rounded-md'>
-          <Image
-            src={JoeHills}
-            alt='joe hills'
-            layout='fill'
-            objectFit='contain'
-          />
-        </div>
-      </div>
-      <div className='absolute inset-0 p-[8px]'>
-        <div className='flex h-full w-full flex-col p-[4px]'>
-          <div className='flex items-center'>
-            <span className='text-[10px]'>dreadhalor</span>
-          </div>
-          <span className='my-auto text-center text-[12px]'>{tagline}</span>
-          <span className='text-center text-[12px]'>View clip &rarr;</span>
-        </div>
-      </div>
-    </div>
-  );
+  start?: number;
+  end?: number;
+  video?: string;
 };
 
 const horns: Horn[] = [
@@ -70,11 +34,29 @@ const horns: Horn[] = [
   },
 ];
 
-export const HornsList = () => {
+export const HornsList = async () => {
+  const data = await fetch('http://localhost:3000/api/get-clips').then((res) =>
+    res.json(),
+  );
+
+  console.log('ddddatttaaaa', data);
+  const [clip] = data.result;
+  const { start, end, video, user } = clip;
+
   return (
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px] text-white'>
       Popular
       <div className='grid w-full grid-cols-2 gap-[10px]'>
+        <HornTile
+          horn={{
+            start: Number.parseInt(start),
+            end: Number.parseInt(end),
+            video,
+            id: '0',
+            title: 'Joe Hills',
+            tagline: 'This is a test...',
+          }}
+        />
         {horns.map((horn) => (
           <HornTile key={horn.id} horn={horn} />
         ))}

@@ -8,6 +8,7 @@ import { VideoPlaySlider } from './sliders/video-play-slider';
 import { ClipSlider } from './sliders/clip-slider';
 import { CombinedSlider } from './sliders/combined-slider';
 import { useApp } from '@/providers/app-provider';
+import { Clip } from '@/../drizzle/db';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
@@ -60,6 +61,26 @@ const LoadVideoPage = () => {
       if (endTime <= duration) {
         // TODO: Implement the export functionality
         console.log(`Exporting video from ${startTime}s to ${endTime}s`);
+        const output: Clip = {
+          start: `${startTime}`,
+          end: `${endTime}`,
+          video: videoUrl,
+          user: 0,
+        };
+        fetch('/api/save-clip', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(output),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
       } else {
         console.error('End time exceeds video duration');
       }
