@@ -1,20 +1,29 @@
 'use client';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
+import { VideoPlaySlider } from './video-play-slider';
+import { ClipSlider } from './clip-slider';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
-    'https://www.youtube.com/watch?v=3gjdYKIUO_4&t=13s'
+    'https://www.youtube.com/watch?v=3gjdYKIUO_4',
   );
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
   const [isLooping, setIsLooping] = useState(false);
   const playerRef = useRef<ReactPlayer>(null);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [playTime, setPlayTime] = useState(0);
+
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setVideoUrl(inputValue);
@@ -72,42 +81,41 @@ const LoadVideoPage = () => {
       </form>
       {videoUrl && (
         <div>
-          <ReactPlayer url={videoUrl} controls ref={playerRef} />
-          <div className='pt-4'>
-            <Slider
-              min={0}
-              max={playerRef.current?.getDuration() || 0}
-              value={[startTime, endTime]}
-              onValueChange={(value) => {
-                setStartTime(value[0]);
-                setEndTime(value[1]);
-              }}
-            />
+          <div className='flex aspect-video w-full items-center justify-center'>
+            {isClient && (
+              <ReactPlayer
+                url={videoUrl}
+                ref={playerRef}
+                onReady={() => {
+                  console.log('Player ready');
+                  setPlayerReady(true);
+                }}
+                className='h-full max-h-full w-full max-w-full'
+              />
+            )}
           </div>
-          <div>
-            <Label>Start Time (in seconds):</Label>
-            <Input
-              className='text-black'
-              type='number'
-              value={startTime}
-              onChange={(e) => setStartTime(parseFloat(e.target.value))}
-              step='0.1'
+          <div className='flex flex-col px-2 pt-4'>
+            {/* the elapsed time slider */}
+            <VideoPlaySlider
+              playerRef={playerRef}
+              playTime={playTime}
+              setPlayTime={setPlayTime}
+              playerReady={playerReady}
             />
-          </div>
-          <div>
-            <Label>End Time (in seconds):</Label>
-            <Input
-              className='text-black'
-              type='number'
-              value={endTime}
-              onChange={(e) => setEndTime(parseFloat(e.target.value))}
-              step='0.1'
+            {/* the clip trimming slider */}
+            <ClipSlider
+              playerRef={playerRef}
+              startTime={startTime}
+              setStartTime={setStartTime}
+              endTime={endTime}
+              setEndTime={setEndTime}
+              playerReady={playerReady}
             />
+            <Button onClick={handleLoopToggle} className='my-2'>
+              {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
+            </Button>
+            <Button onClick={handleExport}>Export</Button>
           </div>
-          <Button onClick={handleLoopToggle}>
-            {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
-          </Button>
-          <Button onClick={handleExport}>Export</Button>
         </div>
       )}
     </div>
