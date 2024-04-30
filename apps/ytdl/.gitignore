@@ -1,1 +1,5 @@
 node_modules
+media-output
+
+# Mac thing
+.DS_Store

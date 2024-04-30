@@ -5,7 +5,7 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-const outputFilename = 'audio_slice.mp3';
+const outputFilename = 'media-output/audio_slice.mp3';
 const timeStart = '00:00:10'; // Start time in HH:MM:SS format
 const timeDuration = '00:00:05'; // Duration in HH:MM:SS format
 
