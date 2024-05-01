@@ -1,25 +1,59 @@
 import express from 'express';
-import bodyParser from 'body-parser';
+import * as trpcExpress from '@trpc/server/adapters/express';
+import { inferAsyncReturnType, initTRPC } from '@trpc/server';
+import { z } from 'zod';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import cors from 'cors';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const app = express();
-app.use(bodyParser.json());
 
-app.post('/api/extract-audio', async (req, res) => {
-  try {
-    const { videoUrl, start, end } = req.body;
-    console.log('Request received:', { videoUrl, start, end });
-    const outputFilename = await downloadAudioSlice(videoUrl, start, end);
-    res.json({ outputFilename });
-  } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({ error: 'An error occurred' });
-  }
+// Enable CORS
+app.use(
+  cors({
+    origin: 'http://localhost:3000', // Replace with the URL of your Next.js app
+  })
+);
+
+const createContext = ({
+  req,
+  res,
+}: trpcExpress.CreateExpressContextOptions) => ({
+  req,
+  res,
 });
+type Context = inferAsyncReturnType<typeof createContext>;
+
+const t = initTRPC.context<Context>().create();
+
+const appRouter = t.router({
+  extractAudio: t.procedure
+    .input(
+      z.object({
+        videoUrl: z.string(),
+        start: z.number(),
+        end: z.number(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { videoUrl, start, end } = input;
+      const outputFilename = await downloadAudioSlice(videoUrl, start, end);
+      return { outputFilename };
+    }),
+});
+
+export type AppRouter = typeof appRouter;
+
+app.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  })
+);
 
 async function downloadAudioSlice(
   videoUrl: string,
