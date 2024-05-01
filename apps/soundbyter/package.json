@@ -10,6 +10,7 @@
     "push": "pnpm dlx drizzle-kit push:pg"
   },
   "dependencies": {
+    "@repo/ytdl": "workspace:*",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@next/env": "^14.2.3",
     "@radix-ui/react-icons": "^1.3.0",

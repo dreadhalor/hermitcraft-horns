@@ -83,7 +83,13 @@ async function downloadAudioSlice(
     });
     const audioStream = ytdl(videoUrl, { format });
 
-    const outputFilename = `media-output/audio_slice_${Date.now()}.mp3`;
+    // if media-output folder does not exist, create it
+    const dir = 'media-output';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+
+    const outputFilename = `${dir}/audio_slice_${Date.now()}.mp3`;
     const duration = end - start;
     const timeStart = `${start}s`;
     const timeDuration = `${duration}s`;

@@ -1,7 +1,7 @@
 import { getClips, saveClip as drizzleSaveClip } from '@/../drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
-import { type VideoProcessingRouterOutput } from '@/../../../random_code/ytdl-test/server';
+import { type VideoProcessingRouterOutput } from '@repo/ytdl';
 
 export const appRouter = router({
   getClips: publicProcedure.query(async () => {

@@ -1,8 +1,13 @@
 {
-  "name": "ytdl-test",
+  "name": "@repo/ytdl",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.ts"
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
