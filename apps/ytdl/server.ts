@@ -6,6 +6,8 @@ import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
@@ -25,6 +27,7 @@ const createContext = ({
   req,
   res,
 });
+
 type Context = inferAsyncReturnType<typeof createContext>;
 
 const t = initTRPC.context<Context>().create();
@@ -41,7 +44,15 @@ const appRouter = t.router({
     .mutation(async ({ input }) => {
       const { videoUrl, start, end } = input;
       const outputFilename = await downloadAudioSlice(videoUrl, start, end);
-      return { outputFilename };
+
+      // Read the processed audio file
+      const audioPath = path.join(__dirname, outputFilename);
+      const audioBuffer = await fs.promises.readFile(audioPath);
+
+      // Delete the temporary audio file
+      await fs.promises.unlink(audioPath);
+
+      return audioBuffer;
     }),
 });
 
