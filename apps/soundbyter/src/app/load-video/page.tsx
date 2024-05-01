@@ -68,12 +68,12 @@ const LoadVideoPage = () => {
       if (clipEnd <= duration) {
         // TODO: Implement the export functionality
         console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
-        // const output: Clip = {
-        //   start: `${clipStart}`,
-        //   end: `${clipEnd}`,
-        //   video: videoUrl,
-        // };
-        // mutate(output);
+        const output: Clip = {
+          start: `${clipStart}`,
+          end: `${clipEnd}`,
+          video: videoUrl,
+        };
+        mutate(output);
       } else {
         console.error('End time exceeds video duration');
       }

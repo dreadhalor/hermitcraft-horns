@@ -7,26 +7,6 @@ export const appRouter = router({
     const result = await getClips();
     return result;
   }),
-  // saveClip: publicProcedure.mutation(async (clip) => {
-  //   console.log('clip', clip);
-  //   const result = await saveClip(clip);
-  //   console.log('result', result);
-  //   return result;
-  // }
-
-  // export type Clip = {
-  //   start: number;
-  //   end: number;
-  //   user: string;
-  //   video: string;
-  // };
-
-  // Clip = {
-  //   start: `${startTime}`,
-  //   end: `${endTime}`,
-  //   video: videoUrl,
-  //   user: 0,
-  // };
 
   saveClip: publicProcedure
     .input(

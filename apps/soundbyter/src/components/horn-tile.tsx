@@ -23,7 +23,12 @@ export const HornTile = ({
       )}
       <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
         <div className='relative h-full w-full overflow-hidden rounded-md'>
-          <Image src={JoeHills} alt='joe hills' fill objectFit='contain' />
+          <Image
+            src={JoeHills}
+            alt='joe hills'
+            fill
+            className='object-contain'
+          />
         </div>
       </div>
       <div className='absolute inset-0 p-[8px]'>
