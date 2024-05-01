@@ -8,8 +8,7 @@ import { VideoPlaySlider } from './sliders/video-play-slider';
 import { ClipSlider } from './sliders/clip-slider';
 import { CombinedSlider } from './sliders/combined-slider';
 import { useApp } from '@/providers/app-provider';
-import { Clip } from '@/../drizzle/db';
-import { trpc } from '@/trpc/client';
+import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
@@ -56,24 +55,23 @@ const LoadVideoPage = () => {
     }
   }, [isLooping, clipStart, clipEnd]);
 
-  const { mutate, isLoading } = trpc.saveClip.useMutation({
-    onSettled: () => {
-      console.log('Clip saved');
-    },
-  });
+  const {
+    createAndSaveClip,
+    isLoading: isSaving,
+    error: saveError,
+    clipUrl,
+  } = useCreateAndSaveClip();
 
   const handleExport = async () => {
     if (playerRef.current) {
       const duration = playerRef.current.getDuration();
       if (clipEnd <= duration) {
-        // TODO: Implement the export functionality
         console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
-        const output: Clip = {
-          start: `${clipStart}`,
-          end: `${clipEnd}`,
-          video: videoUrl,
-        };
-        mutate(output);
+        await createAndSaveClip({
+          videoUrl,
+          start: clipStart,
+          end: clipEnd,
+        });
       } else {
         console.error('End time exceeds video duration');
       }
@@ -119,7 +117,11 @@ const LoadVideoPage = () => {
             <Button onClick={handleLoopToggle} className='my-2'>
               {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
             </Button>
-            <Button onClick={handleExport}>Export</Button>
+            <Button onClick={handleExport} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Export'}
+            </Button>
+            {clipUrl && <p>Clip URL: {clipUrl}</p>}
+            {saveError && <p>Error saving clip: {saveError.message}</p>}
           </div>
         </div>
       )}

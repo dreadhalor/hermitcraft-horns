@@ -30,4 +30,5 @@ export const clips = pgTable('clips', {
   start: numeric('start').notNull(),
   end: numeric('end').notNull(),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
+  clipUrl: text('clipUrl'),
 });

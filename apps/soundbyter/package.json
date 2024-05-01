@@ -23,6 +23,7 @@
     "@trpc/react-query": "10.45.2",
     "@trpc/server": "10.45.2",
     "@types/pg": "^8.11.5",
+    "@uploadthing/react": "^6.5.1",
     "@vercel/postgres": "^0.8.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -35,6 +36,7 @@
     "react-player": "^2.16.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "uploadthing": "^6.10.1",
     "ytdl-core": "^4.11.5",
     "zod": "^3.23.5"
   },
