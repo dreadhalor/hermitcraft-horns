@@ -1,26 +1,34 @@
 'use client';
-
 import Image from 'next/image';
 import { Horn } from './horns-list';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 type HornTileProps = {
   horn: Horn;
 };
-export const HornTile = ({
-  horn: { tagline, video, start, end },
-}: HornTileProps) => {
-  const [playing, setPlaying] = useState(false);
+
+export const HornTile = ({ horn: { tagline, clipUrl } }: HornTileProps) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlayClick = () => {
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.load();
+    }
+  }, [clipUrl]);
 
   return (
     <div
       className='relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-white'
-      onClick={() => setPlaying((prev) => !prev)}
+      onClick={handlePlayClick}
     >
-      {playing && (
-        <div className='absolute inset-0 rounded-lg border-2 border-white'></div>
-      )}
+      <audio ref={audioRef} src={clipUrl} />
       <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
         <div className='relative h-full w-full overflow-hidden rounded-md'>
           <Image

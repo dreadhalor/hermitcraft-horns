@@ -10,6 +10,7 @@ export type Horn = {
   start?: number;
   end?: number;
   video?: string;
+  clipUrl?: string;
 };
 
 const horns: Horn[] = [
@@ -46,6 +47,7 @@ export const HornsList = async () => {
     id: (index + 10).toString(),
     title: 'Joe Hills',
     tagline: `Test ${index}`,
+    clipUrl: clip.clipUrl,
   }));
 
   return (
