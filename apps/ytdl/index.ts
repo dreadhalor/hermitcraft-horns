@@ -4,10 +4,13 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+const videoUrl = 'https://www.youtube.com/watch?v=IM-Z6hJb4E4';
 const outputFilename = 'media-output/audio_slice.mp3';
-const timeStart = '00:00:10'; // Start time in HH:MM:SS format
-const timeDuration = '00:00:05'; // Duration in HH:MM:SS format
+const start = 1149;
+const end = 1155;
+const duration = end - start;
+const timeStart = `${start}s`; // Start time in HH:MM:SS format
+const timeDuration = `${duration}s`; // Duration in HH:MM:SS format
 
 async function downloadAudioSlice() {
   try {
