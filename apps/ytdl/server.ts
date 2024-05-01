@@ -1,6 +1,10 @@
 import express from 'express';
 import * as trpcExpress from '@trpc/server/adapters/express';
-import { inferAsyncReturnType, initTRPC } from '@trpc/server';
+import {
+  inferAsyncReturnType,
+  inferRouterOutputs,
+  initTRPC,
+} from '@trpc/server';
 import { z } from 'zod';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
@@ -57,6 +61,7 @@ const appRouter = t.router({
 });
 
 export type AppRouter = typeof appRouter;
+export type VideoProcessingRouterOutput = inferRouterOutputs<AppRouter>;
 
 app.use(
   '/trpc',
