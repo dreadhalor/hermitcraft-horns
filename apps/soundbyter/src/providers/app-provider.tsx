@@ -27,6 +27,8 @@ type AppContextType = {
   setCurrentlySeeking: (value: boolean) => void;
   hermit: Channel | null;
   setHermit: (value: Channel | null) => void;
+  tagline: string;
+  setTagline: (value: string) => void;
 };
 
 const AppContext = React.createContext<AppContextType>({} as AppContextType);
@@ -56,6 +58,7 @@ export const AppProvider = ({ children }: Props) => {
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
 
   const [hermit, setHermit] = useState<Channel | null>(null);
+  const [tagline, setTagline] = useState('');
 
   useEffect(() => {
     const player = playerRef.current;
@@ -94,6 +97,8 @@ export const AppProvider = ({ children }: Props) => {
         setCurrentlySeeking,
         hermit,
         setHermit,
+        tagline,
+        setTagline,
       }}
     >
       <TooltipProvider>{children}</TooltipProvider>

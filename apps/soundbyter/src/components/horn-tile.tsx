@@ -3,12 +3,17 @@ import Image from 'next/image';
 import { Horn } from './horns-list';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 
 type HornTileProps = {
   horn: Horn;
+  className?: string;
 };
 
-export const HornTile = ({ horn: { tagline, clipUrl } }: HornTileProps) => {
+export const HornTile = ({
+  horn: { tagline, profilePic, clipUrl },
+  className,
+}: HornTileProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlayClick = () => {
@@ -25,17 +30,26 @@ export const HornTile = ({ horn: { tagline, clipUrl } }: HornTileProps) => {
 
   return (
     <div
-      className='relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-white'
+      className={cn(
+        'relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-white',
+        className,
+      )}
       onClick={handlePlayClick}
     >
       <audio ref={audioRef} src={clipUrl} />
       <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
         <div className='relative h-full w-full overflow-hidden rounded-md'>
-          <Image
-            src={JoeHills}
-            alt='joe hills'
+          {/* so tired of image origin shenanigans, Next.js */}
+          {/* <Image
+            src={profilePic ?? JoeHills}
+            alt='profile pic'
             fill
             className='object-contain'
+          /> */}
+          <img
+            src={profilePic ?? JoeHills.src}
+            alt='profile pic'
+            className='absolute inset-0 h-full w-full object-fill'
           />
         </div>
       </div>

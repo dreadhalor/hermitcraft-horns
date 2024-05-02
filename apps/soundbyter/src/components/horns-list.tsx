@@ -11,6 +11,7 @@ export type Horn = {
   end?: number;
   video?: string;
   clipUrl?: string;
+  profilePic?: string;
 };
 
 const horns: Horn[] = [

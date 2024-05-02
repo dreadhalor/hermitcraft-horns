@@ -19,6 +19,7 @@ export type Channel = {
 
 type ApiResponse = Channel[];
 
+// must run this serverside to avoid a CORS error
 export const getHermitChannels = publicProcedure
   .output(z.custom<ApiResponse>())
   .query(async () => {

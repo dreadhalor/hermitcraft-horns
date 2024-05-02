@@ -1,7 +1,8 @@
 import React from 'react';
 import { SelectHermit } from './select-hermit';
-import { Input } from '@/components/ui/input';
 import { trpcServer } from '@/trpc/server';
+import { TaglineInput } from './tagline-input';
+import { HornPreview } from './horn-preview';
 
 export const ClipMetadataBuilder = async () => {
   const hermits = await trpcServer.getHermitChannels();
@@ -9,7 +10,8 @@ export const ClipMetadataBuilder = async () => {
   return (
     <div className='flex h-full flex-col'>
       <SelectHermit data={hermits} />
-      <Input placeholder='Title' />
+      <TaglineInput />
+      <HornPreview />
     </div>
   );
 };
