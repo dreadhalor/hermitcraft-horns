@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ReactPlayer from 'react-player';
 
 type AppContextType = {
   zoomStart: number;
@@ -17,6 +18,11 @@ type AppContextType = {
   setClipEnd: (value: number) => void;
   duration: number;
   setDuration: (value: number) => void;
+  playerRef: React.MutableRefObject<ReactPlayer | null>;
+  playing: boolean;
+  setPlaying: (value: boolean) => void;
+  currentlySeeking: boolean;
+  setCurrentlySeeking: (value: boolean) => void;
 };
 
 const AppContext = React.createContext<AppContextType>({} as AppContextType);
@@ -40,6 +46,11 @@ export const AppProvider = ({ children }: Props) => {
 
   const [duration, setDuration] = useState(0);
 
+  const playerRef = React.useRef<ReactPlayer | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const [currentlySeeking, setCurrentlySeeking] = useState(false);
+
   return (
     <AppContext.Provider
       value={{
@@ -57,6 +68,11 @@ export const AppProvider = ({ children }: Props) => {
         setClipEnd,
         duration,
         setDuration,
+        playerRef,
+        playing,
+        setPlaying,
+        currentlySeeking,
+        setCurrentlySeeking,
       }}
     >
       {children}

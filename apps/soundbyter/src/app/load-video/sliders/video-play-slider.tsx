@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import ReactPlayer from 'react-player';
+import React, { useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
-import { cn, formatTime } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { useApp } from '@/providers/app-provider';
 
 interface Props {
-  playerRef: React.MutableRefObject<ReactPlayer | null>;
-  playerReady: boolean;
+  min: number;
+  max: number;
 }
-export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
-  const [currentlySeeking, setCurrentlySeeking] = useState(false);
+export const VideoPlaySlider = ({ min, max }: Props) => {
   const {
-    zoomStart,
-    zoomEnd,
     playTime,
     setPlayTime,
     playSliderValue,
     setPlaySliderValue,
+    playerRef,
+    playing,
+    currentlySeeking,
+    setCurrentlySeeking,
   } = useApp();
 
   useEffect(() => {
@@ -34,13 +33,7 @@ export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
         clearInterval(interval);
       };
     }
-  }, [
-    currentlySeeking,
-    playerRef,
-    setPlayTime,
-    playerReady,
-    setPlaySliderValue,
-  ]);
+  }, [currentlySeeking, playerRef, setPlayTime, setPlaySliderValue]);
 
   useEffect(() => {
     if (!currentlySeeking) {
@@ -55,8 +48,6 @@ export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
   const handlePlaySliderValueCommit = (value: number) => {
     setCurrentlySeeking(false);
     if (playerRef.current) {
-      const playing =
-        playerRef.current.getInternalPlayer().getPlayerState() === 1;
       playerRef.current.seekTo(value);
       if (playing) {
         playerRef.current.getInternalPlayer().playVideo();
@@ -66,24 +57,32 @@ export const VideoPlaySlider = ({ playerRef, playerReady }: Props) => {
 
   return (
     <div>
-      <Label className='mb-1'>
-        Play Time: {formatTime(Math.floor(playSliderValue))} /{' '}
-        {formatTime(Math.floor(playerRef.current?.getDuration() || 0))}
-      </Label>
       <SliderPrimitive.Root
         className={cn(
-          'relative flex w-full touch-none select-none items-center',
-          'pb-2',
+          'relative flex w-full touch-none select-none items-center bg-primary/20',
         )}
-        min={zoomStart}
-        max={zoomEnd}
+        min={min}
+        max={max}
         value={[playSliderValue]}
         onValueChange={([val]) => handlePlaySliderChange(val)}
         onValueCommit={([val]) => handlePlaySliderValueCommit(val)}
         onPointerDown={() => setCurrentlySeeking(true)}
       >
-        <SliderPrimitive.Track className='relative h-4 w-full grow overflow-hidden rounded-full bg-primary/20'>
-          <SliderPrimitive.Range className='absolute h-full bg-primary' />
+        <SliderPrimitive.Track className='relative h-3 w-full grow'>
+          <SliderPrimitive.Thumb asChild>
+            <svg
+              fill='currentColor'
+              version='1.1'
+              xmlns='http://www.w3.org/2000/svg'
+              x='0px'
+              y='0px'
+              viewBox='0 0 12 6'
+              width='20'
+              height='10'
+            >
+              <path d='M0,0l6,6l6-6H0z' />
+            </svg>
+          </SliderPrimitive.Thumb>
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
     </div>

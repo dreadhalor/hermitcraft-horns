@@ -2,24 +2,21 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
-import { VideoPlaySlider } from './sliders/video-play-slider';
-import { ClipSlider } from './sliders/clip-slider';
-import { CombinedSlider } from './sliders/combined-slider';
 import { useApp } from '@/providers/app-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
-import { ClipSlider2 } from './sliders2/clip-slider-2';
-import { ZoomSlider2 } from './sliders2/zoom-slider-2';
+import { ClipSlider } from './sliders/clip-slider';
+import { ZoomSlider } from './sliders/zoom-slider';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
     'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
   );
-  const { clipStart, clipEnd, setDuration } = useApp();
+  const { clipStart, clipEnd, setDuration, playerRef, playing, setPlaying } =
+    useApp();
   const [isLooping, setIsLooping] = useState(false);
-  const playerRef = useRef<ReactPlayer>(null);
   const [playerReady, setPlayerReady] = useState(false);
 
   const [isClient, setIsClient] = useState(false);
@@ -111,24 +108,24 @@ const LoadVideoPage = () => {
                   console.log('Player ready');
                   setPlayerReady(true);
                 }}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
                 className='h-full max-h-full w-full max-w-full'
               />
             )}
           </div>
           <div className='flex flex-col px-2 pt-4'>
-            {/* <CombinedSlider playerRef={playerRef} playerReady={playerReady} /> */}
-            {/* <ZoomSlider playerRef={playerRef} playerReady={playerReady} /> */}
-            {/* the elapsed time slider */}
-            <VideoPlaySlider playerRef={playerRef} playerReady={playerReady} />
-            {/* the clip trimming slider */}
-            {/* <ClipSlider playerRef={playerRef} playerReady={playerReady} /> */}
-            <div className='flex flex-col gap-2'>
-              <ZoomSlider2 />
-              <ClipSlider2 />
+            <div className='grid w-full grid-cols-2 gap-2'>
+              <Button className='my-2'>{playing ? 'Pause' : 'Play'}</Button>
+              <Button onClick={handleLoopToggle} className='my-2'>
+                {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
+              </Button>
             </div>
-            <Button onClick={handleLoopToggle} className='my-2'>
-              {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
-            </Button>
+            <div className='flex flex-col gap-2'>
+              <ZoomSlider />
+              <ClipSlider />
+            </div>
+
             <Button onClick={handleExport} disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Export'}
             </Button>
