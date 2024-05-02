@@ -15,6 +15,8 @@ type AppContextType = {
   setClipStart: (value: number) => void;
   clipEnd: number;
   setClipEnd: (value: number) => void;
+  duration: number;
+  setDuration: (value: number) => void;
 };
 
 const AppContext = React.createContext<AppContextType>({} as AppContextType);
@@ -36,6 +38,8 @@ export const AppProvider = ({ children }: Props) => {
   const [clipStart, setClipStart] = useState(0);
   const [clipEnd, setClipEnd] = useState(0);
 
+  const [duration, setDuration] = useState(0);
+
   return (
     <AppContext.Provider
       value={{
@@ -51,6 +55,8 @@ export const AppProvider = ({ children }: Props) => {
         setClipStart,
         clipEnd,
         setClipEnd,
+        duration,
+        setDuration,
       }}
     >
       {children}

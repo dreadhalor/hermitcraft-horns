@@ -9,18 +9,26 @@ import { ClipSlider } from './sliders/clip-slider';
 import { CombinedSlider } from './sliders/combined-slider';
 import { useApp } from '@/providers/app-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
+import { ClipSlider2 } from './sliders2/clip-slider-2';
+import { ZoomSlider2 } from './sliders2/zoom-slider-2';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
     'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
   );
-  const { clipStart, clipEnd } = useApp();
+  const { clipStart, clipEnd, setDuration } = useApp();
   const [isLooping, setIsLooping] = useState(false);
   const playerRef = useRef<ReactPlayer>(null);
   const [playerReady, setPlayerReady] = useState(false);
 
   const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    if (playerRef.current) {
+      setDuration(playerRef.current.getDuration());
+    }
+  }, [playerRef, playerReady]);
 
   useEffect(() => {
     setIsClient(true);
@@ -108,12 +116,16 @@ const LoadVideoPage = () => {
             )}
           </div>
           <div className='flex flex-col px-2 pt-4'>
-            <CombinedSlider playerRef={playerRef} playerReady={playerReady} />
+            {/* <CombinedSlider playerRef={playerRef} playerReady={playerReady} /> */}
             {/* <ZoomSlider playerRef={playerRef} playerReady={playerReady} /> */}
             {/* the elapsed time slider */}
             <VideoPlaySlider playerRef={playerRef} playerReady={playerReady} />
             {/* the clip trimming slider */}
-            <ClipSlider playerRef={playerRef} playerReady={playerReady} />
+            {/* <ClipSlider playerRef={playerRef} playerReady={playerReady} /> */}
+            <div className='flex flex-col gap-2'>
+              <ZoomSlider2 />
+              <ClipSlider2 />
+            </div>
             <Button onClick={handleLoopToggle} className='my-2'>
               {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
             </Button>
