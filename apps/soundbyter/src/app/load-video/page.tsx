@@ -8,14 +8,23 @@ import { useApp } from '@/providers/app-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { ClipSlider } from './sliders/clip-slider';
 import { ZoomSlider } from './sliders/zoom-slider';
+import { formatTime } from '@/lib/utils';
 
 const LoadVideoPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
     'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
   );
-  const { clipStart, clipEnd, setDuration, playerRef, playing, setPlaying } =
-    useApp();
+  const {
+    clipStart,
+    clipEnd,
+    duration,
+    setDuration,
+    playerRef,
+    playTime,
+    playing,
+    setPlaying,
+  } = useApp();
   const [isLooping, setIsLooping] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
 
@@ -115,6 +124,9 @@ const LoadVideoPage = () => {
             )}
           </div>
           <div className='flex flex-col px-2 pt-4'>
+            <span className='text-sm'>
+              Playing: {formatTime(playTime)} / {formatTime(duration)}
+            </span>
             <div className='grid w-full grid-cols-2 gap-2'>
               <Button className='my-2'>{playing ? 'Pause' : 'Play'}</Button>
               <Button onClick={handleLoopToggle} className='my-2'>

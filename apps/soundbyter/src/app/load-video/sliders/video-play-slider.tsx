@@ -1,7 +1,12 @@
 import React, { useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
-import { cn } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { useApp } from '@/providers/app-provider';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Props {
   min: number;
@@ -10,7 +15,6 @@ interface Props {
 export const VideoPlaySlider = ({ min, max }: Props) => {
   const {
     playTime,
-    setPlayTime,
     playSliderValue,
     setPlaySliderValue,
     playerRef,
@@ -19,27 +23,13 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
     setCurrentlySeeking,
   } = useApp();
 
-  useEffect(() => {
-    if (playerRef.current) {
-      const player = playerRef.current;
-      const interval = setInterval(() => {
-        if (!currentlySeeking) {
-          setPlayTime(player.getCurrentTime());
-          setPlaySliderValue(player.getCurrentTime());
-        }
-      }, 100);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
-  }, [currentlySeeking, playerRef, setPlayTime, setPlaySliderValue]);
+  const [showTooltip, setShowTooltip] = React.useState(false);
 
   useEffect(() => {
     if (!currentlySeeking) {
       setPlaySliderValue(playTime);
     }
-  }, [playTime, currentlySeeking, setPlaySliderValue]);
+  }, [playTime]);
 
   const handlePlaySliderChange = (value: number) => {
     setPlaySliderValue(value);
@@ -66,23 +56,36 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
         value={[playSliderValue]}
         onValueChange={([val]) => handlePlaySliderChange(val)}
         onValueCommit={([val]) => handlePlaySliderValueCommit(val)}
-        onPointerDown={() => setCurrentlySeeking(true)}
+        onPointerDown={() => {
+          setCurrentlySeeking(true);
+          setShowTooltip(true);
+        }}
+        onPointerUp={() => {
+          setShowTooltip(false);
+        }}
       >
         <SliderPrimitive.Track className='relative h-3 w-full grow'>
-          <SliderPrimitive.Thumb asChild>
-            <svg
-              fill='currentColor'
-              version='1.1'
-              xmlns='http://www.w3.org/2000/svg'
-              x='0px'
-              y='0px'
-              viewBox='0 0 12 6'
-              width='20'
-              height='10'
-            >
-              <path d='M0,0l6,6l6-6H0z' />
-            </svg>
-          </SliderPrimitive.Thumb>
+          <Tooltip open={showTooltip}>
+            <TooltipTrigger asChild>
+              <SliderPrimitive.Thumb asChild>
+                <svg
+                  fill='currentColor'
+                  version='1.1'
+                  xmlns='http://www.w3.org/2000/svg'
+                  x='0px'
+                  y='0px'
+                  viewBox='0 0 12 6'
+                  width='20'
+                  height='10'
+                >
+                  <path d='M0,0l6,6l6-6H0z' />
+                </svg>
+              </SliderPrimitive.Thumb>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{formatTime(playSliderValue)}</p>
+            </TooltipContent>
+          </Tooltip>
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
     </div>

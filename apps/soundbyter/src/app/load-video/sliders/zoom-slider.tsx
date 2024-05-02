@@ -4,6 +4,11 @@ import { cn, formatTime } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { useApp } from '@/providers/app-provider';
 import { VideoPlaySlider } from './video-play-slider';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export const ZoomSlider = () => {
   const {
@@ -19,6 +24,10 @@ export const ZoomSlider = () => {
 
   const clipStartRelative = duration ? clipStart / duration : 0;
   const clipEndRelative = duration ? clipEnd / duration : 0;
+
+  const [sliderActive, setSliderActive] = React.useState(false);
+  const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);
+  const [rightThumbFocused, setRightThumbFocused] = React.useState(false);
 
   useEffect(() => {
     setZoomEnd(duration);
@@ -41,6 +50,8 @@ export const ZoomSlider = () => {
           setZoomStart(value[0]);
           setZoomEnd(value[1]);
         }}
+        onPointerDown={() => setSliderActive(true)}
+        onPointerUp={() => setSliderActive(false)}
       >
         <SliderPrimitive.Track
           ref={ref}
@@ -56,23 +67,44 @@ export const ZoomSlider = () => {
               }}
             ></div>
           </SliderPrimitive.Range>
-
-          <SliderPrimitive.Thumb asChild>
-            <div
-              className={cn(
-                'z-10 mt-[10px] h-6 w-[5px] -translate-y-1/2 transform select-none border-y-[2px] border-[hsl(240,50%,35%)] shadow-md',
-                'border-l-[3px]',
-              )}
-            />
-          </SliderPrimitive.Thumb>
-          <SliderPrimitive.Thumb asChild>
-            <div
-              className={cn(
-                'z-10 mt-[10px] h-6 w-[5px] -translate-y-1/2 transform select-none border-y-[2px] border-[hsl(240,50%,35%)] shadow-md',
-                'border-r-[3px]',
-              )}
-            />
-          </SliderPrimitive.Thumb>
+          <Tooltip open={leftThumbFocused && sliderActive}>
+            <TooltipTrigger asChild>
+              <SliderPrimitive.Thumb
+                asChild
+                onFocus={() => setLeftThumbFocused(true)}
+                onBlur={() => setLeftThumbFocused(false)}
+              >
+                <div
+                  className={cn(
+                    'z-10 mt-[10px] h-6 w-[5px] -translate-y-1/2 transform select-none border-y-[2px] border-[hsl(240,50%,35%)] shadow-md',
+                    'border-l-[3px]',
+                  )}
+                />
+              </SliderPrimitive.Thumb>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{formatTime(zoomStart)}</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip open={rightThumbFocused && sliderActive}>
+            <TooltipTrigger asChild>
+              <SliderPrimitive.Thumb
+                asChild
+                onFocus={() => setRightThumbFocused(true)}
+                onBlur={() => setRightThumbFocused(false)}
+              >
+                <div
+                  className={cn(
+                    'z-10 mt-[10px] h-6 w-[5px] -translate-y-1/2 transform select-none border-y-[2px] border-[hsl(240,50%,35%)] shadow-md',
+                    'border-r-[3px]',
+                  )}
+                />
+              </SliderPrimitive.Thumb>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{formatTime(zoomEnd)}</p>
+            </TooltipContent>
+          </Tooltip>
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
       <span className='flex items-center justify-between text-sm leading-4'>

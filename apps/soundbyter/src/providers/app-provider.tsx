@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import React, { useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 
 type AppContextType = {
@@ -51,6 +52,19 @@ export const AppProvider = ({ children }: Props) => {
 
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
 
+  useEffect(() => {
+    const player = playerRef.current;
+    if (player && playing) {
+      const interval = setInterval(() => {
+        setPlayTime(player.getCurrentTime());
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [playerRef, setPlayTime, playing]);
+
   return (
     <AppContext.Provider
       value={{
@@ -75,7 +89,7 @@ export const AppProvider = ({ children }: Props) => {
         setCurrentlySeeking,
       }}
     >
-      {children}
+      <TooltipProvider>{children}</TooltipProvider>
     </AppContext.Provider>
   );
 };
