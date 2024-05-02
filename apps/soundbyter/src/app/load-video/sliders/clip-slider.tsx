@@ -1,7 +1,6 @@
 import React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
 import { useApp } from '@/providers/app-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import {

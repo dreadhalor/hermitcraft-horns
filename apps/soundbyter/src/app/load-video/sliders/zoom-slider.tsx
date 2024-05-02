@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
 import { useApp } from '@/providers/app-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import {
@@ -20,7 +19,6 @@ export const ZoomSlider = () => {
     clipStart,
     clipEnd,
   } = useApp();
-  const ref = React.useRef<HTMLDivElement>(null);
 
   const clipStartRelative = duration ? clipStart / duration : 0;
   const clipEndRelative = duration ? clipEnd / duration : 0;
@@ -53,10 +51,7 @@ export const ZoomSlider = () => {
         onPointerDown={() => setSliderActive(true)}
         onPointerUp={() => setSliderActive(false)}
       >
-        <SliderPrimitive.Track
-          ref={ref}
-          className='relative h-5 w-full grow bg-primary/20'
-        >
+        <SliderPrimitive.Track className='relative h-5 w-full grow bg-primary/20'>
           <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,50%,50%)]' />
           <SliderPrimitive.Range asChild>
             <div

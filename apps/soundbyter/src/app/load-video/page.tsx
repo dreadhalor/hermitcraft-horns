@@ -125,10 +125,24 @@ const LoadVideoPage = () => {
           </div>
           <div className='flex flex-col px-2 pt-4'>
             <span className='text-sm'>
-              Playing: {formatTime(playTime)} / {formatTime(duration)}
+              {playing ? 'Playing' : 'Paused'}: {formatTime(playTime)} /{' '}
+              {formatTime(duration)}
             </span>
             <div className='grid w-full grid-cols-2 gap-2'>
-              <Button className='my-2'>{playing ? 'Pause' : 'Play'}</Button>
+              <Button
+                className='my-2'
+                onClick={() => {
+                  if (playerRef.current) {
+                    if (playing) {
+                      playerRef.current.getInternalPlayer().pauseVideo();
+                    } else {
+                      playerRef.current.getInternalPlayer().playVideo();
+                    }
+                  }
+                }}
+              >
+                {playing ? 'Pause' : 'Play'}
+              </Button>
               <Button onClick={handleLoopToggle} className='my-2'>
                 {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
               </Button>
