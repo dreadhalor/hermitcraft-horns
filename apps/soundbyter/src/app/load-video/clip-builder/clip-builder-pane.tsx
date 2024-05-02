@@ -86,7 +86,7 @@ export const ClipBuilderPane = () => {
   };
 
   return (
-    <div className='flex flex-1 flex-col'>
+    <div className='flex h-full flex-col'>
       <Navbar videoUrl={videoUrl} setVideoUrl={setVideoUrl} />
       {videoUrl && (
         <div className='flex flex-1 flex-col'>

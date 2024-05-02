@@ -1,21 +1,22 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { ClipBuilderPane } from './clip-builder-pane';
+import { ClipBuilderPane } from './clip-builder/clip-builder-pane';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ClipMetadataBuilder } from './metadata-builder/clip-metadata-builder';
 
 const LoadVideoPage = () => {
   return (
     <main className='flex h-full flex-col pb-[20px]'>
-      <Tabs className='flex w-full flex-1 flex-col' defaultValue='clip-builder'>
-        <TabsContent
-          value='clip-builder'
-          className={cn('flex flex-1 flex-col')}
-        >
+      <Tabs
+        className='flex max-h-full w-full flex-1 flex-col'
+        defaultValue='metadata'
+      >
+        <TabsContent value='clip-builder' className='flex-1'>
           <ClipBuilderPane />
         </TabsContent>
-        <TabsContent value='videos' className='flex-1'>
-          <h1 className='flex flex-1 items-center justify-center'>Videos</h1>
+        <TabsContent value='metadata' className='flex-1 overflow-auto'>
+          <ClipMetadataBuilder />
         </TabsContent>
         <TabsList className='flex w-full gap-2 bg-transparent'>
           <TabsTrigger
@@ -23,7 +24,7 @@ const LoadVideoPage = () => {
             className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
           />
           <TabsTrigger
-            value='videos'
+            value='metadata'
             className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
           />
         </TabsList>
