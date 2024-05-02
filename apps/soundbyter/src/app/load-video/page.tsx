@@ -1,10 +1,12 @@
 import { ClipBuilderPane } from './clip-builder/clip-builder-pane';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipMetadataBuilder } from './metadata-builder/clip-metadata-builder';
+import { ClipViewer } from './clip-viewer';
 
 const LoadVideoPage = () => {
   return (
     <main className='flex h-full flex-col pb-[20px]'>
+      <ClipViewer />
       <Tabs
         className='flex max-h-full w-full flex-1 flex-col'
         defaultValue='metadata'

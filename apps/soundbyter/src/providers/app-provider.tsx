@@ -29,6 +29,8 @@ type AppContextType = {
   setHermit: (value: Channel | null) => void;
   tagline: string;
   setTagline: (value: string) => void;
+  videoUrl: string;
+  setVideoUrl: (value: string) => void;
 };
 
 const AppContext = React.createContext<AppContextType>({} as AppContextType);
@@ -59,6 +61,10 @@ export const AppProvider = ({ children }: Props) => {
 
   const [hermit, setHermit] = useState<Channel | null>(null);
   const [tagline, setTagline] = useState('');
+
+  const [videoUrl, setVideoUrl] = useState(
+    'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
+  );
 
   useEffect(() => {
     const player = playerRef.current;
@@ -99,6 +105,8 @@ export const AppProvider = ({ children }: Props) => {
         setHermit,
         tagline,
         setTagline,
+        videoUrl,
+        setVideoUrl,
       }}
     >
       <TooltipProvider>{children}</TooltipProvider>

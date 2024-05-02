@@ -1,14 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useApp } from '@/providers/app-provider';
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
-interface Props {
-  videoUrl: string;
-  setVideoUrl: (url: string) => void;
-}
-export const Navbar = ({ videoUrl, setVideoUrl }: Props) => {
+export const Navbar = () => {
   const [inputValue, setInputValue] = useState('');
+
+  const { videoUrl, setVideoUrl } = useApp();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setVideoUrl(inputValue);
