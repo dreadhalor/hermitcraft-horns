@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import React, { useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { useApp } from '@/providers/app-provider';
@@ -9,9 +8,10 @@ import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { ClipSlider } from './sliders/clip-slider';
 import { ZoomSlider } from './sliders/zoom-slider';
 import { formatTime } from '@/lib/utils';
+import { Navbar } from './navbar';
+import { ProgressDots } from './progress-dots';
 
 const LoadVideoPage = () => {
-  const [inputValue, setInputValue] = useState('');
   const [videoUrl, setVideoUrl] = useState(
     'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
   );
@@ -39,12 +39,6 @@ const LoadVideoPage = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    setVideoUrl(inputValue);
-    e.preventDefault();
-    // TODO: Validate the video URL if needed
-  };
 
   const handleLoopToggle = () => {
     setIsLooping(!isLooping);
@@ -93,37 +87,30 @@ const LoadVideoPage = () => {
   };
 
   return (
-    <div>
-      <h1>Load YouTube Video</h1>
-      <form onSubmit={handleSubmit}>
-        <Input
-          type='text'
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder='Enter YouTube video URL'
-          className='text-black'
-        />
-        <Button type='submit'>Load Video</Button>
-      </form>
+    <main className='flex h-full flex-col pb-[20px]'>
+      <Navbar videoUrl={videoUrl} setVideoUrl={setVideoUrl} />
       {videoUrl && (
-        <div>
-          <div className='flex aspect-video w-full items-center justify-center'>
-            {isClient && (
-              <ReactPlayer
-                url={videoUrl}
-                ref={playerRef}
-                controls
-                onReady={() => {
-                  console.log('Player ready');
-                  setPlayerReady(true);
-                }}
-                onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
-                className='h-full max-h-full w-full max-w-full'
-              />
-            )}
+        <div className='flex flex-1 flex-col'>
+          {/* weird that we need a wrapping div here but ReactPlayer needs a display:block wrapper to properly size */}
+          <div>
+            <div className='flex aspect-video w-full items-center justify-center'>
+              {isClient && (
+                <ReactPlayer
+                  url={videoUrl}
+                  ref={playerRef}
+                  controls
+                  onReady={() => {
+                    console.log('Player ready');
+                    setPlayerReady(true);
+                  }}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  className='h-full max-h-full w-full max-w-full'
+                />
+              )}
+            </div>
           </div>
-          <div className='flex flex-col px-2 pt-4'>
+          <div className='flex flex-1 flex-col px-4 pt-4'>
             <span className='text-sm'>
               {playing ? 'Playing' : 'Paused'}: {formatTime(playTime)} /{' '}
               {formatTime(duration)}
@@ -144,7 +131,7 @@ const LoadVideoPage = () => {
                 {playing ? 'Pause' : 'Play'}
               </Button>
               <Button onClick={handleLoopToggle} className='my-2'>
-                {isLooping ? 'Stop Loop' : 'Loop Selected Portion'}
+                {isLooping ? 'Stop Loop' : 'Loop Clip'}
               </Button>
             </div>
             <div className='flex flex-col gap-2'>
@@ -152,15 +139,21 @@ const LoadVideoPage = () => {
               <ClipSlider />
             </div>
 
-            <Button onClick={handleExport} disabled={isSaving}>
+            <Button className='mb-4 mt-auto'>Next</Button>
+            {/* <Button
+              onClick={handleExport}
+              disabled={isSaving}
+              className='mb-4 mt-auto'
+            >
               {isSaving ? 'Saving...' : 'Export'}
-            </Button>
-            {clipUrl && <p>Clip URL: {clipUrl}</p>}
-            {saveError && <p>Error saving clip: {saveError.message}</p>}
+            </Button> */}
+            {/* {clipUrl && <p>Clip URL: {clipUrl}</p>}
+            {saveError && <p>Error saving clip: {saveError.message}</p>} */}
           </div>
         </div>
       )}
-    </div>
+      <ProgressDots />
+    </main>
   );
 };
 

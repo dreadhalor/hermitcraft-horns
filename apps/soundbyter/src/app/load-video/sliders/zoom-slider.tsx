@@ -102,7 +102,7 @@ export const ZoomSlider = () => {
           </Tooltip>
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
-      <span className='flex items-center justify-between text-sm leading-4'>
+      <span className='mt-0.5 flex items-center justify-between text-sm leading-4'>
         <span>{formatTime(0)}</span>
         <span>{formatTime(duration)}</span>
       </span>
