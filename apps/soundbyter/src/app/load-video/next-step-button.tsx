@@ -57,7 +57,7 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
           disabled={isSaving}
           className='font-bold'
         >
-          {isSaving ? 'Saving...' : 'Publish!'}
+          {isSaving ? 'Generating...' : 'Generate Horn'}
         </Button>
       )}
     </div>

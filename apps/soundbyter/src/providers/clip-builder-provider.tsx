@@ -33,6 +33,8 @@ type ClipBuilderContextType = {
   setTagline: (value: string) => void;
   videoUrl: string;
   setVideoUrl: (value: string) => void;
+  season: string;
+  setSeason: (value: string) => void;
 };
 
 const ClipBuilderContext = React.createContext<ClipBuilderContextType>(
@@ -66,6 +68,7 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [hermits, setHermits] = useState<Channel[]>([]);
   const [hermit, setHermit] = useState<Channel | null>(null);
   const [tagline, setTagline] = useState('');
+  const [season, setSeason] = useState<string>('');
 
   const [videoUrl, setVideoUrl] = useState(
     'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
@@ -118,6 +121,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
         setTagline,
         videoUrl,
         setVideoUrl,
+        season,
+        setSeason,
       }}
     >
       <TooltipProvider>{children}</TooltipProvider>

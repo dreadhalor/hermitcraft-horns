@@ -1,9 +1,10 @@
 'use client';
-import Image from 'next/image';
 import { Horn } from './horns-list';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { FaRegHeart } from 'react-icons/fa';
+import { MdFileDownload } from 'react-icons/md';
 
 type HornTileProps = {
   horn: Horn;
@@ -11,7 +12,7 @@ type HornTileProps = {
 };
 
 export const HornTile = ({
-  horn: { tagline, profilePic, clipUrl },
+  horn: { tagline, profilePic, clipUrl, season },
   className,
 }: HornTileProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -31,12 +32,12 @@ export const HornTile = ({
   return (
     <div
       className={cn(
-        'relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-white',
+        'relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-[12px] text-white',
         className,
       )}
       onClick={handlePlayClick}
     >
-      <audio ref={audioRef} src={clipUrl} />
+      {clipUrl && <audio ref={audioRef} src={clipUrl} />}
       <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
         <div className='relative h-full w-full overflow-hidden rounded-md'>
           {/* so tired of image origin shenanigans, Next.js */}
@@ -55,13 +56,18 @@ export const HornTile = ({
       </div>
       <div className='absolute inset-0 p-[8px]'>
         <div className='flex h-full w-full flex-col p-[4px]'>
-          <div className='flex items-center'>
+          <div className='flex justify-between'>
             <span className='text-[10px]'>dreadhalor</span>
+            <div className='grid grid-cols-2 items-center justify-items-end p-0'>
+              <span>53</span> <FaRegHeart />
+              <span>101</span> <MdFileDownload />
+            </div>
           </div>
-          <span className='my-auto text-center text-[12px] font-bold'>
-            {tagline}
-          </span>
-          <span className='text-center text-[12px]'>View clip &rarr;</span>
+          <span className='my-auto text-center font-bold'>{tagline}</span>
+          <div className='flex justify-center'>
+            {season && <span className='mr-auto text-center'>S{season}</span>}
+            <span className='text-center'>View clip &rarr;</span>
+          </div>
         </div>
       </div>
     </div>

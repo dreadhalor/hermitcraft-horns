@@ -6,7 +6,7 @@ import { useClipBuilder } from '@/providers/clip-builder-provider';
 import React from 'react';
 
 export const HornPreview = () => {
-  const { tagline, hermit } = useClipBuilder();
+  const { tagline, hermit, season } = useClipBuilder();
 
   return (
     <div className='flex flex-col items-center'>
@@ -15,8 +15,9 @@ export const HornPreview = () => {
         horn={{
           id: '0',
           title: 'Joe Hills',
-          tagline: tagline,
+          tagline,
           profilePic: hermit?.ProfilePicture,
+          season,
         }}
         className='aspect-square w-[150px]'
       />
