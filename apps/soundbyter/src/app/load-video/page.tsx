@@ -1,6 +1,3 @@
-'use client';
-
-import { cn } from '@/lib/utils';
 import { ClipBuilderPane } from './clip-builder/clip-builder-pane';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipMetadataBuilder } from './metadata-builder/clip-metadata-builder';

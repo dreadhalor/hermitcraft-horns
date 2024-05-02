@@ -1,6 +1,7 @@
 'use client';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Channel } from '@/trpc/routers/hermitcraft';
 import React, { useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 
@@ -24,6 +25,8 @@ type AppContextType = {
   setPlaying: (value: boolean) => void;
   currentlySeeking: boolean;
   setCurrentlySeeking: (value: boolean) => void;
+  hermit: Channel | null;
+  setHermit: (value: Channel | null) => void;
 };
 
 const AppContext = React.createContext<AppContextType>({} as AppContextType);
@@ -51,6 +54,8 @@ export const AppProvider = ({ children }: Props) => {
   const [playing, setPlaying] = useState(false);
 
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
+
+  const [hermit, setHermit] = useState<Channel | null>(null);
 
   useEffect(() => {
     const player = playerRef.current;
@@ -87,6 +92,8 @@ export const AppProvider = ({ children }: Props) => {
         setPlaying,
         currentlySeeking,
         setCurrentlySeeking,
+        hermit,
+        setHermit,
       }}
     >
       <TooltipProvider>{children}</TooltipProvider>

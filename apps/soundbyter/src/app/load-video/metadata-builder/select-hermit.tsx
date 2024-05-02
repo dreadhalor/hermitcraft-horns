@@ -1,22 +1,24 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
+import { useApp } from '@/providers/app-provider';
 import { Channel } from '@/trpc/routers/hermitcraft';
 
 interface Props {
   data: Channel[] | undefined;
-  hermit: Channel | null;
-  setHermit: (channel: Channel) => void;
 }
-export const SelectHermit = ({ data, hermit, setHermit }: Props) => {
+export const SelectHermit = ({ data }: Props) => {
+  const { hermit, setHermit } = useApp();
+
   return (
     <Drawer nested>
       <DrawerTrigger asChild>
