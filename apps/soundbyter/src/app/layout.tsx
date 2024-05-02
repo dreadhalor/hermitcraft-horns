@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { AppProvider } from '../providers/app-provider';
+import { ClipBuilderProvider } from '../providers/clip-builder-provider';
 import { TRPCProvider } from '@/trpc/trpc-provider';
 
 const fontSans = FontSans({
@@ -29,7 +29,7 @@ export default function RootLayout({
         )}
       >
         <TRPCProvider>
-          <AppProvider>{children}</AppProvider>
+          <ClipBuilderProvider>{children}</ClipBuilderProvider>
         </TRPCProvider>
       </body>
     </html>

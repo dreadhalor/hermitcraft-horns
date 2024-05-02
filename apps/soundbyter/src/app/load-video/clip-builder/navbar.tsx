@@ -1,13 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useApp } from '@/providers/app-provider';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
 export const Navbar = () => {
   const [inputValue, setInputValue] = useState('');
 
-  const { videoUrl, setVideoUrl } = useApp();
+  const { videoUrl, setVideoUrl } = useClipBuilder();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setVideoUrl(inputValue);

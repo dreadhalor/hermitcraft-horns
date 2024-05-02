@@ -1,14 +1,16 @@
 'use client';
 
 import { HornTile } from '@/components/horn-tile';
-import { useApp } from '@/providers/app-provider';
+import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 import React from 'react';
 
 export const HornPreview = () => {
-  const { tagline, hermit } = useApp();
+  const { tagline, hermit } = useClipBuilder();
+
   return (
-    <div className='flex items-center justify-center'>
-      <span>Preview (No sound):</span>
+    <div className='flex flex-col items-center'>
+      <span className='text-lg font-bold'>Preview:</span>
       <HornTile
         horn={{
           id: '0',

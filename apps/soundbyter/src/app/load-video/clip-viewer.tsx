@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar } from './clip-builder/navbar';
 import ReactPlayer from 'react-player';
-import { useApp } from '@/providers/app-provider';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 
 export const ClipViewer = () => {
   const [isClient, setIsClient] = useState(false);
@@ -13,7 +13,7 @@ export const ClipViewer = () => {
 
   const [playerReady, setPlayerReady] = useState(false);
 
-  const { videoUrl, playerRef, setDuration, setPlaying } = useApp();
+  const { videoUrl, playerRef, setDuration, setPlaying } = useClipBuilder();
 
   useEffect(() => {
     if (playerRef.current) {

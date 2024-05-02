@@ -58,7 +58,9 @@ export const HornTile = ({
           <div className='flex items-center'>
             <span className='text-[10px]'>dreadhalor</span>
           </div>
-          <span className='my-auto text-center text-[12px]'>{tagline}</span>
+          <span className='my-auto text-center text-[12px] font-bold'>
+            {tagline}
+          </span>
           <span className='text-center text-[12px]'>View clip &rarr;</span>
         </div>
       </div>

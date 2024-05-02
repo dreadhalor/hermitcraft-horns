@@ -10,14 +10,10 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
-import { useApp } from '@/providers/app-provider';
-import { Channel } from '@/trpc/routers/hermitcraft';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 
-interface Props {
-  data: Channel[] | undefined;
-}
-export const SelectHermit = ({ data }: Props) => {
-  const { hermit, setHermit } = useApp();
+export const SelectHermit = () => {
+  const { hermit, setHermit, hermits } = useClipBuilder();
 
   return (
     <Drawer nested>
@@ -47,7 +43,7 @@ export const SelectHermit = ({ data }: Props) => {
             <DrawerDescription>Who is this quote by?</DrawerDescription>
           </DrawerHeader>
           <div className='grid grid-cols-3'>
-            {data?.map((channel) => (
+            {hermits.map((channel) => (
               <DrawerClose asChild key={channel.ChannelID}>
                 <button
                   className='flex flex-col items-center rounded-md p-1 hover:bg-gray-100'

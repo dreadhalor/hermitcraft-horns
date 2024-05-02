@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
-import { useApp } from '@/providers/app-provider';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 import {
   Tooltip,
   TooltipContent,
@@ -21,7 +21,7 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
     playing,
     currentlySeeking,
     setCurrentlySeeking,
-  } = useApp();
+  } = useClipBuilder();
 
   const [showTooltip, setShowTooltip] = React.useState(false);
 

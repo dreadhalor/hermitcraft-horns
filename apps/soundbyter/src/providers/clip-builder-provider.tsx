@@ -5,7 +5,7 @@ import { Channel } from '@/trpc/routers/hermitcraft';
 import React, { useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 
-type AppContextType = {
+type ClipBuilderContextType = {
   zoomStart: number;
   setZoomStart: (value: number) => void;
   zoomEnd: number;
@@ -25,6 +25,8 @@ type AppContextType = {
   setPlaying: (value: boolean) => void;
   currentlySeeking: boolean;
   setCurrentlySeeking: (value: boolean) => void;
+  hermits: Channel[];
+  setHermits: (value: Channel[]) => void;
   hermit: Channel | null;
   setHermit: (value: Channel | null) => void;
   tagline: string;
@@ -33,16 +35,18 @@ type AppContextType = {
   setVideoUrl: (value: string) => void;
 };
 
-const AppContext = React.createContext<AppContextType>({} as AppContextType);
+const ClipBuilderContext = React.createContext<ClipBuilderContextType>(
+  {} as ClipBuilderContextType,
+);
 
-export const useApp = () => {
-  return React.useContext(AppContext);
+export const useClipBuilder = () => {
+  return React.useContext(ClipBuilderContext);
 };
 
 type Props = {
   children: React.ReactNode;
 };
-export const AppProvider = ({ children }: Props) => {
+export const ClipBuilderProvider = ({ children }: Props) => {
   const [zoomStart, setZoomStart] = useState(0);
   const [zoomEnd, setZoomEnd] = useState(0);
 
@@ -59,6 +63,7 @@ export const AppProvider = ({ children }: Props) => {
 
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
 
+  const [hermits, setHermits] = useState<Channel[]>([]);
   const [hermit, setHermit] = useState<Channel | null>(null);
   const [tagline, setTagline] = useState('');
 
@@ -79,8 +84,12 @@ export const AppProvider = ({ children }: Props) => {
     }
   }, [playerRef, setPlayTime, playing]);
 
+  useEffect(() => {
+    setZoomEnd(duration);
+  }, [duration, setZoomEnd]);
+
   return (
-    <AppContext.Provider
+    <ClipBuilderContext.Provider
       value={{
         zoomStart,
         setZoomStart,
@@ -101,6 +110,8 @@ export const AppProvider = ({ children }: Props) => {
         setPlaying,
         currentlySeeking,
         setCurrentlySeeking,
+        hermits,
+        setHermits,
         hermit,
         setHermit,
         tagline,
@@ -110,6 +121,6 @@ export const AppProvider = ({ children }: Props) => {
       }}
     >
       <TooltipProvider>{children}</TooltipProvider>
-    </AppContext.Provider>
+    </ClipBuilderContext.Provider>
   );
 };

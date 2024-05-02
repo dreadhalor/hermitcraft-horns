@@ -1,7 +1,7 @@
 import React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
-import { useApp } from '@/providers/app-provider';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import {
   Tooltip,
@@ -11,7 +11,7 @@ import {
 
 export const ClipSlider = () => {
   const { zoomStart, zoomEnd, clipStart, setClipStart, clipEnd, setClipEnd } =
-    useApp();
+    useClipBuilder();
 
   const [sliderActive, setSliderActive] = React.useState(false);
   const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);

@@ -2,26 +2,22 @@
 
 import { Button } from '@/components/ui/button';
 import React, { useState, useEffect } from 'react';
-import ReactPlayer from 'react-player';
-import { useApp } from '@/providers/app-provider';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { ClipSlider } from './sliders/clip-slider';
 import { ZoomSlider } from './sliders/zoom-slider';
 import { formatTime } from '@/lib/utils';
-import { Navbar } from './navbar';
-import { ClipViewer } from '../clip-viewer';
 
 export const ClipBuilderPane = () => {
   const {
     clipStart,
     clipEnd,
     duration,
-    setDuration,
     playerRef,
     playTime,
     playing,
     videoUrl,
-  } = useApp();
+  } = useClipBuilder();
   const [isLooping, setIsLooping] = useState(false);
 
   const handleLoopToggle = () => {
@@ -46,29 +42,6 @@ export const ClipBuilderPane = () => {
       };
     }
   }, [isLooping, clipStart, clipEnd]);
-
-  const {
-    createAndSaveClip,
-    isLoading: isSaving,
-    error: saveError,
-    clipUrl,
-  } = useCreateAndSaveClip();
-
-  const handleExport = async () => {
-    if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      if (clipEnd <= duration) {
-        console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
-        await createAndSaveClip({
-          videoUrl,
-          start: clipStart,
-          end: clipEnd,
-        });
-      } else {
-        console.error('End time exceeds video duration');
-      }
-    }
-  };
 
   return (
     <div className='flex h-full flex-col'>
@@ -100,17 +73,6 @@ export const ClipBuilderPane = () => {
           <ZoomSlider />
           <ClipSlider />
         </div>
-
-        <Button className='mb-4 mt-auto'>Next</Button>
-        {/* <Button
-              onClick={handleExport}
-              disabled={isSaving}
-              className='mb-4 mt-auto'
-            >
-              {isSaving ? 'Saving...' : 'Export'}
-            </Button> */}
-        {/* {clipUrl && <p>Clip URL: {clipUrl}</p>}
-            {saveError && <p>Error saving clip: {saveError.message}</p>} */}
       </div>
     </div>
   );

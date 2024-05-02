@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
-import { useApp } from '@/providers/app-provider';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import {
   Tooltip,
@@ -18,7 +18,7 @@ export const ZoomSlider = () => {
     duration,
     clipStart,
     clipEnd,
-  } = useApp();
+  } = useClipBuilder();
 
   const clipStartRelative = duration ? clipStart / duration : 0;
   const clipEndRelative = duration ? clipEnd / duration : 0;
@@ -26,10 +26,6 @@ export const ZoomSlider = () => {
   const [sliderActive, setSliderActive] = React.useState(false);
   const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);
   const [rightThumbFocused, setRightThumbFocused] = React.useState(false);
-
-  useEffect(() => {
-    setZoomEnd(duration);
-  }, [duration, setZoomEnd]);
 
   return (
     <div className='flex flex-col'>
