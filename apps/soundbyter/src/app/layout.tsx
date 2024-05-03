@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { ClipBuilderProvider } from '../providers/clip-builder-provider';
 import { TRPCProvider } from '@/trpc/trpc-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -30,7 +31,7 @@ export default function RootLayout({
         )}
       >
         <TRPCProvider>
-          <ClipBuilderProvider>{children}</ClipBuilderProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </TRPCProvider>
       </body>
     </html>

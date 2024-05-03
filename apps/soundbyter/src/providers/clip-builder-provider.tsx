@@ -1,6 +1,5 @@
 'use client';
 
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { HermitcraftChannel } from '@/trpc/routers/hermitcraft';
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -148,7 +147,7 @@ export const ClipBuilderProvider = ({ children }: Props) => {
         playClip,
       }}
     >
-      <TooltipProvider>{children}</TooltipProvider>
+      {children}
     </ClipBuilderContext.Provider>
   );
 };
