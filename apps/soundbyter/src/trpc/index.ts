@@ -2,10 +2,11 @@ import { getClips, saveClip as drizzleSaveClip } from '@/../drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
 import { type VideoProcessingRouterOutput } from '@repo/ytdl';
-import { getHermitChannels } from './routers/hermitcraft';
+import { getHermitChannels, getHermitcraftVideos } from './routers/hermitcraft';
 
 export const appRouter = router({
   getHermitChannels,
+  getHermitcraftVideos,
   getClips: publicProcedure.query(async () => {
     const result = await getClips();
     return result;

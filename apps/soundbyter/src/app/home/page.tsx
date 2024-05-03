@@ -3,6 +3,7 @@ import Banner from '@/assets/banner.png';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HornsList } from '@/components/horns-list';
+import { VideosList } from './videos-list/videos-list';
 
 const Home = () => {
   return (
@@ -27,7 +28,7 @@ const Home = () => {
           <HornsList />
         </TabsContent>
         <TabsContent value='videos'>
-          <h1>Videos</h1>
+          <VideosList />
         </TabsContent>
       </Tabs>
     </main>

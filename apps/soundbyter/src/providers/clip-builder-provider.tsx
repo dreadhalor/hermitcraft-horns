@@ -1,7 +1,7 @@
 'use client';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Channel } from '@/trpc/routers/hermitcraft';
+import { HermitcraftChannel } from '@/trpc/routers/hermitcraft';
 import React, { useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 
@@ -25,10 +25,10 @@ type ClipBuilderContextType = {
   setPlaying: (value: boolean) => void;
   currentlySeeking: boolean;
   setCurrentlySeeking: (value: boolean) => void;
-  hermits: Channel[];
-  setHermits: (value: Channel[]) => void;
-  hermit: Channel | null;
-  setHermit: (value: Channel | null) => void;
+  hermits: HermitcraftChannel[];
+  setHermits: (value: HermitcraftChannel[]) => void;
+  hermit: HermitcraftChannel | null;
+  setHermit: (value: HermitcraftChannel | null) => void;
   tagline: string;
   setTagline: (value: string) => void;
   videoUrl: string;
@@ -65,8 +65,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
 
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
 
-  const [hermits, setHermits] = useState<Channel[]>([]);
-  const [hermit, setHermit] = useState<Channel | null>(null);
+  const [hermits, setHermits] = useState<HermitcraftChannel[]>([]);
+  const [hermit, setHermit] = useState<HermitcraftChannel | null>(null);
   const [tagline, setTagline] = useState('');
   const [season, setSeason] = useState<string>('');
 
