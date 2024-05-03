@@ -16,7 +16,7 @@ export const ClipViewer = () => {
   const { videoUrl, playerRef, setDuration, setPlaying } = useClipBuilder();
 
   useEffect(() => {
-    if (playerRef.current) {
+    if (playerRef?.current) {
       setDuration(playerRef.current.getDuration());
     }
   }, [playerRef, playerReady]);

@@ -2,7 +2,7 @@
 
 import { HermitcraftChannel } from '@/trpc/routers/hermitcraft';
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 
 type ClipBuilderContextType = {
@@ -113,41 +113,49 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   }, [duration, setZoomEnd]);
 
   return (
-    <ClipBuilderContext.Provider
-      value={{
-        zoomStart,
-        setZoomStart,
-        zoomEnd,
-        setZoomEnd,
-        playTime,
-        setPlayTime,
-        playSliderValue,
-        setPlaySliderValue,
-        clipStart,
-        setClipStart,
-        clipEnd,
-        setClipEnd,
-        duration,
-        setDuration,
-        playerRef,
-        playing,
-        setPlaying,
-        currentlySeeking,
-        setCurrentlySeeking,
-        hermits,
-        setHermits,
-        hermit,
-        setHermit,
-        tagline,
-        setTagline,
-        videoId,
-        videoUrl,
-        season,
-        setSeason,
-        playClip,
-      }}
+    <Suspense
+      fallback={
+        <div className='flex h-full w-full items-center justify-center'>
+          Loading...
+        </div>
+      }
     >
-      {children}
-    </ClipBuilderContext.Provider>
+      <ClipBuilderContext.Provider
+        value={{
+          zoomStart,
+          setZoomStart,
+          zoomEnd,
+          setZoomEnd,
+          playTime,
+          setPlayTime,
+          playSliderValue,
+          setPlaySliderValue,
+          clipStart,
+          setClipStart,
+          clipEnd,
+          setClipEnd,
+          duration,
+          setDuration,
+          playerRef,
+          playing,
+          setPlaying,
+          currentlySeeking,
+          setCurrentlySeeking,
+          hermits,
+          setHermits,
+          hermit,
+          setHermit,
+          tagline,
+          setTagline,
+          videoId,
+          videoUrl,
+          season,
+          setSeason,
+          playClip,
+        }}
+      >
+        {children}
+      </ClipBuilderContext.Provider>
+    </Suspense>
   );
 };

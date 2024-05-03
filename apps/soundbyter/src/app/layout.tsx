@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { ClipBuilderProvider } from '../providers/clip-builder-provider';
 import { TRPCProvider } from '@/trpc/trpc-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Suspense } from 'react';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -31,7 +32,11 @@ export default function RootLayout({
         )}
       >
         <TRPCProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              <ClipBuilderProvider>{children}</ClipBuilderProvider>
+            </Suspense>
+          </TooltipProvider>
         </TRPCProvider>
       </body>
     </html>
