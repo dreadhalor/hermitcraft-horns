@@ -1,12 +1,11 @@
 'use client';
 
 import { HornTile } from '@/components/horn-tile';
-import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import React from 'react';
 
 export const HornPreview = () => {
-  const { tagline, hermit, season } = useClipBuilder();
+  const { tagline, hermit, season, playClip } = useClipBuilder();
 
   return (
     <div className='flex flex-col items-center'>
@@ -20,6 +19,7 @@ export const HornPreview = () => {
           season,
         }}
         className='aspect-square w-[150px]'
+        onClick={playClip}
       />
     </div>
   );

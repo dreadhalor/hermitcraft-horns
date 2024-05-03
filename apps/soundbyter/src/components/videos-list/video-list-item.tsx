@@ -1,12 +1,20 @@
+'use client';
+
 import { HermitcraftVideo } from '@/trpc/routers/hermitcraft';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 interface Props {
   video: HermitcraftVideo;
 }
 export const VideoListItem = ({ video }: Props) => {
+  const router = useRouter();
+
   return (
-    <div className='flex w-full gap-[5px] bg-white text-xs'>
+    <div
+      className='flex w-full cursor-pointer gap-[5px] bg-white text-xs'
+      onClick={() => router.push(`/edit?id=${video.id}`)}
+    >
       <div className='relative flex aspect-video h-[88px]'>
         <img
           className='h-full w-full shrink-0'

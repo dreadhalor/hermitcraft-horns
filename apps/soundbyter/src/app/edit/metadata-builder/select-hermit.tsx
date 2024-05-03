@@ -10,16 +10,18 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
+import { Label } from '@/components/ui/label';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 
 export const SelectHermit = () => {
   const { hermit, setHermit, hermits } = useClipBuilder();
 
   return (
-    <div className='flex gap-2'>
+    <div className='flex h-auto flex-col gap-1'>
       <Drawer nested>
         <DrawerTrigger asChild>
           <Button
+            id='clip-builder-hermit'
             variant='outline'
             className='mx-auto flex h-auto w-auto flex-col items-center rounded-md p-1'
           >

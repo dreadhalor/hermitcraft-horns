@@ -2,6 +2,7 @@
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { HermitcraftChannel } from '@/trpc/routers/hermitcraft';
+import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 
@@ -31,10 +32,11 @@ type ClipBuilderContextType = {
   setHermit: (value: HermitcraftChannel | null) => void;
   tagline: string;
   setTagline: (value: string) => void;
+  videoId: string;
   videoUrl: string;
-  setVideoUrl: (value: string) => void;
   season: string;
   setSeason: (value: string) => void;
+  playClip: () => void;
 };
 
 const ClipBuilderContext = React.createContext<ClipBuilderContextType>(
@@ -70,9 +72,29 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [tagline, setTagline] = useState('');
   const [season, setSeason] = useState<string>('');
 
-  const [videoUrl, setVideoUrl] = useState(
-    'https://www.youtube.com/watch?v=IM-Z6hJb4E4',
-  );
+  const searchParams = useSearchParams();
+  const videoId = searchParams.get('id') || '';
+  const videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
+
+  // we want to be able to play the clip through once in a function we will export & trigger with a button
+  const playClip = () => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(clipStart);
+      playerRef.current.getInternalPlayer().playVideo();
+      setPlaying(true);
+    }
+
+    const interval = setInterval(() => {
+      if (playerRef.current) {
+        if (playerRef.current.getCurrentTime() >= clipEnd) {
+          playerRef.current.seekTo(clipStart);
+          playerRef.current.getInternalPlayer().pauseVideo();
+          setPlaying(false);
+          clearInterval(interval);
+        }
+      }
+    }, 100);
+  };
 
   useEffect(() => {
     const player = playerRef.current;
@@ -119,10 +141,11 @@ export const ClipBuilderProvider = ({ children }: Props) => {
         setHermit,
         tagline,
         setTagline,
+        videoId,
         videoUrl,
-        setVideoUrl,
         season,
         setSeason,
+        playClip,
       }}
     >
       <TooltipProvider>{children}</TooltipProvider>

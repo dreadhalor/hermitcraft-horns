@@ -9,11 +9,13 @@ import { MdFileDownload } from 'react-icons/md';
 type HornTileProps = {
   horn: Horn;
   className?: string;
+  onClick?: () => void;
 };
 
 export const HornTile = ({
   horn: { tagline, profilePic, clipUrl, season },
   className,
+  onClick,
 }: HornTileProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -32,10 +34,10 @@ export const HornTile = ({
   return (
     <div
       className={cn(
-        'relative aspect-square w-full overflow-hidden rounded-lg bg-[#354B87] text-[12px] text-white',
+        'relative aspect-square w-full cursor-pointer overflow-hidden rounded-lg bg-[#354B87] text-[12px] text-white',
         className,
       )}
-      onClick={handlePlayClick}
+      onClick={onClick ? onClick : handlePlayClick}
     >
       {clipUrl && <audio ref={audioRef} src={clipUrl} />}
       <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>

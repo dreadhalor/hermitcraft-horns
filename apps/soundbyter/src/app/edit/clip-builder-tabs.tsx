@@ -13,7 +13,7 @@ interface Props {
   hermits: HermitcraftChannel[];
 }
 export const ClipBuilderTabs = ({ hermits }: Props) => {
-  const [activeTab, setActiveTab] = React.useState('metadata');
+  const [activeTab, setActiveTab] = React.useState('clip-builder');
   const { setHermits } = useClipBuilder();
 
   useEffect(() => {
