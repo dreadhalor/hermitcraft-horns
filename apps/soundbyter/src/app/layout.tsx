@@ -6,17 +6,8 @@ import { ClipBuilderProvider } from '../providers/clip-builder-provider';
 import { TRPCProvider } from '@/trpc/trpc-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Suspense } from 'react';
-import {
-  ClerkProvider,
-  SignInButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from '@clerk/nextjs';
-import { ProfileButton } from '@/components/main-nav/buttons/profile-button';
-import { EditorButton } from '@/components/main-nav/buttons/editor-button';
-import { HomeButton } from '@/components/main-nav/buttons/home-button';
-import { MainNav } from '@/components/main-nav/main-nav';
+import { ClerkProvider } from '@clerk/nextjs';
+import { MainNav } from '@/components/main-nav';
 
 const fontSans = FontSans({
   subsets: ['latin'],
