@@ -1,0 +1,25 @@
+# Ignore node_modules directory
+**/node_modules
+
+# Ignore build artifacts from any nested directory
+**/dist
+
+# Ignore development logs
+*.log
+
+# Ignore editor and IDE files
+.vscode
+
+# Ignore version control files
+**/.git
+**/.gitignore
+
+# Ignore Docker files
+Dockerfile
+.dockerignore
+
+# Ignore the README
+README.md
+
+# Ignore the lockfile
+pnpm-lock.yaml

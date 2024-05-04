@@ -1,0 +1,9 @@
+version: '3.8'
+# config for AWS
+services:
+  ytdl:
+    build:
+      context: .
+    container_name: ytdl
+    ports:
+      - '3000:3000'
