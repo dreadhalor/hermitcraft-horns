@@ -7,7 +7,7 @@ import { VideosList } from '../components/videos-list/videos-list';
 
 const Home = () => {
   return (
-    <main className='flex flex-col items-center gap-[20px] p-[20px]'>
+    <main className='flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
       <Image src={Banner} alt='banner' className='w-full' />
       <Tabs className='w-full' defaultValue='horns'>
         <TabsList className='grid w-full grid-cols-2 bg-[#4665BA]'>

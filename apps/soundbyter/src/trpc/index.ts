@@ -2,15 +2,23 @@ import { getClips, saveClip as drizzleSaveClip } from '@/../drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
 import { type VideoProcessingRouterOutput } from '@repo/ytdl';
-import { getHermitChannels, getHermitcraftVideos } from './routers/hermitcraft';
+import {
+  getHermitChannels,
+  getHermitcraftVideos,
+} from './routers/hermitcraft-wrapper';
+import { getHermitsLocal } from './routers/hermitcraft-local';
 
 export const appRouter = router({
   getHermitChannels,
+  getHermitsLocal,
   getHermitcraftVideos,
-  getClips: publicProcedure.query(async () => {
-    const result = await getClips();
-    return result;
-  }),
+  getClips: publicProcedure
+    .input(z.object({ userId: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      const userId = input?.userId;
+      const result = await getClips(userId);
+      return result;
+    }),
   saveClip: publicProcedure
     .input(
       z.object({
@@ -18,6 +26,10 @@ export const appRouter = router({
         end: z.string(),
         video: z.string(),
         clipUrl: z.string().optional(),
+        user: z.string(),
+        hermit: z.string().optional(),
+        tagline: z.string().optional(),
+        season: z.string().optional(),
       }),
     )
     .mutation(async ({ input }) => {

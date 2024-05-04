@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
+import { useUser } from '@clerk/nextjs';
 import React from 'react';
 
 interface Props {
@@ -10,7 +11,8 @@ interface Props {
   setActiveTab: (tab: string) => void;
 }
 export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
-  const { clipStart, clipEnd, videoUrl, playerRef } = useClipBuilder();
+  const { clipStart, clipEnd, videoUrl, playerRef, hermit, tagline, season } =
+    useClipBuilder();
   const {
     createAndSaveClip,
     isLoading: isSaving,
@@ -18,20 +20,26 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
     clipUrl,
   } = useCreateAndSaveClip();
 
+  const { user } = useUser();
+
   const handleExport = async () => {
-    // if (playerRef.current) {
-    //   const duration = playerRef.current.getDuration();
-    //   if (clipEnd <= duration) {
-    //     console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
-    //     await createAndSaveClip({
-    //       videoUrl,
-    //       start: clipStart,
-    //       end: clipEnd,
-    //     });
-    //   } else {
-    //     console.error('End time exceeds video duration');
-    //   }
-    // }
+    if (playerRef.current) {
+      const duration = playerRef.current.getDuration();
+      if (clipEnd <= duration) {
+        console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
+        await createAndSaveClip({
+          videoUrl,
+          start: clipStart,
+          end: clipEnd,
+          userId: user?.id || '',
+          hermitId: hermit?.ChannelID || '',
+          tagline,
+          season,
+        });
+      } else {
+        console.error('End time exceeds video duration');
+      }
+    }
   };
 
   const handleNext = () => {

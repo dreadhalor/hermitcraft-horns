@@ -1,9 +1,9 @@
 'use client';
 
-import { HermitcraftChannel } from '@/trpc/routers/hermitcraft';
 import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
+import { Hermit } from '../../drizzle/db';
 
 type ClipBuilderContextType = {
   zoomStart: number;
@@ -25,10 +25,10 @@ type ClipBuilderContextType = {
   setPlaying: (value: boolean) => void;
   currentlySeeking: boolean;
   setCurrentlySeeking: (value: boolean) => void;
-  hermits: HermitcraftChannel[];
-  setHermits: (value: HermitcraftChannel[]) => void;
-  hermit: HermitcraftChannel | null;
-  setHermit: (value: HermitcraftChannel | null) => void;
+  hermits: Hermit[];
+  setHermits: (value: Hermit[]) => void;
+  hermit: Hermit | null;
+  setHermit: (value: Hermit | null) => void;
   tagline: string;
   setTagline: (value: string) => void;
   videoId: string;
@@ -66,8 +66,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
 
   const [currentlySeeking, setCurrentlySeeking] = useState(false);
 
-  const [hermits, setHermits] = useState<HermitcraftChannel[]>([]);
-  const [hermit, setHermit] = useState<HermitcraftChannel | null>(null);
+  const [hermits, setHermits] = useState<Hermit[]>([]);
+  const [hermit, setHermit] = useState<Hermit | null>(null);
   const [tagline, setTagline] = useState('');
   const [season, setSeason] = useState<string>('');
 

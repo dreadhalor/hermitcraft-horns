@@ -6,11 +6,11 @@ import { ClipBuilderPane } from './clip-builder/clip-builder-pane';
 import { ClipMetadataBuilder } from './metadata-builder/clip-metadata-builder';
 import { PreviewPane } from './preview-pane';
 import { NextStepButton } from './next-step-button';
-import { HermitcraftChannel } from '@/trpc/routers/hermitcraft';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
+import { Hermit } from '../../../drizzle/db';
 
 interface Props {
-  hermits: HermitcraftChannel[];
+  hermits: Hermit[];
 }
 export const ClipBuilderTabs = ({ hermits }: Props) => {
   const [activeTab, setActiveTab] = React.useState('clip-builder');

@@ -6,6 +6,10 @@ type CreateAndSaveClipParams = {
   videoUrl: string;
   start: number;
   end: number;
+  userId: string;
+  hermitId?: string;
+  tagline?: string;
+  season?: string;
 };
 
 export const useCreateAndSaveClip = () => {
@@ -20,7 +24,13 @@ export const useCreateAndSaveClip = () => {
     videoUrl,
     start,
     end,
+    userId,
+    hermitId,
+    tagline,
+    season,
   }: CreateAndSaveClipParams) => {
+    if (!userId) throw new Error('User must be provided to create clip');
+
     try {
       setIsLoading(true);
       setError(null);
@@ -35,6 +45,10 @@ export const useCreateAndSaveClip = () => {
         end: `${end}`,
         video: videoUrl,
         clipUrl: uploadedClipUrl,
+        user: userId,
+        hermit: hermitId,
+        tagline,
+        season,
       });
 
       setClipUrl(uploadedClipUrl);

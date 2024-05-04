@@ -7,30 +7,8 @@ import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 
 export const PreviewPane = () => {
-  const { clipStart, clipEnd, videoUrl, playerRef, playClip } =
-    useClipBuilder();
-  const {
-    createAndSaveClip,
-    isLoading: isSaving,
-    error: saveError,
-    clipUrl,
-  } = useCreateAndSaveClip();
-
-  const handleExport = async () => {
-    if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      if (clipEnd <= duration) {
-        console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
-        await createAndSaveClip({
-          videoUrl,
-          start: clipStart,
-          end: clipEnd,
-        });
-      } else {
-        console.error('End time exceeds video duration');
-      }
-    }
-  };
+  const { playClip } = useClipBuilder();
+  const { error: saveError, clipUrl } = useCreateAndSaveClip();
 
   return (
     <div className='flex h-full w-full items-center justify-center px-4'>

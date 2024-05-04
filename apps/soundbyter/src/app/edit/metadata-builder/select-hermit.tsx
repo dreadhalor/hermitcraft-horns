@@ -10,7 +10,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
-import { Label } from '@/components/ui/label';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 
 export const SelectHermit = () => {

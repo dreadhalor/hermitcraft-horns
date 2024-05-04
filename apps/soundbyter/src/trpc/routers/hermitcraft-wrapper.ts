@@ -1,28 +1,13 @@
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
-
-export interface HermitcraftChannel {
-  id: number; // this is always 0 for some reason
-  ChannelName: string;
-  DisplayName: string;
-  GooglePlusLink: string;
-  ProfilePicture: string;
-  TwitterName: string;
-  TwitchName: string;
-  WebsiteURL: string; // this is always an empty string
-  Active: boolean;
-  Streaming: boolean;
-  YTStreaming: boolean;
-  ChannelID: string;
-  UploadPlaylistID: string;
-}
+import { Hermit } from '../../../drizzle/db';
 
 export interface HermitcraftVideo {
   id: string;
   uploaded: string;
   uploadedFriendly: string;
   uploadedFriendlyMobile: string;
-  uploader: HermitcraftChannel;
+  uploader: Hermit;
   title: string;
   duration: number;
   friendlyDuration: string;
@@ -31,7 +16,7 @@ export interface HermitcraftVideo {
   commentCount: number;
 }
 
-type GetHermitChannelsApiResponse = HermitcraftChannel[];
+type GetHermitChannelsApiResponse = Hermit[];
 type GetVideosApiResponse = HermitcraftVideo[];
 
 // must run this serverside to avoid a CORS error
@@ -44,6 +29,7 @@ export const getHermitChannels = publicProcedure
     }
 
     const result = await response.json();
+
     return result as GetHermitChannelsApiResponse;
   });
 

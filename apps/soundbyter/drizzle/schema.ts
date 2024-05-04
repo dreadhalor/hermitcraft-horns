@@ -5,30 +5,58 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  boolean,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
   'users',
   {
-    id: serial('id').primaryKey(),
-    name: text('name').notNull(),
-    email: text('email').notNull(),
-    image: text('image').notNull(),
+    id: text('id').primaryKey(),
+    username: text('username').notNull(),
     createdAt: timestamp('createdAt').defaultNow(),
   },
   (users) => {
     return {
-      uniqueIdx: uniqueIndex('unique_idx').on(users.email),
+      uniqueIdx: uniqueIndex('unique_idx').on(users.username),
     };
   },
 );
 
 export const clips = pgTable('clips', {
   id: serial('id').primaryKey(),
-  user: serial('user').notNull(),
+  user: text('user')
+    .notNull()
+    .references(() => users.id),
   video: text('video').notNull(),
   start: numeric('start').notNull(),
   end: numeric('end').notNull(),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
   clipUrl: text('clipUrl'),
+  hermit: text('hermit').references(() => hermitcraftChannels.ChannelID),
+  season: text('season'),
+  tagline: text('tagline'),
 });
+
+export const hermitcraftChannels = pgTable(
+  'hermitcraftChannels',
+  {
+    id: text('id'),
+    ChannelID: text('ChannelID').primaryKey(),
+    ChannelName: text('ChannelName').notNull(),
+    DisplayName: text('DisplayName').notNull(),
+    ProfilePicture: text('ProfilePicture').notNull(),
+    GooglePlusLink: text('GooglePlusLink'),
+    TwitterName: text('TwitterName'),
+    TwitchName: text('TwitchName'),
+    WebsiteURL: text('WebsiteURL'),
+    Active: boolean('Active').notNull(),
+    Streaming: boolean('Streaming').notNull(),
+    YTStreaming: boolean('YTStreaming').notNull(),
+    UploadPlaylistID: text('UploadPlaylistID').notNull(),
+  },
+  (hermitChannels) => {
+    return {
+      uniqueIdx: uniqueIndex('hermit_idx').on(hermitChannels.ChannelID),
+    };
+  },
+);
