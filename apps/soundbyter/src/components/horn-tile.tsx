@@ -7,6 +7,8 @@ import { FaRegHeart } from 'react-icons/fa';
 import { MdFileDownload } from 'react-icons/md';
 import { DrizzleClip } from '@/../drizzle/db';
 import Image from 'next/image';
+import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from './ui/drawer';
+import { Button } from './ui/button';
 
 type HornTileProps = {
   horn: DrizzleClip & Horn;
@@ -39,22 +41,52 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
         'relative aspect-square w-full cursor-pointer overflow-hidden rounded-lg bg-[#354B87] text-[12px] text-white',
         className,
       )}
-      onClick={onClick ? onClick : handlePlayClick}
     >
       {clipUrl && <audio ref={audioRef} src={clipUrl} />}
-      <div className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'>
+      <div
+        className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
+        onClick={onClick ? onClick : handlePlayClick}
+      >
         <div className='relative h-full w-full overflow-hidden rounded-md'>
           <Image src={_profilePic} alt='profile pic' fill />
         </div>
       </div>
-      <div className='absolute inset-0 p-[8px]'>
+      <div className='pointer-events-none absolute inset-0 p-[8px]'>
         <div className='flex h-full w-full flex-col p-[4px]'>
           <div className='flex justify-between'>
             <span className='text-[10px]'>{username ?? 'no user'}</span>
-            <div className='grid grid-cols-2 items-center justify-items-end p-0'>
-              <span>53</span> <FaRegHeart />
-              <span>101</span> <MdFileDownload />
-            </div>
+
+            <Drawer nested>
+              <DrawerTrigger asChild>
+                <Button
+                  id='clip-builder-hermit'
+                  className='pointer-events-auto -mx-1 -my-0.5 grid h-auto w-auto grid-cols-2 items-center justify-items-end bg-transparent px-1 py-0.5 text-[[[[12px]]]] shadow-none hover:bg-primary/80'
+                >
+                  <span>53</span>
+                  <FaRegHeart />
+                  <span>101</span>
+                  <MdFileDownload className='-mr-0.5' size={16} />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className='max-h-[90%] border-0 p-0'>
+                <DrawerClose asChild>
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                  >
+                    <FaRegHeart /> Favorite
+                  </Button>
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                  >
+                    <MdFileDownload size={22} /> Download
+                  </Button>
+                </DrawerClose>
+              </DrawerContent>
+            </Drawer>
           </div>
           <span className='my-auto text-center font-bold'>{tagline}</span>
           <div className='flex justify-center'>
