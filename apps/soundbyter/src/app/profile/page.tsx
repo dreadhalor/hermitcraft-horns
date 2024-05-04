@@ -13,8 +13,8 @@ const ProfilePage = () => {
 
   return (
     <div className='flex flex-1 flex-col p-[20px]'>
+      <h1 className='text-3xl font-bold'>Profile</h1>
       <SignedIn>
-        <h1 className='text-3xl font-bold'>Profile</h1>
         <div className='flex items-baseline gap-[10px]'>
           <span className='text-2xl'>@dreadhalor</span>
           <span className='text-base text-gray-600'>edit</span>
@@ -23,9 +23,10 @@ const ProfilePage = () => {
         <HornsList id={user?.id} />
       </SignedIn>
       <SignedOut>
+        <p>Sign in to view your profile & create horns!</p>
         <Button
           onClick={() => router.push('/sign-in')}
-          className='mt-[20px] w-full bg-[hsl(0,50%,50%)]'
+          className='mt-[20px] w-full bg-[hsl(0,50%,50%)] hover:bg-[hsl(0,50%,40%)]'
         >
           Sign in
         </Button>
@@ -34,7 +35,7 @@ const ProfilePage = () => {
         <Button
           onClick={() => signOut(() => router.push('/'))}
           variant='destructive'
-          className='mt-[20px] w-full bg-[hsl(0,50%,50%)]'
+          className='mt-[20px] w-full bg-[hsl(0,50%,50%)] hover:bg-[hsl(0,50%,40%)]'
         >
           Sign out
         </Button>

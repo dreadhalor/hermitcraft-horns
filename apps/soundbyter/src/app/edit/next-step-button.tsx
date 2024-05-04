@@ -62,10 +62,14 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
       ) : (
         <Button
           onClick={handleExport}
-          disabled={isSaving}
+          disabled={isSaving || !user}
           className='font-bold'
         >
-          {isSaving ? 'Generating...' : 'Generate Horn'}
+          {user
+            ? isSaving
+              ? 'Generating...'
+              : 'Generate Horn'
+            : 'Sign in to generate horn!'}
         </Button>
       )}
     </div>

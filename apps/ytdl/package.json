@@ -9,12 +9,14 @@
     }
   },
   "scripts": {
+    "start": "dotenvx run -- ts-node server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@dotenvx/dotenvx": "^0.37.1",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@trpc/server": "^10.45.2",
     "@types/node": "^20.12.7",

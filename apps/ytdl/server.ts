@@ -20,7 +20,7 @@ const app = express();
 // Enable CORS
 app.use(
   cors({
-    origin: 'http://localhost:3000', // Replace with the URL of your Next.js app
+    origin: 'http://localhost:3000',
   })
 );
 
