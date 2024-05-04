@@ -51,13 +51,16 @@ export const appRouter = router({
     .output(z.custom<VideoProcessingRouterOutput['extractAudio']>())
     .mutation(async ({ input }) => {
       const { videoUrl, start, end } = input;
-      const response = await fetch('http://localhost:3001/trpc/extractAudio', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        'https://ytdl.hermitcraft-horns.com/trpc/extractAudio',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ videoUrl, start, end }),
         },
-        body: JSON.stringify({ videoUrl, start, end }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error('Failed to extract audio');
