@@ -33,7 +33,7 @@ export const HornsList = ({ id }: Props) => {
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px] text-white'>
       Popular
       <div className='grid w-full grid-cols-2 gap-[10px]'>
-        {clips.reverse().map((clip: any) => (
+        {[...clips].reverse().map((clip: any) => (
           <HornTile key={clip.id} horn={clip} />
         ))}
       </div>
