@@ -56,7 +56,7 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
   };
 
   return (
-    <div className='mx-4 mb-4 flex flex-col'>
+    <div className='mb-4 flex w-full flex-col'>
       {activeTab !== 'preview' ? (
         <Button onClick={handleNext}>Next &rarr;</Button>
       ) : (

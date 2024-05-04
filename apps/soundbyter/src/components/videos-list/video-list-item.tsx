@@ -14,7 +14,7 @@ export const VideoListItem = ({ video }: Props) => {
   return (
     <div
       className='flex w-full cursor-pointer gap-[5px] bg-white text-xs'
-      onClick={() => router.push(`/edit?id=${video.id}`)}
+      onClick={() => router.push(`/create?id=${video.id}`)}
     >
       <div className='relative flex aspect-video h-[88px]'>
         <Image

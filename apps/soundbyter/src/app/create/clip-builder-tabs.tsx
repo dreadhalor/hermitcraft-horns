@@ -35,21 +35,23 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
       <TabsContent value='preview' className='flex-1 overflow-auto'>
         <PreviewPane />
       </TabsContent>
-      <NextStepButton activeTab={activeTab} setActiveTab={setActiveTab} />
-      <TabsList className='flex w-full gap-2 bg-transparent'>
-        <TabsTrigger
-          value='clip-builder'
-          className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
-        />
-        <TabsTrigger
-          value='metadata'
-          className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
-        />
-        <TabsTrigger
-          value='preview'
-          className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
-        />
-      </TabsList>
+      <div className='mx-4 flex gap-2'>
+        <TabsList className='flex gap-2 bg-transparent'>
+          <TabsTrigger
+            value='clip-builder'
+            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
+          />
+          <TabsTrigger
+            value='metadata'
+            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
+          />
+          <TabsTrigger
+            value='preview'
+            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
+          />
+        </TabsList>
+        <NextStepButton activeTab={activeTab} setActiveTab={setActiveTab} />
+      </div>
     </Tabs>
   );
 };

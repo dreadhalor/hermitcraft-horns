@@ -12,8 +12,8 @@ export const MainNav = () => {
     switch (pathname) {
       case '/':
         return 'horns';
-      case '/edit':
-        return 'edit';
+      case '/create':
+        return 'create';
       case '/profile':
         return 'profile';
       default:
@@ -23,34 +23,34 @@ export const MainNav = () => {
 
   return (
     <div className='sticky bottom-0 left-0 h-[60px] w-full shrink-0'>
-      {/* <HomeButton />
-      <EditorButton />
-      <ProfileButton /> */}
       <Tabs className='h-full w-full' value={getActiveTab(pathname)}>
         <TabsList className='grid h-full w-full grid-cols-3 rounded-b-none bg-[#4665BA] pb-0'>
-          <TabsTrigger value='horns' asChild>
-            <Link
-              href='/'
-              className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
-            >
+          <TabsTrigger
+            value='horns'
+            asChild
+            className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
+          >
+            <Link href='/'>
               <GoatHornSVG fill='white' className='h-7 w-7' />
               <span>Home</span>
             </Link>
           </TabsTrigger>
-          <TabsTrigger value='edit' asChild>
-            <Link
-              href='/edit'
-              className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
-            >
+          <TabsTrigger
+            value='create'
+            asChild
+            className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
+          >
+            <Link href='/create'>
               <FaFilm size={24} />
-              <span>Edit</span>
+              <span>Create</span>
             </Link>
           </TabsTrigger>
-          <TabsTrigger value='profile' asChild>
-            <Link
-              href='/profile'
-              className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
-            >
+          <TabsTrigger
+            value='profile'
+            asChild
+            className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
+          >
+            <Link href='/profile'>
               <FaCircleUser size={24} />
               <span>Profile</span>
             </Link>

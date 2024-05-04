@@ -36,9 +36,9 @@ export const Navbar = () => {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder={videoUrl || 'Enter YouTube video URL'}
-          className='text-black'
+          className='rounded-r-none text-base text-black'
         />
-        <Button type='submit'>
+        <Button type='submit' className='rounded-l-none'>
           <FaSearch />
         </Button>
       </form>
