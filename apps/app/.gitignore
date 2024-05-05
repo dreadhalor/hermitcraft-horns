@@ -37,4 +37,3 @@ next-env.d.ts
 
 # migrations
 drizzle/migrations
-drizzle/migrations2
