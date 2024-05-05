@@ -25,10 +25,11 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
     hermit,
     liked,
     likes,
+    downloads,
   } = horn;
   const { username } = _givenUser ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { user, likeClip, unlikeClip } = useHHUser();
+  const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
 
   const _profilePic = profilePic || hermit?.ProfilePicture || JoeHills.src;
 
@@ -81,7 +82,7 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
                 >
                   <span>{likes ?? '53'}</span>
                   {liked ? <FaHeart /> : <FaRegHeart />}
-                  <span>101</span>
+                  <span>{downloads ?? 101}</span>
                   <MdFileDownload className='-mr-0.5' size={16} />
                 </Button>
               </DrawerTrigger>
@@ -107,6 +108,7 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
                   <Button
                     variant='ghost'
                     className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                    onClick={() => incrementClipDownloads(horn.id)}
                   >
                     <MdFileDownload size={22} /> Download
                   </Button>

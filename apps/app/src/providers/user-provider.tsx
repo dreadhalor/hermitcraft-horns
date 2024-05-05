@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import React, { createContext, useContext } from 'react';
+import { incrementClipDownloads } from '../../drizzle/db';
 
 type UserContextValue = {
   user: HHUser | null;
@@ -12,6 +13,7 @@ type UserContextValue = {
   impersonateUser: (userId: string) => void;
   likeClip: (userId: string, clipId: number) => void;
   unlikeClip: (userId: string, clipId: number) => void;
+  incrementClipDownloads: (clipId: number) => Promise<void>;
 };
 
 const UserContext = createContext<UserContextValue>({} as UserContextValue);
@@ -58,6 +60,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     unlikeClipMutation.mutate({ userId, clipId });
   };
 
+  const incrementClipDownloadsMutation =
+    trpc.incrementClipDownloads.useMutation({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey });
+      },
+    });
+  const incrementClipDownloads = async (clipId: number) => {
+    await incrementClipDownloadsMutation.mutateAsync({ clipId });
+  };
+
   const impersonateUser = (userId: string) => {
     setImpersonatedUserId(userId);
   };
@@ -67,7 +79,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <UserContext.Provider
-      value={{ user, superUser, impersonateUser, likeClip, unlikeClip }}
+      value={{
+        user,
+        superUser,
+        impersonateUser,
+        likeClip,
+        unlikeClip,
+        incrementClipDownloads,
+      }}
     >
       {children}
     </UserContext.Provider>

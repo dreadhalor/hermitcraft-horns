@@ -26,6 +26,9 @@ export const ourFileRouter = {
 
       console.log('file url', file.url);
 
+      console.log('full metadata', metadata);
+      console.log('full file', file);
+
       // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };
     }),

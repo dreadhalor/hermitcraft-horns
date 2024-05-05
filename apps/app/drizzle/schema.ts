@@ -37,6 +37,7 @@ export const clips = pgTable('clips', {
   hermit: text('hermit').references(() => hermitcraftChannels.ChannelID),
   season: text('season'),
   tagline: text('tagline'),
+  downloads: integer('downloads').default(0).notNull(),
 });
 
 export const hermitcraftChannels = pgTable(

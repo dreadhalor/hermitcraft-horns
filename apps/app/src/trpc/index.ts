@@ -5,6 +5,7 @@ import {
   getAllUsers,
   likeClip,
   unlikeClip,
+  incrementClipDownloads,
 } from '@/../drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
@@ -65,6 +66,13 @@ export const appRouter = router({
     .input(z.object({ userId: z.string(), clipId: z.number() }))
     .mutation(async ({ input: { userId, clipId } }) => {
       unlikeClip({ user: userId, clip: clipId });
+      return true;
+    }),
+
+  incrementClipDownloads: publicProcedure
+    .input(z.object({ clipId: z.number() }))
+    .mutation(async ({ input: { clipId } }) => {
+      await incrementClipDownloads(clipId);
       return true;
     }),
 

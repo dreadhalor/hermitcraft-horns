@@ -1,10 +1,10 @@
 import './env-config';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { sql } from '@vercel/postgres';
+import { sql as vercelSql } from '@vercel/postgres';
 import * as schema from './schema';
-import { InferSelectModel, and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
-export const db = drizzle(sql, { schema });
+export const db = drizzle(vercelSql, { schema });
 
 export const getUser = async (userId: string) => {
   const result = await db
@@ -25,7 +25,6 @@ export const hasLikedClip = async (userId: string, clipId: number) => {
     .where(and(eq(schema.likes.user, userId), eq(schema.likes.clip, clipId)))
     .limit(1);
 
-  console.log('result', result);
   return result.length > 0;
 };
 export const countLikes = async (clipId: number) => {
@@ -89,7 +88,6 @@ export const saveHermit = async (hermit: Hermit) => {
 };
 
 export const likeClip = async (like: Like) => {
-  console.log('like:', like);
   const result = await db
     .insert(schema.likes)
     .values(like)
@@ -104,5 +102,15 @@ export const unlikeClip = async (like: Like) => {
     .where(
       and(eq(schema.likes.user, like.user), eq(schema.likes.clip, like.clip)),
     );
+  return result;
+};
+
+export const incrementClipDownloads = async (clipId: number) => {
+  const result = await db
+    .update(schema.clips)
+    .set({
+      downloads: sql`${schema.clips.downloads} + 1`,
+    })
+    .where(eq(schema.clips.id, clipId));
   return result;
 };

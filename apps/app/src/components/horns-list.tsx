@@ -34,8 +34,6 @@ export const HornsList = ({ id }: Props) => {
     return <div>Loading...</div>;
   }
 
-  console.log(clips);
-
   return (
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px] text-white'>
       Popular
