@@ -1,25 +1,34 @@
 'use client';
-import { Horn } from './horns-list';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { FaRegHeart } from 'react-icons/fa';
+import { FaRegHeart, FaHeart } from 'react-icons/fa';
 import { MdFileDownload } from 'react-icons/md';
-import { DrizzleClip } from '@/../drizzle/db';
 import Image from 'next/image';
 import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from './ui/drawer';
 import { Button } from './ui/button';
+import { useHHUser } from '@/providers/user-provider';
 
 type HornTileProps = {
-  horn: DrizzleClip & Horn;
+  horn: any;
   className?: string;
   onClick?: () => void;
 };
 
 export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
-  const { tagline, clipUrl, season, profilePic = '', user, hermit } = horn;
-  const { username } = user ?? {};
+  const {
+    tagline,
+    clipUrl,
+    season,
+    profilePic = '',
+    user: _givenUser,
+    hermit,
+    liked,
+    likes,
+  } = horn;
+  const { username } = _givenUser ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { user, likeClip, unlikeClip } = useHHUser();
 
   const _profilePic = profilePic || hermit?.ProfilePicture || JoeHills.src;
 
@@ -34,6 +43,14 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
       audioRef.current.load();
     }
   }, [clipUrl]);
+
+  const toggleLike = () => {
+    if (liked) {
+      unlikeClip(user?.id ?? '', horn.id);
+    } else {
+      likeClip(user?.id ?? '', horn.id);
+    }
+  };
 
   return (
     <div
@@ -62,8 +79,8 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
                   id='clip-builder-hermit'
                   className='pointer-events-auto -mx-1 -my-0.5 grid h-auto w-auto grid-cols-2 items-center justify-items-end bg-transparent px-1 py-0.5 text-[[[[12px]]]] shadow-none hover:bg-primary/80'
                 >
-                  <span>53</span>
-                  <FaRegHeart />
+                  <span>{likes ?? '53'}</span>
+                  {liked ? <FaHeart /> : <FaRegHeart />}
                   <span>101</span>
                   <MdFileDownload className='-mr-0.5' size={16} />
                 </Button>
@@ -73,8 +90,17 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
                   <Button
                     variant='ghost'
                     className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                    onClick={toggleLike}
                   >
-                    <FaRegHeart /> Favorite
+                    {liked ? (
+                      <>
+                        <FaHeart /> Unfavorite
+                      </>
+                    ) : (
+                      <>
+                        <FaRegHeart /> Favorite
+                      </>
+                    )}
                   </Button>
                 </DrawerClose>
                 <DrawerClose asChild>

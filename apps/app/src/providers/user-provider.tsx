@@ -2,12 +2,16 @@
 import { HHUser } from '@/trpc';
 import { trpc } from '@/trpc/client';
 import { useUser } from '@clerk/nextjs';
-import React, { createContext, useContext, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
+import React, { createContext, useContext } from 'react';
 
 type UserContextValue = {
   user: HHUser | null;
   superUser: HHUser | null;
   impersonateUser: (userId: string) => void;
+  likeClip: (userId: string, clipId: number) => void;
+  unlikeClip: (userId: string, clipId: number) => void;
 };
 
 const UserContext = createContext<UserContextValue>({} as UserContextValue);
@@ -21,6 +25,7 @@ export const useHHUser = () => {
 };
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
   const { user: clerkUser } = useUser();
   const { data: userResult } = trpc.getUser.useQuery({
     userId: clerkUser?.id ?? '',
@@ -33,6 +38,26 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     { enabled: !!impersonatedUserId },
   );
 
+  const queryKey = getQueryKey(trpc.getClips);
+
+  const likeClipMutation = trpc.likeClip.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+  const unlikeClipMutation = trpc.unlikeClip.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
+  const likeClip = (userId: string, clipId: number) => {
+    likeClipMutation.mutate({ userId, clipId });
+  };
+  const unlikeClip = (userId: string, clipId: number) => {
+    unlikeClipMutation.mutate({ userId, clipId });
+  };
+
   const impersonateUser = (userId: string) => {
     setImpersonatedUserId(userId);
   };
@@ -41,7 +66,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const superUser = userResult || null;
 
   return (
-    <UserContext.Provider value={{ user, superUser, impersonateUser }}>
+    <UserContext.Provider
+      value={{ user, superUser, impersonateUser, likeClip, unlikeClip }}
+    >
       {children}
     </UserContext.Provider>
   );

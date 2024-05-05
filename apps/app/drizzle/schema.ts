@@ -67,17 +67,21 @@ export const likes = pgTable(
   'likes',
   {
     id: serial('id').primaryKey(),
-    userId: text('user_id')
+    user: text('user')
       .notNull()
       .references(() => users.id),
-    clipId: integer('clip_id')
+    clip: integer('clip')
       .notNull()
       .references(() => clips.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (likes) => {
     return {
-      clipIdIndex: index('likes_clip_id_idx').on(likes.clipId),
+      clipIndex: index('likes_clip_idx').on(likes.clip),
+      userClipUnique: uniqueIndex('likes_user_clip_unique_idx').on(
+        likes.user,
+        likes.clip,
+      ),
     };
   },
 );

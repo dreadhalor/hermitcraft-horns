@@ -1,8 +1,10 @@
 import {
-  getClips,
+  getAllClips,
   saveClip as drizzleSaveClip,
   getUser,
   getAllUsers,
+  likeClip,
+  unlikeClip,
 } from '@/../drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
@@ -28,10 +30,11 @@ export const appRouter = router({
     return await getAllUsers();
   }),
   getClips: publicProcedure
-    .input(z.object({ userId: z.string().optional() }).optional())
-    .query(async ({ input }) => {
-      const userId = input?.userId;
-      const result = await getClips(userId);
+    .input(
+      z.object({ userId: z.string(), filterUserId: z.string().optional() }),
+    )
+    .query(async ({ input: { userId, filterUserId } }) => {
+      const result = await getAllClips(userId, filterUserId);
       return result;
     }),
   saveClip: publicProcedure
@@ -50,6 +53,18 @@ export const appRouter = router({
     .mutation(async ({ input }) => {
       console.log('Saving clip:', input);
       await drizzleSaveClip(input);
+      return true;
+    }),
+  likeClip: publicProcedure
+    .input(z.object({ userId: z.string(), clipId: z.number() }))
+    .mutation(async ({ input: { userId, clipId } }) => {
+      likeClip({ user: userId, clip: clipId });
+      return true;
+    }),
+  unlikeClip: publicProcedure
+    .input(z.object({ userId: z.string(), clipId: z.number() }))
+    .mutation(async ({ input: { userId, clipId } }) => {
+      unlikeClip({ user: userId, clip: clipId });
       return true;
     }),
 
