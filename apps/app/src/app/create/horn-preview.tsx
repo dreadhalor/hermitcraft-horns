@@ -2,12 +2,12 @@
 
 import { HornTile } from '@/components/horn-tile';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
-import { useUser } from '@clerk/nextjs';
+import { useHHUser } from '@/providers/user-provider';
 import React from 'react';
 
 export const HornPreview = () => {
   const { tagline, hermit, season, playClip } = useClipBuilder();
-  const { user } = useUser();
+  const { user } = useHHUser();
 
   return (
     <div className='flex flex-col items-center'>
@@ -19,7 +19,7 @@ export const HornPreview = () => {
             profilePic: hermit?.ProfilePicture,
             season,
             user: {
-              username: 'Joe Hills',
+              username: user?.username || 'Joe Hills',
             },
           } as any
         }

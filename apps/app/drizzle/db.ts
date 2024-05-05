@@ -6,8 +6,15 @@ import { InferSelectModel, eq } from 'drizzle-orm';
 
 export const db = drizzle(sql, { schema });
 
-export const getUsers = async () => {
-  const result = await db.query.users.findMany();
+export const getUser = async (userId: string) => {
+  const result = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.id, userId));
+  return result[0];
+};
+export const getAllUsers = async () => {
+  const result = await db.select().from(schema.users);
   return result;
 };
 

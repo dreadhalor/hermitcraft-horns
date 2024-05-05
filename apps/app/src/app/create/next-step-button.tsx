@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
+import { useHHUser } from '@/providers/user-provider';
 import { useUser } from '@clerk/nextjs';
 import React from 'react';
 
@@ -20,7 +21,7 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
     clipUrl,
   } = useCreateAndSaveClip();
 
-  const { user } = useUser();
+  const { user } = useHHUser();
 
   const handleExport = async () => {
     if (playerRef.current) {

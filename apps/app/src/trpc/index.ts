@@ -1,4 +1,9 @@
-import { getClips, saveClip as drizzleSaveClip } from '@/../drizzle/db';
+import {
+  getClips,
+  saveClip as drizzleSaveClip,
+  getUser,
+  getAllUsers,
+} from '@/../drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
 import { type VideoProcessingRouterOutput } from '@repo/ytdl';
@@ -7,11 +12,21 @@ import {
   getHermitcraftVideos,
 } from './routers/hermitcraft-wrapper';
 import { getHermitsLocal } from './routers/hermitcraft-local';
+import { inferRouterOutputs } from '@trpc/server';
 
 export const appRouter = router({
   getHermitChannels,
   getHermitsLocal,
   getHermitcraftVideos,
+  getUser: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      const result = await getUser(input.userId);
+      return result || null;
+    }),
+  getAllUsers: publicProcedure.query(async () => {
+    return await getAllUsers();
+  }),
   getClips: publicProcedure
     .input(z.object({ userId: z.string().optional() }).optional())
     .query(async ({ input }) => {
@@ -72,3 +87,5 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+type Outputs = inferRouterOutputs<AppRouter>;
+export type HHUser = Outputs['getUser'];
