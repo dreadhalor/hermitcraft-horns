@@ -6,6 +6,8 @@ import {
   timestamp,
   uniqueIndex,
   boolean,
+  integer,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
@@ -57,6 +59,25 @@ export const hermitcraftChannels = pgTable(
   (hermitChannels) => {
     return {
       uniqueIdx: uniqueIndex('hermit_idx').on(hermitChannels.ChannelID),
+    };
+  },
+);
+
+export const likes = pgTable(
+  'likes',
+  {
+    id: serial('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    clipId: integer('clip_id')
+      .notNull()
+      .references(() => clips.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (likes) => {
+    return {
+      clipIdIndex: index('likes_clip_id_idx').on(likes.clipId),
     };
   },
 );

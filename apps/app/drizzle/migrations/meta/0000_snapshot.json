@@ -1,5 +1,5 @@
 {
-  "id": "1c14e9e7-e2a9-40a9-b012-1ed17358bed1",
+  "id": "e906da63-7711-46e9-a4ac-9b06e9217cf6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "5",
   "dialect": "pg",
@@ -16,7 +16,7 @@
         },
         "user": {
           "name": "user",
-          "type": "serial",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -44,10 +44,227 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "clipUrl": {
+          "name": "clipUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hermit": {
+          "name": "hermit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "season": {
+          "name": "season",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tagline": {
+          "name": "tagline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
+      "foreignKeys": {
+        "clips_user_users_id_fk": {
+          "name": "clips_user_users_id_fk",
+          "tableFrom": "clips",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "clips_hermit_hermitcraftChannels_ChannelID_fk": {
+          "name": "clips_hermit_hermitcraftChannels_ChannelID_fk",
+          "tableFrom": "clips",
+          "tableTo": "hermitcraftChannels",
+          "columnsFrom": [
+            "hermit"
+          ],
+          "columnsTo": [
+            "ChannelID"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "hermitcraftChannels": {
+      "name": "hermitcraftChannels",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ChannelID": {
+          "name": "ChannelID",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ChannelName": {
+          "name": "ChannelName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "DisplayName": {
+          "name": "DisplayName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ProfilePicture": {
+          "name": "ProfilePicture",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "GooglePlusLink": {
+          "name": "GooglePlusLink",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "TwitterName": {
+          "name": "TwitterName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "TwitchName": {
+          "name": "TwitchName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "WebsiteURL": {
+          "name": "WebsiteURL",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "Active": {
+          "name": "Active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "Streaming": {
+          "name": "Streaming",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "YTStreaming": {
+          "name": "YTStreaming",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "UploadPlaylistID": {
+          "name": "UploadPlaylistID",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "hermit_idx": {
+          "name": "hermit_idx",
+          "columns": [
+            "ChannelID"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "likes": {
+      "name": "likes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clip_id": {
+          "name": "clip_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "likes_clip_id_idx": {
+          "name": "likes_clip_id_idx",
+          "columns": [
+            "clip_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "likes_user_id_users_id_fk": {
+          "name": "likes_user_id_users_id_fk",
+          "tableFrom": "likes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "likes_clip_id_clips_id_fk": {
+          "name": "likes_clip_id_clips_id_fk",
+          "tableFrom": "likes",
+          "tableTo": "clips",
+          "columnsFrom": [
+            "clip_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -57,24 +274,12 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "image": {
-          "name": "image",
+        "username": {
+          "name": "username",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -91,7 +296,7 @@
         "unique_idx": {
           "name": "unique_idx",
           "columns": [
-            "email"
+            "username"
           ],
           "isUnique": true
         }

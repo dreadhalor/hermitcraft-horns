@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "push": "pnpm dlx drizzle-kit push:pg"
+    "push": "pnpm dlx drizzle-kit push:pg",
+    "migrate": "dotenvx run --env-file=.env.local -- npx tsx drizzle/migrate.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.6",
@@ -48,6 +49,7 @@
     "zod": "^3.23.5"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^0.37.1",
     "@svgr/webpack": "^8.1.0",
     "@types/fluent-ffmpeg": "^2.1.24",
     "@types/node": "^20.12.7",
@@ -64,6 +66,7 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.9.1",
     "typescript": "^5"
   }
 }

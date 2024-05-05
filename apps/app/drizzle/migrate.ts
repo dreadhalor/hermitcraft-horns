@@ -1,18 +1,16 @@
-import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { migrate } from 'drizzle-orm/vercel-postgres/migrator';
-import { sql } from '@vercel/postgres';
-import './env-config';
+import { db } from './db';
+import path from 'path';
 
-const db = drizzle(sql);
+async function runMigration() {
+  try {
+    const migrationPath = path.join(__dirname, './migrations');
 
-async function main() {
-  console.log('migration started...');
-  await migrate(db, { migrationsFolder: 'drizzle/migrations' });
-  console.log('migration ended...');
-  process.exit(0);
+    await migrate(db, { migrationsFolder: migrationPath });
+    console.log('Migration completed successfully.');
+  } catch (error) {
+    console.error('Migration failed:', error);
+  }
 }
 
-main().catch((err) => {
-  console.log(err);
-  process.exit(0);
-});
+runMigration();
