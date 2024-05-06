@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { sql as vercelSql } from '@vercel/postgres';
 import * as schema from './schema';
 import { and, eq, sql } from 'drizzle-orm';
+import { EditClipSchema } from '@/schemas';
 
 export const db = drizzle(vercelSql, { schema });
 
@@ -73,6 +74,13 @@ export type Like = typeof schema.likes.$inferInsert;
 
 export const saveClip = async (clip: Clip) => {
   const result = await db.insert(schema.clips).values(clip);
+  return result;
+};
+export const editClip = async (newClipValues: EditClipSchema) => {
+  const result = await db
+    .update(schema.clips)
+    .set(newClipValues)
+    .where(eq(schema.clips.id, newClipValues.id));
   return result;
 };
 

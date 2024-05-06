@@ -1,20 +1,15 @@
 'use client';
 
-import { HornsList } from '@/components/horns-list';
-import { Button } from '@/components/ui/button';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTrigger,
-} from '@/components/ui/drawer';
+import { HornsList } from '@/components/horn-tile/horns-list';
+import { Button } from '@ui/button';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger } from '@ui/drawer';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@ui/select';
 import { useHHUser } from '@/providers/user-provider';
 import { trpc } from '@/trpc/client';
 import { SignedIn, SignedOut, useClerk } from '@clerk/nextjs';

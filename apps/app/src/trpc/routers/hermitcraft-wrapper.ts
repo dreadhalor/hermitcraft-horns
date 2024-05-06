@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
-import { Hermit } from '../../../drizzle/db';
+import { Hermit } from '@drizzle/db';
 
 export interface HermitcraftVideo {
   id: string;

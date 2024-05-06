@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { HornPreview } from './horn-preview';
-import { Button } from '@/components/ui/button';
+import { Button } from '@ui/button';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 

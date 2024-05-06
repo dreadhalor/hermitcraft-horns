@@ -2,11 +2,7 @@ import React, { useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/tooltip';
 
 interface Props {
   min: number;

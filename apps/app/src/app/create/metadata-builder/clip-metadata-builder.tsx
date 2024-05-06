@@ -10,17 +10,31 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@ui/select';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
-import { Label } from '@/components/ui/label';
+import { Label } from '@ui/label';
+import { Hermit } from '@drizzle/db';
 
-export const ClipMetadataBuilder = () => {
-  const { season, setSeason } = useClipBuilder();
+interface Props {
+  season: string;
+  setSeason: (season: string) => void;
+  hermit: Hermit | null;
+  setHermit: (hermit: Hermit | null) => void;
+  hermits: Hermit[];
+}
+export const ClipMetadataBuilder = ({
+  season,
+  setSeason,
+  hermit,
+  setHermit,
+  hermits,
+}: Props) => {
+  // const { season, setSeason, hermit, setHermit, hermits } = useClipBuilder();
 
   return (
     <div className='flex h-full items-start px-4 pt-2'>
       <div className='my-auto flex w-full items-end gap-4'>
-        <SelectHermit />
+        <SelectHermit hermit={hermit} setHermit={setHermit} hermits={hermits} />
         <div className='flex flex-1 flex-col gap-1'>
           <TaglineInput />
           <Label htmlFor='clip-builder-season'>Season</Label>

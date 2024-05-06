@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Card } from './ui/card';
+import { Card } from '@ui/card';
 import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
-import { useHHUser } from '../providers/user-provider';
+import { useHHUser } from '../../providers/user-provider';
 
 export type Horn = {
   id: string;

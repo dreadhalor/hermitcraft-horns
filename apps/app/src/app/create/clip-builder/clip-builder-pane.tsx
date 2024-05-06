@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@ui/button';
 import React, { useState, useEffect } from 'react';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';

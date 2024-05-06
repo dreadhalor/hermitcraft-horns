@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@ui/button';
 import {
   Drawer,
   DrawerClose,
@@ -9,11 +9,16 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/components/ui/drawer';
-import { useClipBuilder } from '@/providers/clip-builder-provider';
+} from '@ui/drawer';
+import { Hermit } from '@drizzle/db';
 
-export const SelectHermit = () => {
-  const { hermit, setHermit, hermits } = useClipBuilder();
+interface Props {
+  hermits: Hermit[];
+  hermit: Hermit | null;
+  setHermit: (hermit: Hermit) => void;
+}
+export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
+  // const { hermit, setHermit, hermits } = useClipBuilder();
 
   return (
     <div className='flex h-auto flex-col gap-1'>

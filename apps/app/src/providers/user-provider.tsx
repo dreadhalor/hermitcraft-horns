@@ -5,7 +5,6 @@ import { useUser } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import React, { createContext, useContext } from 'react';
-import { incrementClipDownloads } from '../../drizzle/db';
 
 type UserContextValue = {
   user: HHUser | null;

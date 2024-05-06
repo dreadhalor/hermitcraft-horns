@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@ui/button';
+import { Input } from '@ui/input';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';

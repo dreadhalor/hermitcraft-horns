@@ -3,11 +3,7 @@ import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { VideoPlaySlider } from './video-play-slider';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/tooltip';
 
 export const ClipSlider = () => {
   const { zoomStart, zoomEnd, clipStart, setClipStart, clipEnd, setClipEnd } =

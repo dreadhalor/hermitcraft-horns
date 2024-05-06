@@ -1,6 +1,6 @@
 'use client';
 
-import { HornTile } from '@/components/horn-tile';
+import { HornTile } from '@/components/horn-tile/horn-tile';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
 import React from 'react';

@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
-import { Hermit } from '../../drizzle/db';
+import { Hermit } from '@drizzle/db';
 
 type ClipBuilderContextType = {
   zoomStart: number;

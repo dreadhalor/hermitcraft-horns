@@ -1,8 +1,8 @@
 import React from 'react';
 import Banner from '@/assets/banner.png';
 import Image from 'next/image';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HornsList } from '@/components/horns-list';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/tabs';
+import { HornsList } from '@/components/horn-tile/horns-list';
 import { VideosList } from '../components/videos-list/videos-list';
 
 const Home = () => {

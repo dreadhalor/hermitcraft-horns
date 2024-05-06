@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { trpc } from '@/trpc/client';
 import { useGenerateClip } from './use-generate-clip';
+import { SaveClipSchema } from '@/schemas';
 
 type CreateAndSaveClipParams = {
   videoUrl: string;
@@ -39,8 +40,7 @@ export const useCreateAndSaveClip = () => {
       // Step 1: Generate the clip using the useGenerateClip hook
       const uploadedClipUrl = await generateClip({ videoUrl, start, end });
 
-      // Step 2: Save the metadata to the database
-      await saveClipMutation.mutateAsync({
+      const formValues = {
         start: `${start}`,
         end: `${end}`,
         video: videoUrl,
@@ -49,7 +49,10 @@ export const useCreateAndSaveClip = () => {
         hermit: hermitId,
         tagline,
         season,
-      });
+      } satisfies SaveClipSchema;
+
+      // Step 2: Save the metadata to the database
+      await saveClipMutation.mutateAsync(formValues);
 
       setClipUrl(uploadedClipUrl);
     } catch (error) {

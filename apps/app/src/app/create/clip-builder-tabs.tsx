@@ -1,20 +1,21 @@
 'use client';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/tabs';
 import React, { useEffect } from 'react';
 import { ClipBuilderPane } from './clip-builder/clip-builder-pane';
 import { ClipMetadataBuilder } from './metadata-builder/clip-metadata-builder';
 import { PreviewPane } from './preview-pane';
 import { NextStepButton } from './next-step-button';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
-import { Hermit } from '../../../drizzle/db';
+import { Hermit } from '@drizzle/db';
 
 interface Props {
   hermits: Hermit[];
 }
 export const ClipBuilderTabs = ({ hermits }: Props) => {
   const [activeTab, setActiveTab] = React.useState('clip-builder');
-  const { setHermits } = useClipBuilder();
+  // const { setHermits } = useClipBuilder();
+  const { season, setSeason, hermit, setHermit, setHermits } = useClipBuilder();
 
   useEffect(() => {
     setHermits(hermits);
@@ -30,7 +31,13 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
         <ClipBuilderPane />
       </TabsContent>
       <TabsContent value='metadata' className='flex-1 overflow-auto'>
-        <ClipMetadataBuilder />
+        <ClipMetadataBuilder
+          season={season}
+          setSeason={setSeason}
+          hermit={hermit}
+          setHermit={setHermit}
+          hermits={hermits}
+        />
       </TabsContent>
       <TabsContent value='preview' className='flex-1 overflow-auto'>
         <PreviewPane />

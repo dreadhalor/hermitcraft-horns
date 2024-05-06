@@ -6,7 +6,8 @@ import {
   likeClip,
   unlikeClip,
   incrementClipDownloads,
-} from '@/../drizzle/db';
+  editClip as drizzleEditClip,
+} from '@drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
 import { type VideoProcessingRouterOutput } from '@repo/ytdl';
@@ -16,6 +17,7 @@ import {
 } from './routers/hermitcraft-wrapper';
 import { getHermitsLocal } from './routers/hermitcraft-local';
 import { inferRouterOutputs } from '@trpc/server';
+import { editClipSchema, saveClipSchema } from '@/schemas';
 
 export const appRouter = router({
   getHermitChannels,
@@ -39,21 +41,17 @@ export const appRouter = router({
       return result;
     }),
   saveClip: publicProcedure
-    .input(
-      z.object({
-        start: z.string(),
-        end: z.string(),
-        video: z.string(),
-        clipUrl: z.string().optional(),
-        user: z.string(),
-        hermit: z.string().optional(),
-        tagline: z.string().optional(),
-        season: z.string().optional(),
-      }),
-    )
+    .input(saveClipSchema)
     .mutation(async ({ input }) => {
       console.log('Saving clip:', input);
       await drizzleSaveClip(input);
+      return true;
+    }),
+  editClip: publicProcedure
+    .input(editClipSchema)
+    .mutation(async ({ input }) => {
+      console.log('Editing clip:', input);
+      await drizzleEditClip(input);
       return true;
     }),
   likeClip: publicProcedure

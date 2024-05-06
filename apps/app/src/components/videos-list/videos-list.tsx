@@ -1,7 +1,7 @@
 import { trpcServer } from '@/trpc/server';
 import React from 'react';
 import { VideoListItem } from './video-list-item';
-import { Card } from '@/components/ui/card';
+import { Card } from '@ui/card';
 
 export const VideosList = async () => {
   const videos = await trpcServer.getHermitcraftVideos({

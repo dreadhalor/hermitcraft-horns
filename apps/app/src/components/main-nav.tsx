@@ -1,6 +1,6 @@
 'use client';
 
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@ui/tabs';
 import GoatHornSVG from '@/assets/goat-horn-icon.svg';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
