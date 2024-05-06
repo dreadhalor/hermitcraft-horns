@@ -6,20 +6,6 @@ import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
 import { useHHUser } from '../../providers/user-provider';
 
-export type Horn = {
-  id: string;
-  title: string;
-  tagline: string;
-  start?: number;
-  end?: number;
-  video?: string;
-  clipUrl?: string;
-  profilePic?: string;
-  season?: string;
-  user: string;
-  liked?: boolean;
-};
-
 interface Props {
   id?: string;
 }

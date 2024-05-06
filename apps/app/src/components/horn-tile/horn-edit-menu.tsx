@@ -1,9 +1,5 @@
 import React from 'react';
-import { DrawerClose } from '@ui/drawer';
 import { Button } from '@ui/button';
-import { MdFileDownload } from 'react-icons/md';
-import { ClipMetadataBuilder } from '@/app/create/metadata-builder/clip-metadata-builder';
-import { useClipEditor } from '@/providers/clip-editor-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import {
@@ -11,28 +7,19 @@ import {
   EditClipSchema,
   editClipFrontendSchema,
 } from '@/schemas';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@ui/form';
-import { Input } from '@ui/input';
+import { Form } from '@ui/form';
 import { TaglineInput } from './tagline-input';
 import { SelectHermit } from './select-hermit';
-import { TabsTrigger } from '@ui/tabs';
 import { SelectSeason } from './select-season';
 import { useEditClip } from '@/hooks/use-edit-clip';
+import { useApp } from '@/providers/app-provider';
 
 interface Props {
   setActiveTab: (tab: string) => void;
   horn: any;
 }
 export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
-  const { hermits } = useClipEditor();
+  const { hermits } = useApp();
   const { editClip } = useEditClip();
 
   const form = useForm<EditClipFrontendSchema>({
@@ -48,7 +35,6 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
   });
 
   const onSubmit = (values: EditClipFrontendSchema) => {
-    console.log('values:', values);
     const { hermit, ...rest } = values;
     const backendValues = {
       ...rest,
@@ -64,7 +50,7 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
         className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
         onClick={() => setActiveTab('main')}
       >
-        <MdFileDownload size={22} /> Back
+        &larr; Back
       </Button>
       <Form {...form}>
         <form

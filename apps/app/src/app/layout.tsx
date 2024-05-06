@@ -9,6 +9,7 @@ import { Suspense } from 'react';
 import { ClerkProvider } from '@clerk/nextjs';
 import { MainNav } from '@/components/main-nav';
 import { UserProvider } from '@/providers/user-provider';
+import { AppProvider } from '@/providers/app-provider';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -36,18 +37,20 @@ export default function RootLayout({
           )}
         >
           <TRPCProvider>
-            <TooltipProvider>
-              <Suspense fallback={<div>Loading...</div>}>
-                <UserProvider>
-                  <ClipBuilderProvider>
-                    <div className='flex h-full flex-col'>
-                      {children}
-                      <MainNav />
-                    </div>
-                  </ClipBuilderProvider>
-                </UserProvider>
-              </Suspense>
-            </TooltipProvider>
+            <AppProvider>
+              <TooltipProvider>
+                <Suspense fallback={<div>Loading...</div>}>
+                  <UserProvider>
+                    <ClipBuilderProvider>
+                      <div className='flex h-full flex-col'>
+                        {children}
+                        <MainNav />
+                      </div>
+                    </ClipBuilderProvider>
+                  </UserProvider>
+                </Suspense>
+              </TooltipProvider>
+            </AppProvider>
           </TRPCProvider>
         </body>
       </html>

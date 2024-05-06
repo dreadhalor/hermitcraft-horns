@@ -67,9 +67,7 @@ export const getAllClips = async (userId: string, filterUserId?: string) => {
 
 export type Clip = typeof schema.clips.$inferInsert;
 export type DrizzleUser = typeof schema.users.$inferSelect;
-export type DrizzleClip = (typeof getAllClips extends () => Promise<infer T>
-  ? T
-  : never)[number];
+export type DrizzleClip = Awaited<ReturnType<typeof getAllClips>>[number];
 export type Like = typeof schema.likes.$inferInsert;
 
 export const saveClip = async (clip: Clip) => {

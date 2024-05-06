@@ -1,6 +1,6 @@
 'use client';
 
-import { HornTile } from '@/components/horn-tile/horn-tile';
+import { HornPreviewTile } from '@/components/horn-tile/horn-preview-tile';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
 import React from 'react';
@@ -12,7 +12,7 @@ export const HornPreview = () => {
   return (
     <div className='flex flex-col items-center'>
       <span className='text-lg font-bold'>Preview:</span>
-      <HornTile
+      <HornPreviewTile
         horn={
           {
             tagline,

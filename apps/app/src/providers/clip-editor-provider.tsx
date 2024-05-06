@@ -28,7 +28,6 @@ type Props = {
   horn: any;
 };
 export const ClipEditorProvider = ({ children, horn }: Props) => {
-  // console.log('horn', horn);
   const { data: hermits, isLoading } = trpc.getHermitChannels.useQuery();
   const [hermit, setHermit] = useState<Hermit | null>(null);
   const [tagline, setTagline] = useState('');

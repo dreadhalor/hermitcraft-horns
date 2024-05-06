@@ -1,24 +1,37 @@
 'use client';
-
 import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useHHUser } from '@/providers/user-provider';
 import { HornTileMenu } from './horn-tile-menu';
-import { DrizzleClip } from '@drizzle/db';
 
-type HornTileProps = {
-  horn: DrizzleClip;
+type HornPreviewTileProps = {
+  horn: any;
   className?: string;
   onClick?: () => void;
 };
 
-export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
-  const { tagline, clipUrl, season, user, hermit, liked } = horn;
-  const { username } = user ?? {};
+export const HornPreviewTile = ({
+  horn,
+  className,
+  onClick,
+}: HornPreviewTileProps) => {
+  const {
+    tagline,
+    clipUrl,
+    season,
+    profilePic = '',
+    user: _givenUser,
+    hermit,
+    liked,
+    likes,
+    downloads,
+  } = horn;
+  const { username } = _givenUser ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const profilePic = hermit?.ProfilePicture || JoeHills.src;
+  const _profilePic = profilePic || hermit?.ProfilePicture || JoeHills.src;
 
   const handlePlayClick = () => {
     if (audioRef.current) {
@@ -45,7 +58,7 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
         onClick={onClick ? onClick : handlePlayClick}
       >
         <div className='relative h-full w-full overflow-hidden rounded-md'>
-          <Image src={profilePic} alt='profile pic' fill />
+          <Image src={_profilePic} alt='profile pic' fill />
         </div>
       </div>
       <div className='pointer-events-none absolute inset-0 p-[8px]'>

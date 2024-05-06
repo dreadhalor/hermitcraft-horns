@@ -1,6 +1,6 @@
 import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from '@ui/drawer';
 import { Button } from '@ui/button';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaEdit } from 'react-icons/fa';
 import { MdFileDownload } from 'react-icons/md';
 import { useHHUser } from '@/providers/user-provider';
 import { Tabs, TabsContent } from '@ui/tabs';
@@ -14,8 +14,6 @@ type Props = {
 export const HornTileMenu = ({ horn }: Props) => {
   const [activeTab, setActiveTab] = useState('main');
 
-  console.log('horn tile menu', horn);
-
   const { liked, likes, downloads } = horn;
   const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
 
@@ -28,7 +26,7 @@ export const HornTileMenu = ({ horn }: Props) => {
   };
 
   return (
-    <Drawer nested>
+    <Drawer nested onClose={() => setActiveTab('main')}>
       <DrawerTrigger asChild>
         <Button
           id='clip-builder-hermit'
@@ -74,7 +72,7 @@ export const HornTileMenu = ({ horn }: Props) => {
               className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
               onClick={() => setActiveTab('edit')}
             >
-              <MdFileDownload size={22} /> Edit
+              <FaEdit size={16} /> Edit
             </Button>
           </TabsContent>
           <TabsContent value='edit'>
