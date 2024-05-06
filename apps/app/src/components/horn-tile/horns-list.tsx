@@ -17,6 +17,13 @@ import {
 } from '@ui/drawer';
 import { Hermit } from '@drizzle/db';
 import { useApp } from '@/providers/app-provider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ui/select';
 
 interface Props {
   id?: string;
@@ -27,11 +34,13 @@ export const HornsList = ({ id }: Props) => {
   const { hermits } = useApp();
   const [selectedHermitId, setSelectedHermitId] = useState<string | null>(null);
 
+  const [selectedSort, setSelectedSort] = useState<string>('most_liked');
+
   const { data: clips, isLoading } = trpc.getClips.useQuery({
     userId: user?.id ?? '',
     filterUserId: id,
     hermitId: selectedHermitId ?? undefined,
-    sort: 'newest',
+    sort: selectedSort,
   });
 
   const handleHermitSelect = (hermit: Hermit) => {
@@ -45,7 +54,16 @@ export const HornsList = ({ id }: Props) => {
   return (
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px] text-white'>
       <div className='flex items-center justify-between'>
-        <span>Popular</span>
+        <Select value={selectedSort} onValueChange={setSelectedSort}>
+          <SelectTrigger className='w-[160px]'>
+            <SelectValue placeholder='Sort by' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='most_liked'>Most Liked</SelectItem>
+            <SelectItem value='most_downloaded'>Most Downloaded</SelectItem>
+            <SelectItem value='newest'>Newest</SelectItem>
+          </SelectContent>
+        </Select>
         <Drawer nested>
           <DrawerTrigger asChild>
             <Button variant='ghost' className='text-white'>

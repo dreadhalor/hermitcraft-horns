@@ -58,13 +58,24 @@ export const getAllClips = async ({
     switch (sort) {
       case 'newest':
         return sql`${schema.clips.createdAt} DESC`;
+      case 'most_liked':
+        return sql`cast(count(${schema.likes.clip}) as int) DESC`;
+      case 'most_downloaded':
+        return sql`${schema.clips.downloads} DESC`;
       default:
         return sql`${schema.clips.id} DESC`;
     }
   };
 
   const result = await db
-    .select()
+    .select({
+      clips: schema.clips,
+      users: schema.users,
+      hermitcraftChannels: schema.hermitcraftChannels,
+      likesCount: sql<number>`cast(count(${schema.likes.clip}) as int)`.as(
+        'likes_count',
+      ),
+    })
     .from(schema.clips)
     .where(and(...filters))
     .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
@@ -72,21 +83,25 @@ export const getAllClips = async ({
       schema.hermitcraftChannels,
       eq(schema.clips.hermit, schema.hermitcraftChannels.ChannelID),
     )
+    .leftJoin(schema.likes, eq(schema.clips.id, schema.likes.clip))
+    .groupBy(
+      schema.clips.id,
+      schema.users.id,
+      schema.hermitcraftChannels.ChannelID,
+    )
     .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`);
 
-  const nestedFields = result.map(({ users, clips, hermitcraftChannels }) => ({
-    ...clips,
-    user: users,
-    hermit: hermitcraftChannels,
-  }));
-
-  const parsedFields = nestedFields.map(async (clip) => ({
-    ...clip,
-    start: parseFloat(clip.start),
-    end: parseFloat(clip.end),
-    liked: userId ? await hasLikedClip(userId, clip.id) : false,
-    likes: await countLikes(clip.id),
-  }));
+  const parsedFields = result.map(
+    async ({ clips, users, hermitcraftChannels, likesCount }) => ({
+      ...clips,
+      user: users,
+      hermit: hermitcraftChannels,
+      start: parseFloat(clips.start),
+      end: parseFloat(clips.end),
+      liked: userId ? await hasLikedClip(userId, clips.id) : false,
+      likes: likesCount,
+    }),
+  );
 
   return await Promise.all(parsedFields);
 };
