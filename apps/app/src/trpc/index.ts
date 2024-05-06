@@ -38,13 +38,15 @@ export const appRouter = router({
         userId: z.string(),
         filterUserId: z.string().optional(),
         hermitId: z.string().optional(),
+        sort: z.string().optional(),
       }),
     )
-    .query(async ({ input: { userId, filterUserId, hermitId } }) => {
+    .query(async ({ input: { userId, filterUserId, hermitId, sort } }) => {
       const result = await getAllClips({
         userId,
         filterUserId,
         hermitId,
+        sort,
       });
       return result;
     }),

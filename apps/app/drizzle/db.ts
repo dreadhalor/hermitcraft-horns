@@ -41,16 +41,27 @@ interface GetAllClipsParams {
   userId: string;
   filterUserId?: string;
   hermitId?: string;
+  sort?: string;
 }
 export const getAllClips = async ({
   userId,
   filterUserId,
   hermitId,
+  sort,
 }: GetAllClipsParams) => {
   const filters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
   ].filter(Boolean);
+
+  const sortFxn = (sort: string) => {
+    switch (sort) {
+      case 'newest':
+        return sql`${schema.clips.createdAt} DESC`;
+      default:
+        return sql`${schema.clips.id} DESC`;
+    }
+  };
 
   const result = await db
     .select()
@@ -60,7 +71,8 @@ export const getAllClips = async ({
     .leftJoin(
       schema.hermitcraftChannels,
       eq(schema.clips.hermit, schema.hermitcraftChannels.ChannelID),
-    );
+    )
+    .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`);
 
   const nestedFields = result.map(({ users, clips, hermitcraftChannels }) => ({
     ...clips,
