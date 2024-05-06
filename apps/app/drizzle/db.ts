@@ -37,11 +37,25 @@ export const countLikes = async (clipId: number) => {
   return result.length;
 };
 
-export const getAllClips = async (userId: string, filterUserId?: string) => {
+interface GetAllClipsParams {
+  userId: string;
+  filterUserId?: string;
+  hermitId?: string;
+}
+export const getAllClips = async ({
+  userId,
+  filterUserId,
+  hermitId,
+}: GetAllClipsParams) => {
+  const filters = [
+    filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
+    hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
+  ].filter(Boolean);
+
   const result = await db
     .select()
     .from(schema.clips)
-    .where(filterUserId ? eq(schema.clips.user, filterUserId) : undefined)
+    .where(and(...filters))
     .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
     .leftJoin(
       schema.hermitcraftChannels,

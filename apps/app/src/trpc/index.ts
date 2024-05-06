@@ -34,10 +34,18 @@ export const appRouter = router({
   }),
   getClips: publicProcedure
     .input(
-      z.object({ userId: z.string(), filterUserId: z.string().optional() }),
+      z.object({
+        userId: z.string(),
+        filterUserId: z.string().optional(),
+        hermitId: z.string().optional(),
+      }),
     )
-    .query(async ({ input: { userId, filterUserId } }) => {
-      const result = await getAllClips(userId, filterUserId);
+    .query(async ({ input: { userId, filterUserId, hermitId } }) => {
+      const result = await getAllClips({
+        userId,
+        filterUserId,
+        hermitId,
+      });
       return result;
     }),
   saveClip: publicProcedure

@@ -6,7 +6,6 @@ import { useHHUser } from '@/providers/user-provider';
 import { Tabs, TabsContent } from '@ui/tabs';
 import { useState } from 'react';
 import { HornEditMenu } from './horn-edit-menu';
-import { ClipEditorProvider } from '@/providers/clip-editor-provider';
 
 type Props = {
   horn: any;
@@ -76,9 +75,7 @@ export const HornTileMenu = ({ horn }: Props) => {
             </Button>
           </TabsContent>
           <TabsContent value='edit'>
-            <ClipEditorProvider horn={horn}>
-              <HornEditMenu setActiveTab={setActiveTab} horn={horn} />
-            </ClipEditorProvider>
+            <HornEditMenu setActiveTab={setActiveTab} horn={horn} />
           </TabsContent>
         </Tabs>
       </DrawerContent>
