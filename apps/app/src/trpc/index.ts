@@ -98,6 +98,7 @@ export const appRouter = router({
     .mutation(async ({ input }) => {
       const { videoUrl, start, end } = input;
       const response = await fetch(
+        // 'http://localhost:3001/trpc/extractAudio',
         'https://ytdl.hermitcraft-horns.com/trpc/extractAudio',
         {
           method: 'POST',
