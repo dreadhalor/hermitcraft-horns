@@ -6,14 +6,10 @@ import {
   initTRPC,
 } from '@trpc/server';
 import { z } from 'zod';
-import ytdl from 'ytdl-core';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { execSync } from 'child_process';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const app = express();
 
@@ -71,45 +67,41 @@ app.use(
   })
 );
 
+function formatTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  const formattedHours = String(hours).padStart(2, '0');
+  const formattedMinutes = String(minutes).padStart(2, '0');
+  const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+
+  return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+}
+
 async function downloadAudioSlice(
   videoUrl: string,
   start: number,
   end: number
 ): Promise<string> {
   try {
-    const videoInfo = await ytdl.getInfo(videoUrl);
-    const format = ytdl.chooseFormat(videoInfo.formats, {
-      quality: 'highestaudio',
-    });
-    const audioStream = ytdl(videoUrl, { format });
-
-    // if media-output folder does not exist, create it
+    // Create the media-output folder if it doesn't exist
     const dir = 'media-output';
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
 
     const outputFilename = `${dir}/audio_slice_${Date.now()}.mp3`;
-    const duration = end - start;
-    const timeStart = `${start}s`;
-    const timeDuration = `${duration}s`;
+    const startTime = formatTime(start);
+    const endTime = formatTime(end);
+    console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
 
-    return new Promise((resolve, reject) => {
-      ffmpeg(audioStream)
-        .setStartTime(timeStart)
-        .setDuration(timeDuration)
-        .outputOptions('-acodec', 'libmp3lame')
-        .output(outputFilename)
-        .on('end', () => {
-          console.log(`Audio slice saved to ${outputFilename}`);
-          resolve(outputFilename);
-        })
-        .on('error', (err: Error) => {
-          console.error('Error processing audio:', err);
-          reject(err);
-        })
-        .run();
-    });
+    const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;
+
+    execSync(command, { stdio: 'inherit' });
+
+    console.log(`Audio slice saved to ${outputFilename}`);
+    return outputFilename;
   } catch (error) {
     console.error('Error downloading audio:', error);
     throw error;
