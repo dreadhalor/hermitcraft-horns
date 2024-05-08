@@ -1,26 +1,19 @@
 'use client';
-
 import { Button } from '@ui/button';
 import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
-import { useUser } from '@clerk/nextjs';
 import React from 'react';
 
 interface Props {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
+
 export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
   const { clipStart, clipEnd, videoUrl, playerRef, hermit, tagline, season } =
     useClipBuilder();
-  const {
-    createAndSaveClip,
-    isLoading: isSaving,
-    error: saveError,
-    clipUrl,
-  } = useCreateAndSaveClip();
-
+  const { createAndSaveClip, isLoading: isSaving } = useCreateAndSaveClip();
   const { user } = useHHUser();
 
   const handleExport = async () => {

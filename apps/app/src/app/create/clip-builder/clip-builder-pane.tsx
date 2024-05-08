@@ -3,7 +3,6 @@
 import { Button } from '@ui/button';
 import React, { useState, useEffect } from 'react';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
-import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { ClipSlider } from './sliders/clip-slider';
 import { ZoomSlider } from './sliders/zoom-slider';
 import { formatTime } from '@/lib/utils';

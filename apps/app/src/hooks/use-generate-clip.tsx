@@ -1,47 +1,27 @@
-import { useState } from 'react';
-import { trpc } from '@/trpc/client';
+import { useState, useEffect } from 'react';
 import { uploadFiles } from '@/lib/uploadthing';
+import { useTask } from './use-task';
 
-type ExtractAudioParams = {
+type GenerateClipParams = {
   videoUrl: string;
   start: number;
   end: number;
 };
 
 export const useGenerateClip = () => {
-  const [uploadResponse, setUploadResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
+  const { enqueueTask, taskData } = useTask();
 
-  const extractAudioMutation = trpc.extractAudio.useMutation();
-
-  const generateClip = async ({ videoUrl, start, end }: ExtractAudioParams) => {
+  const generateClip = async ({ videoUrl, start, end }: GenerateClipParams) => {
     try {
       setIsLoading(true);
       setError(null);
-
-      const result = await extractAudioMutation.mutateAsync({
-        videoUrl,
-        start,
-        end,
-      });
-      console.log('Audio extraction result:', result);
-      const { data } = result;
-
-      // Create a File object from the buffer data
-      const file = new File([new Uint8Array(data)], 'audio.mp3', {
-        type: 'audio/mpeg',
-      });
-      console.log('File:', file);
-
-      // Upload the file to UploadThing
-      const res = await uploadFiles('audioUploader', { files: [file] });
-      console.log('Upload response:', res);
-      setUploadResponse(res);
-
-      return res[0].url;
+      console.log('Enqueuing task with params:', { videoUrl, start, end });
+      await enqueueTask({ videoUrl, start, end });
     } catch (error) {
-      console.error('Error generating clip:', error);
+      console.error('Error enqueuing task:', error);
       setError(error);
       throw error;
     } finally {
@@ -49,5 +29,30 @@ export const useGenerateClip = () => {
     }
   };
 
-  return { generateClip, uploadResponse, isLoading, error };
+  useEffect(() => {
+    const uploadAudioFile = async () => {
+      if (taskData && taskData.status === 'completed' && taskData.audioBuffer) {
+        const file = new File(
+          [new Uint8Array(taskData.audioBuffer.data)],
+          'audio.mp3',
+          {
+            type: 'audio/mpeg',
+          },
+        );
+        console.log('Uploading audio file...');
+        try {
+          const res = await uploadFiles('audioUploader', { files: [file] });
+          console.log('Audio uploaded:', res[0].url);
+          setUploadedAudioUrl(res[0].url);
+        } catch (error) {
+          console.error('Error uploading audio:', error);
+          setError(error);
+        }
+      }
+    };
+
+    uploadAudioFile();
+  }, [taskData]);
+
+  return { generateClip, isLoading, error, uploadedAudioUrl };
 };

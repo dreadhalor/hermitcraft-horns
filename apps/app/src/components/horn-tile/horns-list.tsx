@@ -34,7 +34,7 @@ export const HornsList = ({ id }: Props) => {
   const { hermits } = useApp();
   const [selectedHermitId, setSelectedHermitId] = useState<string | null>(null);
 
-  const [selectedSort, setSelectedSort] = useState<string>('most_liked');
+  const [selectedSort, setSelectedSort] = useState<string>('newest');
 
   const { data: clips, isLoading } = trpc.getClips.useQuery({
     userId: user?.id ?? '',

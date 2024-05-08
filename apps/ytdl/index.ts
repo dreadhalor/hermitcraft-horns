@@ -1,1 +1,1 @@
-export { type VideoProcessingRouterOutput } from './server';
+export * from './server';

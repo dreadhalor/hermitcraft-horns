@@ -2,14 +2,17 @@ import express from 'express';
 import * as trpcExpress from '@trpc/server/adapters/express';
 import {
   inferAsyncReturnType,
+  inferProcedureInput,
+  inferProcedureOutput,
   inferRouterOutputs,
   initTRPC,
 } from '@trpc/server';
 import { z } from 'zod';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import Queue from 'bull';
 
 const app = express();
 
@@ -32,8 +35,11 @@ type Context = inferAsyncReturnType<typeof createContext>;
 
 const t = initTRPC.context<Context>().create();
 
+// Create a queue for video processing tasks
+const videoProcessingQueue = new Queue('video-processing');
+
 const appRouter = t.router({
-  extractAudio: t.procedure
+  enqueueTask: t.procedure
     .input(
       z.object({
         videoUrl: z.string(),
@@ -43,21 +49,55 @@ const appRouter = t.router({
     )
     .mutation(async ({ input }) => {
       const { videoUrl, start, end } = input;
-      const outputFilename = await downloadAudioSlice(videoUrl, start, end);
+      console.log('Received enqueueTask request with input:', input);
 
-      // Read the processed audio file
-      const audioPath = path.join(__dirname, outputFilename);
-      const audioBuffer = await fs.promises.readFile(audioPath);
+      try {
+        console.log('Enqueueing task...');
+        const taskId = await videoProcessingQueue.add({ videoUrl, start, end });
+        console.log('Task enqueued with taskId:', taskId);
+        return { taskId: taskId.id };
+      } catch (error) {
+        console.error('Error enqueuing task:', error);
+        throw new Error('Failed to enqueue task');
+      }
+    }),
 
-      // Delete the temporary audio file
-      await fs.promises.unlink(audioPath);
+  checkTaskStatus: t.procedure
+    .input(z.object({ taskId: z.string() }))
+    .query(async ({ input }) => {
+      const { taskId } = input;
+      const job = await videoProcessingQueue.getJob(taskId);
+      if (!job) {
+        return { status: 'not_found' };
+      }
 
-      return audioBuffer;
+      const status = await job.getState();
+      console.log('Task status:', status);
+
+      if (status === 'completed') {
+        const outputFilename = job.returnvalue;
+        const audioPath = path.join(__dirname, outputFilename);
+        const audioBuffer = await fs.promises.readFile(audioPath);
+
+        // Delete the temporary audio file
+        await fs.promises.unlink(audioPath);
+
+        return { status, audioBuffer };
+      }
+
+      return { status };
     }),
 });
 
 export type AppRouter = typeof appRouter;
 export type VideoProcessingRouterOutput = inferRouterOutputs<AppRouter>;
+export type EnqueueTaskInput = inferProcedureInput<AppRouter['enqueueTask']>;
+export type CheckTaskStatusInput = inferProcedureInput<
+  AppRouter['checkTaskStatus']
+>;
+export type CheckTaskStatusOutput = inferProcedureOutput<
+  AppRouter['checkTaskStatus']
+>;
 
 app.use(
   '/trpc',
@@ -98,7 +138,17 @@ async function downloadAudioSlice(
 
     const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;
 
-    execSync(command, { stdio: 'inherit' });
+    await new Promise<void>((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error executing command: ${error.message}`);
+          reject(error);
+          return;
+        }
+        console.log(`Command output: ${stdout}`);
+        resolve();
+      });
+    });
 
     console.log(`Audio slice saved to ${outputFilename}`);
     return outputFilename;
@@ -107,6 +157,18 @@ async function downloadAudioSlice(
     throw error;
   }
 }
+
+videoProcessingQueue.process(async (job) => {
+  const { videoUrl, start, end } = job.data;
+  try {
+    const outputFilename = await downloadAudioSlice(videoUrl, start, end);
+    // Perform any additional processing or cleanup if needed
+    return outputFilename;
+  } catch (error) {
+    console.error('Error processing video:', error);
+    throw error;
+  }
+});
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
