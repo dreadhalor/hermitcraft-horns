@@ -17,17 +17,12 @@ import {
 import { getHermitsLocal } from './routers/hermitcraft-local';
 import { inferRouterOutputs } from '@trpc/server';
 import { editClipSchema, saveClipSchema } from '@/schemas';
-import {
-  checkTaskStatus,
-  enqueueTask,
-  extractAudio,
-} from './routers/video-processing';
+import { checkTaskStatus, enqueueTask } from './routers/video-processing';
 
 export const appRouter = router({
   getHermitChannels,
   getHermitsLocal,
   getHermitcraftVideos,
-  extractAudio,
   enqueueTask,
   checkTaskStatus,
   getUser: publicProcedure

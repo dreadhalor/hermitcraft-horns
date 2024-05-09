@@ -1,37 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
-import { VideoProcessingRouterOutput } from '@repo/ytdl';
-
-export const extractAudio = publicProcedure
-  .input(
-    z.object({
-      videoUrl: z.string(),
-      start: z.number(),
-      end: z.number(),
-    }),
-  )
-  .output(z.custom<VideoProcessingRouterOutput['extractAudio']>())
-  .mutation(async ({ input }) => {
-    const { videoUrl, start, end } = input;
-    const response = await fetch(
-      'http://localhost:3001/trpc/extractAudio',
-      // 'https://ytdl.hermitcraft-horns.com/trpc/extractAudio',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ videoUrl, start, end }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to extract audio');
-    }
-
-    const { result } = await response.json();
-    return result.data as VideoProcessingRouterOutput['extractAudio'];
-  });
+// import { VideoProcessingRouterOutput } from '@repo/ytdl';
 
 export const enqueueTask = publicProcedure
   .input(
@@ -48,8 +17,8 @@ export const enqueueTask = publicProcedure
 
     try {
       const response = await fetch(
-        'http://localhost:3001/trpc/enqueueTask',
-        // 'https://ytdl.hermitcraft-horns.com/trpc/enqueueTask',
+        // 'http://localhost:3001/trpc/enqueueTask',
+        'https://ytdl.hermitcraft-horns.com/trpc/enqueueTask',
         {
           method: 'POST',
           headers: {
@@ -96,8 +65,8 @@ export const checkTaskStatus = publicProcedure
   .query(async ({ input }) => {
     const { taskId } = input;
     const response = await fetch(
-      `http://localhost:3001/trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
-      // `https://ytdl.hermitcraft-horns.com/trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
+      // `http://localhost:3001/trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
+      `https://ytdl.hermitcraft-horns.com/trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
       {
         method: 'GET',
         headers: {

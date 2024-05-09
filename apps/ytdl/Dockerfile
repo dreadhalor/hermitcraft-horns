@@ -27,7 +27,7 @@ RUN pnpm i
 
 # Nothing to build, just run the server.
 # Expose the port.
-EXPOSE 3000
+EXPOSE 3001
 
 # Start the server.
 ENTRYPOINT ["pnpm", "start"]

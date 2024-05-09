@@ -36,7 +36,12 @@ type Context = inferAsyncReturnType<typeof createContext>;
 const t = initTRPC.context<Context>().create();
 
 // Create a queue for video processing tasks
-const videoProcessingQueue = new Queue('video-processing');
+const videoProcessingQueue = new Queue('video-processing', {
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+  },
+});
 
 const appRouter = t.router({
   enqueueTask: t.procedure
