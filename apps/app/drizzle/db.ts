@@ -142,31 +142,34 @@ export const getPaginatedClips = async ({
 
   const offset = (page - 1) * limit;
 
-  const result = await db
-    .select({
-      clips: schema.clips,
-      users: schema.users,
-      hermitcraftChannels: schema.hermitcraftChannels,
-      likesCount: sql<number>`cast(count(${schema.likes.clip}) as int)`.as(
-        'likes_count',
-      ),
-    })
-    .from(schema.clips)
-    .where(and(...filters))
-    .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
-    .leftJoin(
-      schema.hermitcraftChannels,
-      eq(schema.clips.hermit, schema.hermitcraftChannels.ChannelID),
-    )
-    .leftJoin(schema.likes, eq(schema.clips.id, schema.likes.clip))
-    .groupBy(
-      schema.clips.id,
-      schema.users.id,
-      schema.hermitcraftChannels.ChannelID,
-    )
-    .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`)
-    .offset(offset)
-    .limit(limit);
+  const [result, totalCountResult] = await Promise.all([
+    db
+      .select({
+        clips: schema.clips,
+        users: schema.users,
+        hermitcraftChannels: schema.hermitcraftChannels,
+        likesCount: sql<number>`cast(count(${schema.likes.clip}) as int)`.as(
+          'likes_count',
+        ),
+      })
+      .from(schema.clips)
+      .where(and(...filters))
+      .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
+      .leftJoin(
+        schema.hermitcraftChannels,
+        eq(schema.clips.hermit, schema.hermitcraftChannels.ChannelID),
+      )
+      .leftJoin(schema.likes, eq(schema.clips.id, schema.likes.clip))
+      .groupBy(
+        schema.clips.id,
+        schema.users.id,
+        schema.hermitcraftChannels.ChannelID,
+      )
+      .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`)
+      .offset(offset)
+      .limit(limit),
+    db.select({ count: sql<number>`count(*)`.as('count') }).from(schema.clips),
+  ]);
 
   const parsedFields = result.map(
     async ({ clips, users, hermitcraftChannels, likesCount }) => ({
@@ -180,7 +183,13 @@ export const getPaginatedClips = async ({
     }),
   );
 
-  return await Promise.all(parsedFields);
+  const totalCount = totalCountResult[0].count;
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return {
+    clips: await Promise.all(parsedFields),
+    totalPages,
+  };
 };
 
 export type Clip = typeof schema.clips.$inferInsert;

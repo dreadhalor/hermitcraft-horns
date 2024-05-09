@@ -19,3 +19,29 @@ export const formatTime = (seconds: number) => {
     ? `${formattedHours}:${formattedMinutes}:${formattedSeconds}`
     : `${formattedMinutes}:${formattedSeconds}`;
 };
+
+export const getPaginationRange = ({
+  currentPage,
+  totalPages,
+  maxPages = 5,
+}: {
+  currentPage: number;
+  totalPages: number;
+  maxPages?: number;
+}) => {
+  const halfMaxPages = Math.floor(maxPages / 2);
+  const start = Math.max(1, currentPage - halfMaxPages);
+  const end = Math.min(totalPages, currentPage + halfMaxPages);
+
+  const range = Array.from({ length: end - start + 1 }, (_, i) => i + start);
+
+  if (range[0] > 1) {
+    range.unshift(1);
+  }
+
+  if (range[range.length - 1] < totalPages) {
+    range.push(totalPages);
+  }
+
+  return range;
+};

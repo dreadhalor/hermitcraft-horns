@@ -69,11 +69,11 @@ export const likes = pgTable(
   {
     id: serial('id').primaryKey(),
     user: text('user')
-      .notNull()
-      .references(() => users.id),
+      .references(() => users.id)
+      .notNull(),
     clip: integer('clip')
-      .notNull()
-      .references(() => clips.id),
+      .references(() => clips.id, { onDelete: 'cascade' })
+      .notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (likes) => {

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import { Card } from '@ui/card';
 import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
@@ -24,6 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+} from '@ui/pagination';
+import { getPaginationRange } from '@/lib/utils';
 
 interface Props {
   id?: string;
@@ -35,19 +43,27 @@ export const HornsList = ({ id }: Props) => {
   const [selectedHermitId, setSelectedHermitId] = useState<string | null>(null);
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
+  const [selectedPage, setSelectedPage] = useState<number>(1);
 
-  const { data: clips, isLoading } = trpc.getPaginatedClips.useQuery({
+  const { data, isLoading } = trpc.getPaginatedClips.useQuery({
     userId: user?.id ?? '',
     filterUserId: id,
     hermitId: selectedHermitId ?? undefined,
     sort: selectedSort,
-    page: 1,
+    page: selectedPage,
     limit: 20,
   });
+
+  const { clips, totalPages = 5 } = data ?? {};
 
   const handleHermitSelect = (hermit: Hermit) => {
     setSelectedHermitId(hermit.ChannelID);
   };
+
+  const range = getPaginationRange({
+    currentPage: selectedPage,
+    totalPages,
+  });
 
   if (isLoading || !clips) {
     return <div>Loading...</div>;
@@ -110,6 +126,28 @@ export const HornsList = ({ id }: Props) => {
           <HornTile key={clip.id} horn={clip} />
         ))}
       </div>
+      <Pagination className='w-full'>
+        <PaginationContent className='px-4'>
+          {range.map((page, index) => (
+            <Fragment key={index}>
+              {index > 0 && page - range[index - 1] > 1 && (
+                <PaginationEllipsis />
+              )}
+              <PaginationItem className='cursor-pointer'>
+                <PaginationLink
+                  isActive={page === selectedPage}
+                  onClick={() => setSelectedPage(page)}
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+              {index === range.length - 1 && page < totalPages && (
+                <PaginationEllipsis />
+              )}
+            </Fragment>
+          ))}
+        </PaginationContent>
+      </Pagination>
     </Card>
   );
 };

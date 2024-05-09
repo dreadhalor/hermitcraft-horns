@@ -12,7 +12,7 @@ export const useDeleteClip = () => {
   const [error, setError] = useState<any>(null);
 
   const queryClient = useQueryClient();
-  const queryKey = getQueryKey(trpc.getClips);
+  const queryKey = getQueryKey(trpc.getPaginatedClips);
 
   const deleteClipMutation = trpc.deleteClip.useMutation({
     onSuccess: () => {

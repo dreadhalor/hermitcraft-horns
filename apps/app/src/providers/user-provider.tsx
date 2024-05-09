@@ -39,7 +39,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     { enabled: !!impersonatedUserId },
   );
 
-  const queryKey = getQueryKey(trpc.getClips);
+  const queryKey = getQueryKey(trpc.getPaginatedClips);
 
   const likeClipMutation = trpc.likeClip.useMutation({
     onSuccess: () => {
