@@ -7,7 +7,7 @@ export const useTask = () => {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [taskData, setTaskData] = useState<any>(null);
 
-  const { data, isLoading, error } = trpc.checkTaskStatus.useQuery(
+  const { isLoading, error } = trpc.checkTaskStatus.useQuery(
     { taskId: taskId ?? '' },
     {
       enabled: !!taskId,

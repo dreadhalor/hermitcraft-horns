@@ -13,23 +13,26 @@ import { SelectHermit } from './select-hermit';
 import { SelectSeason } from './select-season';
 import { useEditClip } from '@/hooks/use-edit-clip';
 import { useApp } from '@/providers/app-provider';
+import { useDeleteClip } from '@/hooks/use-delete-clip';
+import { DrizzleClip } from '@drizzle/db';
 
 interface Props {
   setActiveTab: (tab: string) => void;
-  horn: any;
+  horn: DrizzleClip;
 }
 export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
   const { hermits } = useApp();
   const { editClip } = useEditClip();
+  const { deleteClip } = useDeleteClip();
 
   const form = useForm<EditClipFrontendSchema>({
     resolver: zodResolver(editClipFrontendSchema),
     defaultValues: {
       id: horn.id,
-      tagline: horn.tagline,
-      season: horn.season,
+      tagline: horn.tagline ?? '',
+      season: horn.season ?? '',
       hermit: hermits.find(
-        (hermit) => hermit.ChannelID === horn.hermit.ChannelID,
+        (hermit) => hermit.ChannelID === horn.hermit?.ChannelID,
       ),
     },
   });
@@ -66,6 +69,14 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
           </div>
           <Button type='submit' className='w-full'>
             Submit
+          </Button>
+          <Button
+            variant='destructive'
+            type='reset'
+            className='w-full brightness-90'
+            onClick={() => deleteClip({ id: horn.id })}
+          >
+            Delete
           </Button>
         </form>
       </Form>

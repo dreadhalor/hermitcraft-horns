@@ -36,11 +36,13 @@ export const HornsList = ({ id }: Props) => {
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
 
-  const { data: clips, isLoading } = trpc.getClips.useQuery({
+  const { data: clips, isLoading } = trpc.getPaginatedClips.useQuery({
     userId: user?.id ?? '',
     filterUserId: id,
     hermitId: selectedHermitId ?? undefined,
     sort: selectedSort,
+    page: 1,
+    limit: 20,
   });
 
   const handleHermitSelect = (hermit: Hermit) => {

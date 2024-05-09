@@ -17,8 +17,7 @@ export const enqueueTask = publicProcedure
 
     try {
       const response = await fetch(
-        // 'http://localhost:3001/trpc/enqueueTask',
-        'https://ytdl.hermitcraft-horns.com/trpc/enqueueTask',
+        `${process.env.NEXT_PUBLIC_YTDL_URL}trpc/enqueueTask`,
         {
           method: 'POST',
           headers: {
@@ -65,8 +64,7 @@ export const checkTaskStatus = publicProcedure
   .query(async ({ input }) => {
     const { taskId } = input;
     const response = await fetch(
-      // `http://localhost:3001/trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
-      `https://ytdl.hermitcraft-horns.com/trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
+      `${process.env.NEXT_PUBLIC_YTDL_URL}trpc/checkTaskStatus?input=${JSON.stringify({ taskId })}`,
       {
         method: 'GET',
         headers: {

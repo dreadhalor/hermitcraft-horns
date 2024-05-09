@@ -7,6 +7,8 @@ import {
   unlikeClip,
   incrementClipDownloads,
   editClip as drizzleEditClip,
+  deleteClip as drizzleDeleteClip,
+  getPaginatedClips as drizzleGetPaginatedClips,
 } from '@drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
@@ -52,6 +54,33 @@ export const appRouter = router({
       });
       return result;
     }),
+  getPaginatedClips: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        filterUserId: z.string().optional(),
+        hermitId: z.string().optional(),
+        sort: z.string().optional(),
+        page: z.number().min(1).default(1),
+        limit: z.number().min(1).max(100).default(20),
+      }),
+    )
+    .query(
+      async ({
+        input: { userId, filterUserId, hermitId, sort, page, limit },
+      }) => {
+        const result = await drizzleGetPaginatedClips({
+          userId,
+          filterUserId,
+          hermitId,
+          sort,
+          page,
+          limit,
+        });
+        return result;
+      },
+    ),
+
   saveClip: publicProcedure
     .input(saveClipSchema)
     .mutation(async ({ input }) => {
@@ -64,6 +93,13 @@ export const appRouter = router({
     .mutation(async ({ input }) => {
       console.log('Editing clip:', input);
       await drizzleEditClip(input);
+      return true;
+    }),
+  deleteClip: publicProcedure
+    .input(z.object({ clipId: z.number() }))
+    .mutation(async ({ input }) => {
+      console.log('Deleting clip:', input);
+      await drizzleDeleteClip(input.clipId);
       return true;
     }),
   likeClip: publicProcedure
