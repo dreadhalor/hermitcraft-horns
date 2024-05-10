@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
+import { useClipBuilder } from '@/providers/clip-builder-provider';
 
 type HornPreviewTileProps = {
   horn: any;
@@ -20,12 +21,9 @@ export const HornPreviewTile = ({
   const { username } = _givenUser ?? {};
   const _profilePic = profilePic || hermit?.ProfilePicture || JoeHills.src;
 
-  const [isPlaying, setIsPlaying] = useState(false);
-
   const handlePlayClick = () => {
     if (onClick) {
       onClick();
-      setIsPlaying(true);
     }
   };
 
@@ -36,7 +34,7 @@ export const HornPreviewTile = ({
         className,
       )}
     >
-      <HornTileBorder isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
+      <HornTileBorder />
       <div
         className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
         onClick={handlePlayClick}
@@ -62,13 +60,9 @@ export const HornPreviewTile = ({
   );
 };
 
-type HornTileBorderProps = {
-  isPlaying: boolean;
-  setIsPlaying: (value: boolean) => void;
-};
-
-const HornTileBorder = ({ isPlaying, setIsPlaying }: HornTileBorderProps) => {
+const HornTileBorder = () => {
   const tileRef = useRef<HTMLDivElement | null>(null);
+  const { playing, playTime, clipStart, clipEnd } = useClipBuilder();
   const [percentage, setPercentage] = useState(0);
 
   const createArcPath = (percentage: number) => {
@@ -100,28 +94,19 @@ const HornTileBorder = ({ isPlaying, setIsPlaying }: HornTileBorderProps) => {
   };
 
   useEffect(() => {
-    let animationFrameId: number | null = null;
-
-    const animate = () => {
-      if (isPlaying && percentage < 100) {
-        setPercentage((prevPercentage) => prevPercentage + 0.5);
-        animationFrameId = requestAnimationFrame(animate);
-      } else if (percentage >= 100) {
-        setIsPlaying(false);
+    const calculatePercentage = () => {
+      if (playing && clipStart !== undefined && clipEnd !== undefined) {
+        const clipDuration = clipEnd - clipStart;
+        const elapsedTime = playTime - clipStart;
+        const progress = (elapsedTime / clipDuration) * 100;
+        setPercentage(progress);
+      } else {
         setPercentage(0);
       }
     };
 
-    if (isPlaying) {
-      animationFrameId = requestAnimationFrame(animate);
-    }
-
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [isPlaying, percentage, setIsPlaying]);
+    calculatePercentage();
+  }, [playing, playTime, clipStart, clipEnd]);
 
   return (
     <div
