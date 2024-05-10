@@ -23,7 +23,6 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-tooltip": "^1.0.7",
-    "@repo/vaul": "workspace:*",
     "@repo/ytdl": "workspace:*",
     "@tanstack/react-query": "^4.36.1",
     "@trpc/client": "10.45.2",
@@ -47,6 +46,7 @@
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^6.10.1",
+    "vaul": "^0.9.1",
     "ytdl-core": "^4.11.5",
     "zod": "^3.23.5"
   },

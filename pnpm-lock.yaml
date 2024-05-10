@@ -59,9 +59,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.19)(@types/react@18.2.61)(react-dom@18.2.0)(react@18.2.0)
-      '@repo/vaul':
-        specifier: workspace:*
-        version: link:../vaul
       '@repo/ytdl':
         specifier: workspace:*
         version: link:../ytdl
@@ -131,6 +128,9 @@ importers:
       uploadthing:
         specifier: ^6.10.1
         version: 6.10.1(next@14.2.3)(tailwindcss@3.4.3)
+      vaul:
+        specifier: ^0.9.1
+        version: 0.9.1(@types/react-dom@18.2.19)(@types/react@18.2.61)(react-dom@18.2.0)(react@18.2.0)
       ytdl-core:
         specifier: ^4.11.5
         version: 4.11.5
@@ -10980,6 +10980,20 @@ packages:
   /vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
+    dev: false
+
+  /vaul@0.9.1(@types/react-dom@18.2.19)(@types/react@18.2.61)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-fAhd7i4RNMinx+WEm6pF3nOl78DFkAazcN04ElLPFF9BMCNGbY/kou8UMhIcicm0rJCNePJP0Yyza60gGOD0Jw==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0
+      react-dom: ^16.8 || ^17.0 || ^18.0
+    dependencies:
+      '@radix-ui/react-dialog': 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.61)(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
     dev: false
 
   /wcwidth@1.0.1:
