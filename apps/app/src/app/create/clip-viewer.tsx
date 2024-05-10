@@ -5,7 +5,12 @@ import { Navbar } from './clip-builder/navbar';
 import ReactPlayer from 'react-player';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 
-export const ClipViewer = () => {
+type Props = {
+  initialClipStart?: number;
+  initialClipEnd?: number;
+};
+
+export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
@@ -13,13 +18,31 @@ export const ClipViewer = () => {
 
   const [playerReady, setPlayerReady] = useState(false);
 
-  const { videoUrl, playerRef, setDuration, setPlaying } = useClipBuilder();
+  const {
+    videoUrl,
+    playerRef,
+    setDuration,
+    setPlaying,
+    setClipStart,
+    setClipEnd,
+    setPlayTime,
+  } = useClipBuilder();
 
   useEffect(() => {
     if (playerRef?.current) {
       setDuration(playerRef.current.getDuration());
     }
   }, [playerRef, playerReady]);
+
+  useEffect(() => {
+    if (initialClipStart !== undefined) {
+      setClipStart(initialClipStart);
+      setPlayTime(initialClipStart);
+    }
+    if (initialClipEnd !== undefined) {
+      setClipEnd(initialClipEnd);
+    }
+  }, [initialClipStart, initialClipEnd]);
 
   return (
     <>

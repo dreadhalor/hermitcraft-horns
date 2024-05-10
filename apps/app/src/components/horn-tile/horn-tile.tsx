@@ -2,10 +2,11 @@
 
 import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useRef, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, getYouTubeId } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
 import { DrizzleClip } from '@drizzle/db';
+import { useRouter } from 'next/navigation';
 
 type HornTileProps = {
   horn: DrizzleClip;
@@ -14,9 +15,10 @@ type HornTileProps = {
 };
 
 export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
-  const { tagline, clipUrl, season, user, hermit } = horn;
+  const { tagline, clipUrl, season, user, hermit, start, end } = horn;
   const { username } = user ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const router = useRouter();
 
   const profilePic = hermit?.ProfilePicture || JoeHills.src;
 
@@ -63,7 +65,16 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
           <span className='my-auto text-center font-bold'>{tagline}</span>
           <div className='flex justify-center'>
             {season && <span className='mr-auto text-center'>S{season}</span>}
-            <span className='text-center'>View clip &rarr;</span>
+            <button
+              className='pointer-events-auto cursor-pointer text-center hover:underline'
+              onClick={() => {
+                router.push(
+                  `/create?id=${getYouTubeId(horn.video)}&start=${start}&end=${end}`,
+                );
+              }}
+            >
+              View clip &rarr;
+            </button>
           </div>
         </div>
       </div>

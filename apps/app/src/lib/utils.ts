@@ -20,6 +20,11 @@ export const formatTime = (seconds: number) => {
     : `${formattedMinutes}:${formattedSeconds}`;
 };
 
+export const getYouTubeId = (url: string) => {
+  const urlParams = new URLSearchParams(new URL(url).search);
+  return urlParams.get('v');
+};
+
 export const getPaginationRange = ({
   currentPage,
   totalPages,
