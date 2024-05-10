@@ -78,6 +78,7 @@ type HornTileBorderProps = {
 const HornTileBorder = ({ audioRef }: HornTileBorderProps) => {
   const tileRef = useRef<HTMLDivElement | null>(null);
   const [percentage, setPercentage] = useState(0);
+  const animationFrameRef = useRef<number | null>(null);
 
   const createArcPath = (percentage: number) => {
     const tile = tileRef.current;
@@ -111,20 +112,46 @@ const HornTileBorder = ({ audioRef }: HornTileBorderProps) => {
     const audio = audioRef.current;
     const tile = tileRef.current;
 
-    const handleTimeUpdate = () => {
-      if (audio && tile) {
+    const animate = () => {
+      if (audio && tile && !audio.paused) {
         const progress = audio.currentTime / audio.duration;
         setPercentage(progress * 100);
+        animationFrameRef.current = requestAnimationFrame(animate);
       }
     };
 
+    const handlePlay = () => {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    const handlePause = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      setPercentage(0);
+    };
+
+    const handleEnded = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      setPercentage(0);
+    };
+
     if (audio) {
-      audio.addEventListener('timeupdate', handleTimeUpdate);
+      audio.addEventListener('play', handlePlay);
+      audio.addEventListener('pause', handlePause);
+      audio.addEventListener('ended', handleEnded);
     }
 
     return () => {
       if (audio) {
-        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('pause', handlePause);
+        audio.removeEventListener('ended', handleEnded);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [audioRef]);
