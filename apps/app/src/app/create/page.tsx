@@ -1,10 +1,11 @@
+'use client';
+
 import { ClipViewer } from './clip-viewer';
 import { ClipBuilderTabs } from './clip-builder-tabs';
-import { trpcServer } from '@/trpc/server';
+import { useApp } from '@/providers/app-provider';
 
-const LoadVideoPage = async () => {
-  const hermits = await trpcServer.getHermitChannels();
-
+const LoadVideoPage = () => {
+  const { hermits } = useApp();
   return (
     <main className='flex h-full flex-col pb-[20px]'>
       <ClipViewer />

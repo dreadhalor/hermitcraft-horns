@@ -14,7 +14,7 @@ type HornTileProps = {
 };
 
 export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
-  const { tagline, clipUrl, season, user, hermit, liked } = horn;
+  const { tagline, clipUrl, season, user, hermit } = horn;
   const { username } = user ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
 

@@ -21,7 +21,7 @@ export const TaglineInput = () => {
         <FormItem>
           <FormLabel>Tagline</FormLabel>
           <FormControl>
-            <Input placeholder='tagline' {...field} />
+            <Input placeholder='tagline' {...field} className='text-base' />
           </FormControl>
           <FormMessage />
         </FormItem>

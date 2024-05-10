@@ -14,7 +14,6 @@ interface Props {
 }
 export const ClipBuilderTabs = ({ hermits }: Props) => {
   const [activeTab, setActiveTab] = React.useState('clip-builder');
-  // const { setHermits } = useClipBuilder();
   const { season, setSeason, hermit, setHermit, setHermits } = useClipBuilder();
 
   useEffect(() => {
