@@ -1,6 +1,6 @@
 'use client';
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
@@ -16,30 +16,18 @@ export const HornPreviewTile = ({
   className,
   onClick,
 }: HornPreviewTileProps) => {
-  const {
-    tagline,
-    clipUrl,
-    season,
-    profilePic = '',
-    user: _givenUser,
-    hermit,
-  } = horn;
+  const { tagline, season, profilePic = '', user: _givenUser, hermit } = horn;
   const { username } = _givenUser ?? {};
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const _profilePic = profilePic || hermit?.ProfilePicture || JoeHills.src;
 
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const handlePlayClick = () => {
-    if (audioRef.current) {
-      audioRef.current.play();
+    if (onClick) {
+      onClick();
+      setIsPlaying(true);
     }
   };
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.load();
-    }
-  }, [clipUrl]);
 
   return (
     <div
@@ -48,10 +36,10 @@ export const HornPreviewTile = ({
         className,
       )}
     >
-      {clipUrl && <audio ref={audioRef} src={clipUrl} />}
+      <HornTileBorder isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
       <div
         className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
-        onClick={onClick ? onClick : handlePlayClick}
+        onClick={handlePlayClick}
       >
         <div className='relative h-full w-full overflow-hidden rounded-md'>
           <Image src={_profilePic} alt='profile pic' fill />
@@ -71,5 +59,80 @@ export const HornPreviewTile = ({
         </div>
       </div>
     </div>
+  );
+};
+
+type HornTileBorderProps = {
+  isPlaying: boolean;
+  setIsPlaying: (value: boolean) => void;
+};
+
+const HornTileBorder = ({ isPlaying, setIsPlaying }: HornTileBorderProps) => {
+  const tileRef = useRef<HTMLDivElement | null>(null);
+  const [percentage, setPercentage] = useState(0);
+
+  const createArcPath = (percentage: number) => {
+    const tile = tileRef.current;
+    if (!tile) return '';
+
+    const radius = Math.max(tile.offsetWidth, tile.offsetHeight) * 2;
+    const centerX = tile.offsetWidth / 2;
+    const centerY = tile.offsetHeight / 2;
+
+    const startAngle = -90;
+    const endAngle = (percentage / 100) * 360 - 90;
+
+    const startX = centerX + radius * Math.cos(startAngle * (Math.PI / 180));
+    const startY = centerY + radius * Math.sin(startAngle * (Math.PI / 180));
+    const endX = centerX + radius * Math.cos(endAngle * (Math.PI / 180));
+    const endY = centerY + radius * Math.sin(endAngle * (Math.PI / 180));
+
+    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+    const d = cn(
+      `M ${centerX} ${centerY}`,
+      `L ${startX} ${startY}`,
+      `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+      `L ${centerX} ${centerY}`,
+    );
+
+    return d;
+  };
+
+  useEffect(() => {
+    let animationFrameId: number | null = null;
+
+    const animate = () => {
+      if (isPlaying && percentage < 100) {
+        setPercentage((prevPercentage) => prevPercentage + 0.5);
+        animationFrameId = requestAnimationFrame(animate);
+      } else if (percentage >= 100) {
+        setIsPlaying(false);
+        setPercentage(0);
+      }
+    };
+
+    if (isPlaying) {
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isPlaying, percentage, setIsPlaying]);
+
+  return (
+    <div
+      ref={tileRef}
+      className={cn(
+        'pointer-events-none absolute inset-0 rounded-lg border-white',
+        percentage > 0 && 'border-2',
+      )}
+      style={{
+        clipPath: `path('${createArcPath(percentage)}')`,
+      }}
+    />
   );
 };
