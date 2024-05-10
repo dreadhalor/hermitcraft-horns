@@ -3,7 +3,6 @@ import JoeHills from '@/assets/hermits/joehills.jpeg';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { useHHUser } from '@/providers/user-provider';
 import { HornTileMenu } from './horn-tile-menu';
 
 type HornPreviewTileProps = {
@@ -24,9 +23,6 @@ export const HornPreviewTile = ({
     profilePic = '',
     user: _givenUser,
     hermit,
-    liked,
-    likes,
-    downloads,
   } = horn;
   const { username } = _givenUser ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);

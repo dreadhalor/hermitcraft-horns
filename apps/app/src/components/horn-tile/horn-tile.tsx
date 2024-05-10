@@ -1,7 +1,7 @@
 'use client';
 
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
@@ -22,7 +22,12 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
 
   const handlePlayClick = () => {
     if (audioRef.current) {
-      audioRef.current.play();
+      if (audioRef.current.paused) {
+        audioRef.current.play();
+      } else {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
     }
   };
 
@@ -39,6 +44,7 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
         className,
       )}
     >
+      <HornTileBorder audioRef={audioRef} />
       {clipUrl && <audio ref={audioRef} src={clipUrl} />}
       <div
         className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
@@ -62,5 +68,77 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
         </div>
       </div>
     </div>
+  );
+};
+
+type HornTileBorderProps = {
+  audioRef: React.RefObject<HTMLAudioElement>;
+};
+
+const HornTileBorder = ({ audioRef }: HornTileBorderProps) => {
+  const tileRef = useRef<HTMLDivElement | null>(null);
+  const [percentage, setPercentage] = useState(0);
+
+  const createArcPath = (percentage: number) => {
+    const tile = tileRef.current;
+    if (!tile) return '';
+
+    const radius = Math.max(tile.offsetWidth, tile.offsetHeight) * 2;
+    const centerX = tile.offsetWidth / 2;
+    const centerY = tile.offsetHeight / 2;
+
+    const startAngle = -90;
+    const endAngle = (percentage / 100) * 360 - 90;
+
+    const startX = centerX + radius * Math.cos(startAngle * (Math.PI / 180));
+    const startY = centerY + radius * Math.sin(startAngle * (Math.PI / 180));
+    const endX = centerX + radius * Math.cos(endAngle * (Math.PI / 180));
+    const endY = centerY + radius * Math.sin(endAngle * (Math.PI / 180));
+
+    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+    const d = cn(
+      `M ${centerX} ${centerY}`,
+      `L ${startX} ${startY}`,
+      `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+      `L ${centerX} ${centerY}`,
+    );
+
+    return d;
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const tile = tileRef.current;
+
+    const handleTimeUpdate = () => {
+      if (audio && tile) {
+        const progress = audio.currentTime / audio.duration;
+        setPercentage(progress * 100);
+      }
+    };
+
+    if (audio) {
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+    }
+
+    return () => {
+      if (audio) {
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+      }
+    };
+  }, [audioRef]);
+
+  return (
+    <div
+      ref={tileRef}
+      className={cn(
+        'pointer-events-none absolute inset-0 rounded-lg border-white',
+        percentage > 0 && 'border-2',
+      )}
+      style={{
+        clipPath: `path('${createArcPath(percentage)}')`,
+      }}
+    />
   );
 };
