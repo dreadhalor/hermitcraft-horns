@@ -8,13 +8,25 @@ import { PreviewPane } from './preview-pane';
 import { NextStepButton } from './next-step-button';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { Hermit } from '@drizzle/db';
+import { MAX_CLIP_LENGTH } from '@/lib/utils';
 
 interface Props {
   hermits: Hermit[];
 }
 export const ClipBuilderTabs = ({ hermits }: Props) => {
   const [activeTab, setActiveTab] = React.useState('clip-builder');
-  const { season, setSeason, hermit, setHermit, setHermits } = useClipBuilder();
+  const {
+    season,
+    setSeason,
+    hermit,
+    setHermit,
+    setHermits,
+    clipStart,
+    clipEnd,
+  } = useClipBuilder();
+
+  const clipLength = clipEnd - clipStart;
+  const disabled = clipLength > MAX_CLIP_LENGTH;
 
   useEffect(() => {
     setHermits(hermits);
@@ -44,16 +56,19 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
       <div className='mx-4 flex gap-2'>
         <TabsList className='flex gap-2 bg-transparent'>
           <TabsTrigger
+            disabled={disabled}
             value='clip-builder'
-            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
+            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
           />
           <TabsTrigger
+            disabled={disabled}
             value='metadata'
-            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
+            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
           />
           <TabsTrigger
+            disabled={disabled}
             value='preview'
-            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 data-[state=active]:bg-[#354B87]'
+            className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
           />
         </TabsList>
         <NextStepButton activeTab={activeTab} setActiveTab={setActiveTab} />

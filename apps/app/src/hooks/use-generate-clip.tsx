@@ -34,10 +34,8 @@ export const useGenerateClip = () => {
       if (taskData && taskData.status === 'completed' && taskData.audioBuffer) {
         const file = new File(
           [new Uint8Array(taskData.audioBuffer.data)],
-          'audio.mp3',
-          {
-            type: 'audio/mpeg',
-          },
+          'titles-are-lame.mp3',
+          { type: 'audio/mpeg' },
         );
         console.log('Uploading audio file...');
         try {

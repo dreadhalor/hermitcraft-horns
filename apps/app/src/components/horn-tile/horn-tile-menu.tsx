@@ -6,14 +6,15 @@ import { useHHUser } from '@/providers/user-provider';
 import { Tabs, TabsContent } from '@ui/tabs';
 import { useState } from 'react';
 import { HornEditMenu } from './horn-edit-menu';
+import { kebabIt } from '@/lib/utils';
 
 type Props = {
   horn: any;
 };
+
 export const HornTileMenu = ({ horn }: Props) => {
   const [activeTab, setActiveTab] = useState('main');
-
-  const { liked, likes, downloads } = horn;
+  const { liked, likes, downloads, clipUrl = '' } = horn;
   const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
 
   const toggleLike = () => {
@@ -22,6 +23,29 @@ export const HornTileMenu = ({ horn }: Props) => {
     } else {
       likeClip(user?.id ?? '', horn.id);
     }
+  };
+
+  const handleDownload = () => {
+    incrementClipDownloads(horn.id);
+    // ya gotta do it indirectly like this to let you set the filename
+    fetch(clipUrl)
+      .then((response) => response.blob())
+      .then((blob) => {
+        // Create a temporary URL for the downloaded file
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a link element and trigger the download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${kebabIt(horn.tagline)}.mp3`;
+        link.click();
+
+        // Clean up the temporary URL
+        window.URL.revokeObjectURL(url);
+      })
+      .catch((error) => {
+        console.error('Error downloading the file:', error);
+      });
   };
 
   return (
@@ -61,7 +85,7 @@ export const HornTileMenu = ({ horn }: Props) => {
               <Button
                 variant='ghost'
                 className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                onClick={() => incrementClipDownloads(horn.id)}
+                onClick={handleDownload}
               >
                 <MdFileDownload size={22} /> Download
               </Button>

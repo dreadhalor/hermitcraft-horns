@@ -66,8 +66,6 @@ export const useCreateAndSaveClip = () => {
     } catch (error) {
       console.error('Error creating and saving clip:', error);
       setError(error);
-    } finally {
-      // setIsLoading(false);
     }
   };
 

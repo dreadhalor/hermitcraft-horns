@@ -50,3 +50,9 @@ export const getPaginationRange = ({
 
   return range;
 };
+
+export const kebabIt = (str: string) => {
+  return str.replace(/\s+/g, '-').toLowerCase();
+};
+
+export const MAX_CLIP_LENGTH = 15;

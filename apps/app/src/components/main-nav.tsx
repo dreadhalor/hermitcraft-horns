@@ -17,7 +17,7 @@ export const MainNav = () => {
       case '/profile':
         return 'profile';
       default:
-        return 'horns';
+        return '';
     }
   };
 

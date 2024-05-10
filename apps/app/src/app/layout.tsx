@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { ClipBuilderProvider } from '../providers/clip-builder-provider';
 import { TRPCProvider } from '@/trpc/trpc-provider';
 import { TooltipProvider } from '@ui/tooltip';
 import { Suspense } from 'react';
@@ -43,12 +42,10 @@ export default function RootLayout({
                 <TooltipProvider>
                   <Suspense fallback={<div>Loading...</div>}>
                     <UserProvider>
-                      <ClipBuilderProvider>
-                        <div className='flex h-full flex-col'>
-                          {children}
-                          <MainNav />
-                        </div>
-                      </ClipBuilderProvider>
+                      <div className='flex h-full flex-col'>
+                        {children}
+                        <MainNav />
+                      </div>
                     </UserProvider>
                   </Suspense>
                 </TooltipProvider>

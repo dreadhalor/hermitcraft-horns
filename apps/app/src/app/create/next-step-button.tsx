@@ -4,6 +4,7 @@ import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
 import React from 'react';
+import { MAX_CLIP_LENGTH } from '@/lib/utils';
 
 interface Props {
   activeTab: string;
@@ -15,6 +16,8 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
     useClipBuilder();
   const { createAndSaveClip, isLoading: isSaving } = useCreateAndSaveClip();
   const { user } = useHHUser();
+
+  const clipLength = clipEnd - clipStart;
 
   const handleExport = async () => {
     if (playerRef.current) {
@@ -52,7 +55,13 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
   return (
     <div className='mb-4 flex w-full flex-col'>
       {activeTab !== 'preview' ? (
-        <Button onClick={handleNext}>Next &rarr;</Button>
+        <Button onClick={handleNext} disabled={clipLength > MAX_CLIP_LENGTH}>
+          {clipLength > MAX_CLIP_LENGTH ? (
+            'Max clip length 15s!'
+          ) : (
+            <>Next &rarr;</>
+          )}
+        </Button>
       ) : (
         <Button
           onClick={handleExport}
