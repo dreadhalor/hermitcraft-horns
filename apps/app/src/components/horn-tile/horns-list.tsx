@@ -26,7 +26,8 @@ import {
 import { getPaginationRange } from '@/lib/utils';
 import { SelectHermit } from './select-hermit';
 import { useForm } from 'react-hook-form';
-import { Form } from '../ui/form';
+import { Form } from '@ui/form';
+import { Sheet, SheetContent, SheetTrigger } from '@ui/sheet';
 
 interface Props {
   id?: string;
@@ -76,12 +77,47 @@ export const HornsList = ({ id }: Props) => {
           </SelectContent>
         </Select>
         <Form {...form}>
-          <SelectHermit hermits={hermits} onSelect={setSelectedHermit}>
-            <Button variant='ghost' className='text-white'>
-              <FaSliders className='mr-2' />
-              Filter
-            </Button>
-          </SelectHermit>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant='ghost' className='text-white'>
+                <FaSliders className='mr-2' />
+                Filters
+                {selectedHermit ? ` (1)` : ''}
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side='bottom'
+              className='rounded-t-2xl border-0 p-0 pt-4'
+            >
+              <SelectHermit hermits={hermits} onSelect={setSelectedHermit}>
+                <Button
+                  variant='ghost'
+                  className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                >
+                  Hermit:{' '}
+                  {selectedHermit ? (
+                    <>
+                      <img
+                        src={selectedHermit.ProfilePicture}
+                        alt={selectedHermit.DisplayName}
+                        className='aspect-square w-[40px]'
+                      />
+                      {selectedHermit.DisplayName}
+                    </>
+                  ) : (
+                    'All'
+                  )}
+                </Button>
+              </SelectHermit>
+              <Button
+                variant='ghost'
+                className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                // onClick={handleDownload}
+              >
+                Time Posted: All Time
+              </Button>
+            </SheetContent>
+          </Sheet>
         </Form>
       </div>
       <div className='grid w-full grid-cols-2 gap-[10px]'>
