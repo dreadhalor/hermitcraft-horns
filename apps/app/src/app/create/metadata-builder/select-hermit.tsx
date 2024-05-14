@@ -31,11 +31,16 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
             <span className='justify-center text-sm'>
               {hermit?.DisplayName ?? 'Hermit:'}
             </span>
-            <img
-              src={hermit?.ProfilePicture}
-              alt={hermit?.DisplayName}
-              className='aspect-square w-[80px]'
-            />
+
+            {hermit ? (
+              <img
+                src={hermit?.ProfilePicture}
+                alt={hermit?.DisplayName}
+                className='aspect-square w-[80px]'
+              />
+            ) : (
+              <div className='aspect-square w-[80px] border' />
+            )}
           </Button>
         </SheetTrigger>
         <SheetContent
