@@ -1,20 +1,12 @@
 'use client';
+
 import React, { Fragment, useState } from 'react';
 import { Card } from '@ui/card';
 import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
 import { useHHUser } from '@/providers/user-provider';
-import { FaBan, FaSliders } from 'react-icons/fa6';
+import { FaSliders } from 'react-icons/fa6';
 import { Button } from '@ui/button';
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@ui/sheet';
 import { Hermit } from '@drizzle/db';
 import { useApp } from '@/providers/app-provider';
 import {
@@ -32,6 +24,9 @@ import {
   PaginationLink,
 } from '@ui/pagination';
 import { getPaginationRange } from '@/lib/utils';
+import { SelectHermit } from './select-hermit';
+import { useForm } from 'react-hook-form';
+import { Form } from '../ui/form';
 
 interface Props {
   id?: string;
@@ -40,25 +35,23 @@ interface Props {
 export const HornsList = ({ id }: Props) => {
   const { user } = useHHUser();
   const { hermits } = useApp();
-  const [selectedHermitId, setSelectedHermitId] = useState<string | null>(null);
+  const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
   const [selectedPage, setSelectedPage] = useState<number>(1);
 
+  const form = useForm();
+
   const { data, isLoading } = trpc.getPaginatedClips.useQuery({
     userId: user?.id ?? '',
     filterUserId: id,
-    hermitId: selectedHermitId ?? undefined,
+    hermitId: selectedHermit?.ChannelID ?? undefined,
     sort: selectedSort,
     page: selectedPage,
     limit: 20,
   });
 
   const { clips, totalPages = 5 } = data ?? {};
-
-  const handleHermitSelect = (hermit: Hermit | null) => {
-    setSelectedHermitId(hermit?.ChannelID ?? null);
-  };
 
   const range = getPaginationRange({
     currentPage: selectedPage,
@@ -82,54 +75,14 @@ export const HornsList = ({ id }: Props) => {
             <SelectItem value='newest'>Newest</SelectItem>
           </SelectContent>
         </Select>
-        <Sheet>
-          <SheetTrigger asChild>
+        <Form {...form}>
+          <SelectHermit hermits={hermits} onSelect={setSelectedHermit}>
             <Button variant='ghost' className='text-white'>
               <FaSliders className='mr-2' />
               Filter
             </Button>
-          </SheetTrigger>
-          <SheetContent
-            side='bottom'
-            className='flex max-h-[90%] rounded-t-2xl border-0 p-0 pt-4'
-          >
-            <div className='max-h-full w-full overflow-auto'>
-              <SheetHeader>
-                <SheetTitle>Select Hermit</SheetTitle>
-                <SheetDescription>
-                  Choose a hermit to filter by
-                </SheetDescription>
-              </SheetHeader>
-              <div className='grid grid-cols-3'>
-                {[null, ...hermits].map((hermit) => (
-                  <SheetClose asChild key={hermit?.ChannelID || 'none'}>
-                    <Button
-                      variant='ghost'
-                      className='flex h-auto w-auto flex-col items-center rounded-md p-1'
-                      onClick={() => handleHermitSelect(hermit)}
-                    >
-                      <span className='justify-center text-sm'>
-                        {hermit?.DisplayName ?? 'None'}
-                      </span>
-                      {hermit && (
-                        <img
-                          src={hermit.ProfilePicture}
-                          alt={hermit.DisplayName}
-                          className='aspect-square w-full'
-                        />
-                      )}
-                      {!hermit && (
-                        <span className='flex flex-1 items-center justify-center text-[#354B87]'>
-                          <FaBan size={96} />
-                        </span>
-                      )}
-                    </Button>
-                  </SheetClose>
-                ))}
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+          </SelectHermit>
+        </Form>
       </div>
       <div className='grid w-full grid-cols-2 gap-[10px]'>
         {clips.map((clip: any) => (

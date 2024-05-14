@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ui/select';
-import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { Label } from '@ui/label';
 import { Hermit } from '@drizzle/db';
 
@@ -29,8 +28,6 @@ export const ClipMetadataBuilder = ({
   setHermit,
   hermits,
 }: Props) => {
-  // const { season, setSeason, hermit, setHermit, hermits } = useClipBuilder();
-
   return (
     <div className='flex h-full items-start px-4 pt-2'>
       <div className='my-auto flex w-full items-end gap-4'>

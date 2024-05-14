@@ -17,9 +17,11 @@ import { FaBan } from 'react-icons/fa6';
 
 interface Props {
   hermits: Hermit[];
+  onSelect?: (hermit: Hermit | null) => void;
+  children?: React.ReactNode;
 }
 
-export const SelectHermit = ({ hermits }: Props) => {
+export const SelectHermit = ({ hermits, onSelect, children }: Props) => {
   const form = useFormContext();
 
   return (
@@ -31,24 +33,26 @@ export const SelectHermit = ({ hermits }: Props) => {
           <Sheet>
             <SheetTrigger asChild>
               <FormControl>
-                <Button
-                  id='clip-builder-hermit'
-                  variant='outline'
-                  className='mx-auto flex h-auto w-auto flex-col items-center rounded-md p-1'
-                >
-                  <span className='justify-center text-sm'>
-                    {field.value?.DisplayName ?? 'Hermit:'}
-                  </span>
-                  {field.value ? (
-                    <img
-                      src={field.value?.ProfilePicture}
-                      alt={field.value?.DisplayName}
-                      className='aspect-square w-[80px]'
-                    />
-                  ) : (
-                    <div className='aspect-square w-[80px] border' />
-                  )}
-                </Button>
+                {children || (
+                  <Button
+                    id='clip-builder-hermit'
+                    variant='outline'
+                    className='mx-auto flex h-auto w-auto flex-col items-center rounded-md p-1'
+                  >
+                    <span className='justify-center text-sm'>
+                      {field.value?.DisplayName ?? 'Hermit:'}
+                    </span>
+                    {field.value ? (
+                      <img
+                        src={field.value?.ProfilePicture}
+                        alt={field.value?.DisplayName}
+                        className='aspect-square w-[80px]'
+                      />
+                    ) : (
+                      <div className='aspect-square w-[80px] border' />
+                    )}
+                  </Button>
+                )}
               </FormControl>
             </SheetTrigger>
             <SheetContent
@@ -66,7 +70,10 @@ export const SelectHermit = ({ hermits }: Props) => {
                       <Button
                         variant='ghost'
                         className='flex h-auto w-auto flex-col items-center rounded-md p-1'
-                        onClick={() => field.onChange(channel)}
+                        onClick={() => {
+                          field.onChange(channel);
+                          onSelect?.(channel);
+                        }}
                       >
                         <span className='justify-center text-sm'>
                           {channel?.DisplayName ?? 'None'}
