@@ -15,6 +15,7 @@ import { useEditClip } from '@/hooks/use-edit-clip';
 import { useApp } from '@/providers/app-provider';
 import { useDeleteClip } from '@/hooks/use-delete-clip';
 import { DrizzleClip } from '@drizzle/db';
+import { SheetClose } from '../ui/sheet';
 
 interface Props {
   setActiveTab: (tab: string) => void;
@@ -24,6 +25,7 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
   const { hermits } = useApp();
   const { editClip } = useEditClip();
   const { deleteClip } = useDeleteClip();
+  const closeRef = React.useRef<HTMLButtonElement>(null);
 
   const form = useForm<EditClipFrontendSchema>({
     resolver: zodResolver(editClipFrontendSchema),
@@ -37,13 +39,14 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
     },
   });
 
-  const onSubmit = (values: EditClipFrontendSchema) => {
+  const onSubmit = async (values: EditClipFrontendSchema) => {
     const { hermit, ...rest } = values;
     const backendValues = {
       ...rest,
       hermit: hermit?.ChannelID,
     } satisfies EditClipSchema;
-    editClip(backendValues);
+    await editClip(backendValues);
+    closeRef.current?.click();
   };
 
   return (
@@ -70,6 +73,7 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
           <Button type='submit' className='w-full'>
             Submit
           </Button>
+          <SheetClose ref={closeRef} className='sr-only' />
           <Button
             variant='destructive'
             type='reset'

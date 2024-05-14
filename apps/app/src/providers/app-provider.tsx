@@ -18,7 +18,10 @@ type Props = {
   children: React.ReactNode;
 };
 export const AppProvider = ({ children }: Props) => {
-  const { data: hermits } = trpc.getHermitChannels.useQuery();
+  const { data: hermits } = trpc.getHermitsLocal.useQuery();
+  const sortedHermits = hermits?.sort((a, b) =>
+    a.ChannelName.localeCompare(b.ChannelName),
+  );
 
   return (
     <Suspense
@@ -30,7 +33,7 @@ export const AppProvider = ({ children }: Props) => {
     >
       <AppContext.Provider
         value={{
-          hermits: hermits || [],
+          hermits: sortedHermits || [],
         }}
       >
         {children}

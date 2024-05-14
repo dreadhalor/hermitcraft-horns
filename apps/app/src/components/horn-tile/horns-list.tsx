@@ -4,7 +4,7 @@ import { Card } from '@ui/card';
 import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
 import { useHHUser } from '@/providers/user-provider';
-import { FaSliders } from 'react-icons/fa6';
+import { FaBan, FaSliders } from 'react-icons/fa6';
 import { Button } from '@ui/button';
 import {
   Sheet,
@@ -56,8 +56,8 @@ export const HornsList = ({ id }: Props) => {
 
   const { clips, totalPages = 5 } = data ?? {};
 
-  const handleHermitSelect = (hermit: Hermit) => {
-    setSelectedHermitId(hermit.ChannelID);
+  const handleHermitSelect = (hermit: Hermit | null) => {
+    setSelectedHermitId(hermit?.ChannelID ?? null);
   };
 
   const range = getPaginationRange({
@@ -101,21 +101,28 @@ export const HornsList = ({ id }: Props) => {
                 </SheetDescription>
               </SheetHeader>
               <div className='grid grid-cols-3'>
-                {hermits.map((hermit) => (
-                  <SheetClose asChild key={hermit.ChannelID}>
+                {[null, ...hermits].map((hermit) => (
+                  <SheetClose asChild key={hermit?.ChannelID || 'none'}>
                     <Button
                       variant='ghost'
                       className='flex h-auto w-auto flex-col items-center rounded-md p-1'
                       onClick={() => handleHermitSelect(hermit)}
                     >
                       <span className='justify-center text-sm'>
-                        {hermit.DisplayName}
+                        {hermit?.DisplayName ?? 'None'}
                       </span>
-                      <img
-                        src={hermit.ProfilePicture}
-                        alt={hermit.DisplayName}
-                        className='aspect-square w-full'
-                      />
+                      {hermit && (
+                        <img
+                          src={hermit.ProfilePicture}
+                          alt={hermit.DisplayName}
+                          className='aspect-square w-full'
+                        />
+                      )}
+                      {!hermit && (
+                        <span className='flex flex-1 items-center justify-center text-[#354B87]'>
+                          <FaBan size={96} />
+                        </span>
+                      )}
                     </Button>
                   </SheetClose>
                 ))}

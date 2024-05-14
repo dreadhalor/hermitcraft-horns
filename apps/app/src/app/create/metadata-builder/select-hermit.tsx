@@ -11,15 +11,14 @@ import {
   SheetTrigger,
 } from '@ui/sheet';
 import { Hermit } from '@drizzle/db';
+import { FaBan } from 'react-icons/fa6';
 
 interface Props {
   hermits: Hermit[];
   hermit: Hermit | null;
-  setHermit: (hermit: Hermit) => void;
+  setHermit: (hermit: Hermit | null) => void;
 }
 export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
-  // const { hermit, setHermit, hermits } = useClipBuilder();
-
   return (
     <div className='flex h-auto flex-col gap-1'>
       <Sheet>
@@ -49,21 +48,28 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
               <SheetDescription>Who is this quote by?</SheetDescription>
             </SheetHeader>
             <div className='grid grid-cols-3'>
-              {hermits.map((channel) => (
-                <SheetClose asChild key={channel.ChannelID}>
+              {[null, ...hermits].map((channel) => (
+                <SheetClose asChild key={channel?.ChannelID || 'all'}>
                   <Button
                     variant='ghost'
                     className='flex h-auto w-auto flex-col items-center rounded-md p-1'
                     onClick={() => setHermit(channel)}
                   >
                     <span className='justify-center text-sm'>
-                      {channel.DisplayName}
+                      {channel?.DisplayName ?? 'None'}
                     </span>
-                    <img
-                      src={channel.ProfilePicture}
-                      alt={channel.DisplayName}
-                      className='aspect-square w-full'
-                    />
+                    {channel && (
+                      <img
+                        src={channel.ProfilePicture}
+                        alt={channel.DisplayName}
+                        className='aspect-square w-full'
+                      />
+                    )}
+                    {!channel && (
+                      <span className='flex flex-1 items-center justify-center text-[#354B87]'>
+                        <FaBan size={96} />
+                      </span>
+                    )}
                   </Button>
                 </SheetClose>
               ))}

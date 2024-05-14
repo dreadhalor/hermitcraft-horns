@@ -55,8 +55,13 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
   return (
     <div className='mb-4 flex w-full flex-col'>
       {activeTab !== 'preview' ? (
-        <Button onClick={handleNext} disabled={clipLength > MAX_CLIP_LENGTH}>
-          {clipLength > MAX_CLIP_LENGTH ? (
+        <Button
+          onClick={handleNext}
+          disabled={clipLength > MAX_CLIP_LENGTH || !user}
+        >
+          {!user ? (
+            'Sign in to generate horn!'
+          ) : clipLength > MAX_CLIP_LENGTH ? (
             'Max clip length 15s!'
           ) : (
             <>Next &rarr;</>

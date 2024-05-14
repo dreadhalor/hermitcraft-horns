@@ -9,6 +9,7 @@ import { NextStepButton } from './next-step-button';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { Hermit } from '@drizzle/db';
 import { MAX_CLIP_LENGTH } from '@/lib/utils';
+import { useHHUser } from '@/providers/user-provider';
 
 interface Props {
   hermits: Hermit[];
@@ -24,9 +25,10 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
     clipStart,
     clipEnd,
   } = useClipBuilder();
+  const { user } = useHHUser();
 
   const clipLength = clipEnd - clipStart;
-  const disabled = clipLength > MAX_CLIP_LENGTH;
+  const disabled = clipLength > MAX_CLIP_LENGTH || !user;
 
   useEffect(() => {
     setHermits(hermits);
