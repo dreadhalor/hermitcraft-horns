@@ -2,7 +2,7 @@
 
 import { HornsList } from '@/components/horn-tile/horns-list';
 import { Button } from '@ui/button';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger } from '@ui/drawer';
+import { Sheet, SheetContent, SheetHeader, SheetTrigger } from '@ui/sheet';
 import {
   Select,
   SelectContent,
@@ -30,14 +30,14 @@ const ProfilePage = () => {
       <div className='flex items-center justify-between'>
         <h1 className='text-3xl font-bold'>Profile</h1>
         {user?.username == 'dreadhalor' && (
-          <Drawer>
-            <DrawerTrigger asChild>
+          <Sheet>
+            <SheetTrigger asChild>
               <Button variant='ghost'>
                 <FaUserFriends className='text-3xl' />
               </Button>
-            </DrawerTrigger>
-            <DrawerContent className='px-4 pb-4'>
-              <DrawerHeader>Impersonate User</DrawerHeader>
+            </SheetTrigger>
+            <SheetContent className='rounded-t-2xl px-4 pb-4' side='bottom'>
+              <SheetHeader className='mb-2'>Impersonate User</SheetHeader>
               <Select onValueChange={(userId) => impersonateUser(userId)}>
                 <SelectTrigger>
                   <SelectValue placeholder='Select user' />
@@ -53,8 +53,8 @@ const ProfilePage = () => {
                       ))}
                 </SelectContent>
               </Select>
-            </DrawerContent>
-          </Drawer>
+            </SheetContent>
+          </Sheet>
         )}
       </div>
       <SignedIn>

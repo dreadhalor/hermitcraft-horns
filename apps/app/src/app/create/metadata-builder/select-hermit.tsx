@@ -2,14 +2,14 @@
 
 import { Button } from '@ui/button';
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@ui/drawer';
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@ui/sheet';
 import { Hermit } from '@drizzle/db';
 
 interface Props {
@@ -22,8 +22,8 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
 
   return (
     <div className='flex h-auto flex-col gap-1'>
-      <Drawer nested>
-        <DrawerTrigger asChild>
+      <Sheet>
+        <SheetTrigger asChild>
           <Button
             id='clip-builder-hermit'
             variant='outline'
@@ -38,16 +38,19 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
               className='aspect-square w-[80px]'
             />
           </Button>
-        </DrawerTrigger>
-        <DrawerContent className='max-h-[90%] border-0 p-0'>
-          <div className='h-full w-full overflow-auto pb-4'>
-            <DrawerHeader>
-              <DrawerTitle>Select Hermit</DrawerTitle>
-              <DrawerDescription>Who is this quote by?</DrawerDescription>
-            </DrawerHeader>
+        </SheetTrigger>
+        <SheetContent
+          side='bottom'
+          className='flex max-h-[90%] rounded-t-2xl border-0 p-0 pt-4'
+        >
+          <div className='max-h-full w-full overflow-auto'>
+            <SheetHeader>
+              <SheetTitle>Select Hermit</SheetTitle>
+              <SheetDescription>Who is this quote by?</SheetDescription>
+            </SheetHeader>
             <div className='grid grid-cols-3'>
               {hermits.map((channel) => (
-                <DrawerClose asChild key={channel.ChannelID}>
+                <SheetClose asChild key={channel.ChannelID}>
                   <Button
                     variant='ghost'
                     className='flex h-auto w-auto flex-col items-center rounded-md p-1'
@@ -62,12 +65,12 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
                       className='aspect-square w-full'
                     />
                   </Button>
-                </DrawerClose>
+                </SheetClose>
               ))}
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

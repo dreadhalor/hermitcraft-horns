@@ -7,14 +7,14 @@ import { useHHUser } from '@/providers/user-provider';
 import { FaSliders } from 'react-icons/fa6';
 import { Button } from '@ui/button';
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@ui/drawer';
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@ui/sheet';
 import { Hermit } from '@drizzle/db';
 import { useApp } from '@/providers/app-provider';
 import {
@@ -82,24 +82,27 @@ export const HornsList = ({ id }: Props) => {
             <SelectItem value='newest'>Newest</SelectItem>
           </SelectContent>
         </Select>
-        <Drawer nested>
-          <DrawerTrigger asChild>
+        <Sheet>
+          <SheetTrigger asChild>
             <Button variant='ghost' className='text-white'>
               <FaSliders className='mr-2' />
               Filter
             </Button>
-          </DrawerTrigger>
-          <DrawerContent className='max-h-[90%] border-0 p-0'>
-            <div className='h-full w-full overflow-auto pb-4'>
-              <DrawerHeader>
-                <DrawerTitle>Select Hermit</DrawerTitle>
-                <DrawerDescription>
+          </SheetTrigger>
+          <SheetContent
+            side='bottom'
+            className='flex max-h-[90%] rounded-t-2xl border-0 p-0 pt-4'
+          >
+            <div className='max-h-full w-full overflow-auto'>
+              <SheetHeader>
+                <SheetTitle>Select Hermit</SheetTitle>
+                <SheetDescription>
                   Choose a hermit to filter by
-                </DrawerDescription>
-              </DrawerHeader>
+                </SheetDescription>
+              </SheetHeader>
               <div className='grid grid-cols-3'>
                 {hermits.map((hermit) => (
-                  <DrawerClose asChild key={hermit.ChannelID}>
+                  <SheetClose asChild key={hermit.ChannelID}>
                     <Button
                       variant='ghost'
                       className='flex h-auto w-auto flex-col items-center rounded-md p-1'
@@ -114,12 +117,12 @@ export const HornsList = ({ id }: Props) => {
                         className='aspect-square w-full'
                       />
                     </Button>
-                  </DrawerClose>
+                  </SheetClose>
                 ))}
               </div>
             </div>
-          </DrawerContent>
-        </Drawer>
+          </SheetContent>
+        </Sheet>
       </div>
       <div className='grid w-full grid-cols-2 gap-[10px]'>
         {clips.map((clip: any) => (
