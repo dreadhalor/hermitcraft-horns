@@ -2,8 +2,9 @@ import './env-config';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { sql as vercelSql } from '@vercel/postgres';
 import * as schema from './schema';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import { EditClipSchema } from '@/schemas';
+import { TimeRange } from '@/lib/utils';
 
 export const db = drizzle(vercelSql, { schema });
 
@@ -37,21 +38,50 @@ export const countLikes = async (clipId: number) => {
   return result.length;
 };
 
+const getTimeFilter = (timeFilter: TimeRange) => {
+  const now = new Date();
+
+  switch (timeFilter) {
+    case 'today':
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      );
+      return gte(schema.clips.createdAt, startOfToday);
+    case 'thisWeek':
+      const startOfWeek = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - now.getDay(),
+      );
+      return gte(schema.clips.createdAt, startOfWeek);
+    case 'thisMonth':
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return gte(schema.clips.createdAt, startOfMonth);
+    default:
+      return undefined;
+  }
+};
+
 interface GetAllClipsParams {
   userId: string;
   filterUserId?: string;
   hermitId?: string;
   sort?: string;
+  timeFilter?: TimeRange;
 }
 export const getAllClips = async ({
   userId,
   filterUserId,
   hermitId,
   sort,
+  timeFilter,
 }: GetAllClipsParams) => {
   const filters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
+    timeFilter ? getTimeFilter(timeFilter) : undefined,
   ].filter(Boolean);
 
   const sortFxn = (sort: string) => {
@@ -113,6 +143,7 @@ interface GetPaginatedClipsParams {
   sort?: string;
   page?: number;
   limit?: number;
+  timeFilter?: TimeRange;
 }
 export const getPaginatedClips = async ({
   userId,
@@ -121,10 +152,12 @@ export const getPaginatedClips = async ({
   sort,
   page = 1,
   limit = 20,
+  timeFilter,
 }: GetPaginatedClipsParams) => {
   const filters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
+    timeFilter ? getTimeFilter(timeFilter) : undefined,
   ].filter(Boolean);
 
   const sortFxn = (sort: string) => {
@@ -168,7 +201,10 @@ export const getPaginatedClips = async ({
       .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`)
       .offset(offset)
       .limit(limit),
-    db.select({ count: sql<number>`count(*)`.as('count') }).from(schema.clips),
+    db
+      .select({ count: sql<number>`count(*)`.as('count') })
+      .from(schema.clips)
+      .where(and(...filters)),
   ]);
 
   const parsedFields = result.map(

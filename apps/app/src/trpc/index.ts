@@ -20,6 +20,7 @@ import { getHermitsLocal } from './routers/hermitcraft-local';
 import { inferRouterOutputs } from '@trpc/server';
 import { editClipSchema, saveClipSchema } from '@/schemas';
 import { checkTaskStatus, enqueueTask } from './routers/video-processing';
+import { TimeRange } from '@/lib/utils';
 
 export const appRouter = router({
   getHermitChannels,
@@ -43,17 +44,23 @@ export const appRouter = router({
         filterUserId: z.string().optional(),
         hermitId: z.string().optional(),
         sort: z.string().optional(),
+        timeFilter: z.custom<TimeRange>().optional(),
       }),
     )
-    .query(async ({ input: { userId, filterUserId, hermitId, sort } }) => {
-      const result = await getAllClips({
-        userId,
-        filterUserId,
-        hermitId,
-        sort,
-      });
-      return result;
-    }),
+    .query(
+      async ({
+        input: { userId, filterUserId, hermitId, sort, timeFilter },
+      }) => {
+        const result = await getAllClips({
+          userId,
+          filterUserId,
+          hermitId,
+          sort,
+          timeFilter,
+        });
+        return result;
+      },
+    ),
   getPaginatedClips: publicProcedure
     .input(
       z.object({
@@ -63,11 +70,20 @@ export const appRouter = router({
         sort: z.string().optional(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(20),
+        timeFilter: z.custom<TimeRange>().optional(),
       }),
     )
     .query(
       async ({
-        input: { userId, filterUserId, hermitId, sort, page, limit },
+        input: {
+          userId,
+          filterUserId,
+          hermitId,
+          sort,
+          page,
+          limit,
+          timeFilter,
+        },
       }) => {
         const result = await drizzleGetPaginatedClips({
           userId,
@@ -76,6 +92,7 @@ export const appRouter = router({
           sort,
           page,
           limit,
+          timeFilter,
         });
         return result;
       },

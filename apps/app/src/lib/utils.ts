@@ -56,3 +56,11 @@ export const kebabIt = (str: string) => {
 };
 
 export const MAX_CLIP_LENGTH = 15;
+
+export const TIME_RANGES = [
+  'today',
+  'thisWeek',
+  'thisMonth',
+  'allTime',
+] as const;
+export type TimeRange = (typeof TIME_RANGES)[number];

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Fragment, useState } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import { Card } from '@ui/card';
 import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
@@ -23,7 +23,7 @@ import {
   PaginationItem,
   PaginationLink,
 } from '@ui/pagination';
-import { getPaginationRange } from '@/lib/utils';
+import { TimeRange, getPaginationRange } from '@/lib/utils';
 import { SelectHermit } from './select-hermit';
 import { useForm } from 'react-hook-form';
 import { Form } from '@ui/form';
@@ -39,6 +39,7 @@ export const HornsList = ({ id }: Props) => {
   const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
+  const [selectedTime, setSelectedTime] = useState<TimeRange>('allTime');
   const [selectedPage, setSelectedPage] = useState<number>(1);
 
   const form = useForm();
@@ -50,6 +51,7 @@ export const HornsList = ({ id }: Props) => {
     sort: selectedSort,
     page: selectedPage,
     limit: 20,
+    timeFilter: selectedTime,
   });
 
   const { clips, totalPages = 5 } = data ?? {};
@@ -58,6 +60,10 @@ export const HornsList = ({ id }: Props) => {
     currentPage: selectedPage,
     totalPages,
   });
+
+  useEffect(() => {
+    setSelectedPage(1);
+  }, [selectedSort, selectedTime, selectedHermit]);
 
   if (isLoading || !clips) {
     return <div>Loading...</div>;
@@ -109,13 +115,49 @@ export const HornsList = ({ id }: Props) => {
                   )}
                 </Button>
               </SelectHermit>
-              <Button
-                variant='ghost'
-                className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                // onClick={handleDownload}
-              >
-                Time Posted: All Time
-              </Button>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none capitalize hover:bg-[#4665BA] hover:text-white'
+                  >
+                    Time Posted: {selectedTime.replace(/([A-Z])/g, ' $1')}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side='bottom'
+                  className='rounded-t-2xl border-0 p-0 pt-4'
+                >
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                    onClick={() => setSelectedTime('today')}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                    onClick={() => setSelectedTime('thisWeek')}
+                  >
+                    This week
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                    onClick={() => setSelectedTime('thisMonth')}
+                  >
+                    This month
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                    onClick={() => setSelectedTime('allTime')}
+                  >
+                    All time
+                  </Button>
+                </SheetContent>
+              </Sheet>
             </SheetContent>
           </Sheet>
         </Form>
