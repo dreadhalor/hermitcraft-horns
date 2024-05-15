@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { FaUserFriends } from 'react-icons/fa';
 import { Separator } from '@ui/separator';
+import { EditUsernameDialog } from './edit-username-dialog';
 
 const ProfilePage = () => {
   const { user, impersonateUser } = useHHUser();
@@ -83,7 +84,7 @@ const ProfilePage = () => {
       <SignedIn>
         <div className='flex items-baseline gap-[10px]'>
           <span className='text-2xl'>{usernameDisplay}</span>
-          {user && <span className='text-base text-gray-600'>edit</span>}
+          {user && <EditUsernameDialog />}
         </div>
         <h2 className='text-xl font-bold'>Your Horns</h2>
         <HornsList id={user?.id} />
