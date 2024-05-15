@@ -1,19 +1,26 @@
-import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@ui/sheet';
+import React from 'react';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTrigger,
+} from '@ui/sheet';
 import { Button } from '@ui/button';
 import { FaHeart, FaRegHeart, FaEdit } from 'react-icons/fa';
 import { MdFileDownload } from 'react-icons/md';
 import { useHHUser } from '@/providers/user-provider';
 import { Tabs, TabsContent } from '@ui/tabs';
-import { useState } from 'react';
 import { HornEditMenu } from './horn-edit-menu';
 import { kebabIt } from '@/lib/utils';
+import { Separator } from '@ui/separator';
 
 type Props = {
   horn: any;
 };
 
 export const HornTileMenu = ({ horn }: Props) => {
-  const [activeTab, setActiveTab] = useState('main');
+  const [tab, setTab] = React.useState('main');
   const { liked, likes, downloads, clipUrl = '' } = horn;
   const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
 
@@ -27,20 +34,14 @@ export const HornTileMenu = ({ horn }: Props) => {
 
   const handleDownload = () => {
     incrementClipDownloads(horn.id);
-    // ya gotta do it indirectly like this to let you set the filename
     fetch(clipUrl)
       .then((response) => response.blob())
       .then((blob) => {
-        // Create a temporary URL for the downloaded file
         const url = window.URL.createObjectURL(blob);
-
-        // Create a link element and trigger the download
         const link = document.createElement('a');
         link.href = url;
         link.download = `${kebabIt(horn.tagline)}.mp3`;
         link.click();
-
-        // Clean up the temporary URL
         window.URL.revokeObjectURL(url);
       })
       .catch((error) => {
@@ -51,7 +52,7 @@ export const HornTileMenu = ({ horn }: Props) => {
   return (
     <Sheet
       onOpenChange={(open) => {
-        if (!open) setActiveTab('main');
+        if (!open) setTab('main');
       }}
     >
       <SheetTrigger asChild>
@@ -66,24 +67,28 @@ export const HornTileMenu = ({ horn }: Props) => {
         </Button>
       </SheetTrigger>
       <SheetContent
-        className='max-h-[90%] overflow-hidden rounded-t-2xl border-0 p-0'
+        className='max-h-[90%] overflow-hidden rounded-t-lg border-0 p-0'
         side='bottom'
       >
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsContent value='main'>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsContent value='main' className='data-[state=active]:pt-[8px]'>
+            <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
+              Horn Actions
+            </SheetHeader>
+            <Separator className='mx-4 w-auto bg-gray-600' />
             <SheetClose asChild>
               <Button
                 variant='ghost'
-                className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
                 onClick={toggleLike}
               >
                 {liked ? (
                   <>
-                    <FaHeart /> Unfavorite
+                    <FaHeart className='mr-1' /> Unfavorite
                   </>
                 ) : (
                   <>
-                    <FaRegHeart /> Favorite
+                    <FaRegHeart className='mr-1' /> Favorite
                   </>
                 )}
               </Button>
@@ -91,22 +96,45 @@ export const HornTileMenu = ({ horn }: Props) => {
             <SheetClose asChild>
               <Button
                 variant='ghost'
-                className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
                 onClick={handleDownload}
               >
-                <MdFileDownload size={22} /> Download
+                <MdFileDownload size={22} className='ml-[-2px]' /> Download
               </Button>
             </SheetClose>
             <Button
               variant='ghost'
-              className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-              onClick={() => setActiveTab('edit')}
+              className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+              onClick={() => setTab('edit')}
             >
-              <FaEdit size={16} /> Edit
+              <FaEdit size={16} className='ml-0.5 mr-1' /> Edit
             </Button>
+            <div className='flex p-2 pt-1'>
+              <SheetClose asChild>
+                <Button
+                  variant='outline'
+                  className='h-[36px] flex-1 gap-2 rounded-full border-gray-600 text-sm hover:bg-[#4665BA] hover:text-white'
+                >
+                  Close
+                </Button>
+              </SheetClose>
+            </div>
           </TabsContent>
-          <TabsContent value='edit'>
-            <HornEditMenu setActiveTab={setActiveTab} horn={horn} />
+          <TabsContent value='edit' className='data-[state=active]:pt-[8px]'>
+            <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
+              Edit Horn
+            </SheetHeader>
+            <Separator className='mx-4 w-auto bg-gray-600' />
+            <HornEditMenu horn={horn} />
+            <div className='flex p-2 pt-1'>
+              <Button
+                variant='outline'
+                className='h-[36px] flex-1 gap-2 rounded-full border-gray-600 text-sm hover:bg-[#4665BA] hover:text-white'
+                onClick={() => setTab('main')}
+              >
+                &larr; Back
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </SheetContent>

@@ -18,10 +18,9 @@ import { DrizzleClip } from '@drizzle/db';
 import { SheetClose } from '../ui/sheet';
 
 interface Props {
-  setActiveTab: (tab: string) => void;
   horn: DrizzleClip;
 }
-export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
+export const HornEditMenu = ({ horn }: Props) => {
   const { hermits } = useApp();
   const { editClip } = useEditClip();
   const { deleteClip } = useDeleteClip();
@@ -51,17 +50,10 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
 
   return (
     <>
-      <Button
-        variant='ghost'
-        className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-        onClick={() => setActiveTab('main')}
-      >
-        &larr; Back
-      </Button>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className='space-y-2 px-4 pb-4'
+          className='space-y-2 px-4 py-2'
         >
           <div className='flex items-end gap-2'>
             <SelectHermit hermits={hermits} />
@@ -70,18 +62,20 @@ export const HornEditMenu = ({ setActiveTab, horn }: Props) => {
               <SelectSeason />
             </div>
           </div>
-          <Button type='submit' className='w-full'>
-            Submit
-          </Button>
-          <SheetClose ref={closeRef} className='sr-only' />
-          <Button
-            variant='destructive'
-            type='reset'
-            className='w-full brightness-90'
-            onClick={() => deleteClip({ id: horn.id })}
-          >
-            Delete
-          </Button>
+          <div className='grid w-full grid-cols-4 gap-2'>
+            <Button type='submit' className='col-span-3'>
+              Save
+            </Button>
+            <SheetClose ref={closeRef} className='sr-only' />
+            <Button
+              variant='destructive'
+              type='reset'
+              className='w-full brightness-90'
+              onClick={() => deleteClip({ id: horn.id })}
+            >
+              Delete
+            </Button>
+          </div>
         </form>
       </Form>
     </>
