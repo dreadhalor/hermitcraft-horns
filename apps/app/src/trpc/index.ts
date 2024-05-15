@@ -1,8 +1,6 @@
 import {
   getAllClips,
   saveClip as drizzleSaveClip,
-  getUser,
-  getAllUsers,
   likeClip,
   unlikeClip,
   incrementClipDownloads,
@@ -21,6 +19,7 @@ import { inferRouterOutputs } from '@trpc/server';
 import { editClipSchema, saveClipSchema } from '@/schemas';
 import { checkTaskStatus, enqueueTask } from './routers/video-processing';
 import { TimeRange } from '@/lib/utils';
+import * as UserRouterEndpoints from './routers/user';
 
 export const appRouter = router({
   getHermitChannels,
@@ -28,15 +27,7 @@ export const appRouter = router({
   getHermitcraftVideos,
   enqueueTask,
   checkTaskStatus,
-  getUser: publicProcedure
-    .input(z.object({ userId: z.string() }))
-    .query(async ({ input }) => {
-      const result = await getUser(input.userId);
-      return result || null;
-    }),
-  getAllUsers: publicProcedure.query(async () => {
-    return await getAllUsers();
-  }),
+  ...UserRouterEndpoints,
   getClips: publicProcedure
     .input(
       z.object({

@@ -8,17 +8,7 @@ import { TimeRange } from '@/lib/utils';
 
 export const db = drizzle(vercelSql, { schema });
 
-export const getUser = async (userId: string) => {
-  const result = await db
-    .select()
-    .from(schema.users)
-    .where(eq(schema.users.id, userId));
-  return result[0];
-};
-export const getAllUsers = async () => {
-  const result = await db.select().from(schema.users);
-  return result;
-};
+export * from './db-fxns/user';
 
 export const hasLikedClip = async (userId: string, clipId: number) => {
   const result = await db

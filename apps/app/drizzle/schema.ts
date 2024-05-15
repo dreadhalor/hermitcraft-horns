@@ -14,7 +14,7 @@ export const users = pgTable(
   'users',
   {
     id: text('id').primaryKey(),
-    username: text('username').notNull(),
+    username: text('username').unique().notNull(),
     createdAt: timestamp('createdAt').defaultNow(),
   },
   (users) => {
