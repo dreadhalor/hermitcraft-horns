@@ -28,6 +28,7 @@ import { SelectHermit } from './select-hermit';
 import { useForm } from 'react-hook-form';
 import { Form } from '@ui/form';
 import { Sheet, SheetContent, SheetTrigger } from '@ui/sheet';
+import { HornFilters } from './horn-filters';
 
 interface Props {
   id?: string;
@@ -35,10 +36,9 @@ interface Props {
 
 export const HornsList = ({ id }: Props) => {
   const { user } = useHHUser();
-  const { hermits } = useApp();
-  const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
+  const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
   const [selectedTime, setSelectedTime] = useState<TimeRange>('allTime');
   const [selectedPage, setSelectedPage] = useState<number>(1);
 
@@ -82,85 +82,14 @@ export const HornsList = ({ id }: Props) => {
             <SelectItem value='newest'>Newest</SelectItem>
           </SelectContent>
         </Select>
-        <Form {...form}>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant='ghost' className='text-white'>
-                <FaSliders className='mr-2' />
-                Filters
-                {selectedHermit ? ` (1)` : ''}
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side='bottom'
-              className='rounded-t-2xl border-0 p-0 pt-4'
-            >
-              <SelectHermit hermits={hermits} onSelect={setSelectedHermit}>
-                <Button
-                  variant='ghost'
-                  className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                >
-                  Hermit:{' '}
-                  {selectedHermit ? (
-                    <>
-                      <img
-                        src={selectedHermit.ProfilePicture}
-                        alt={selectedHermit.DisplayName}
-                        className='aspect-square w-[40px]'
-                      />
-                      {selectedHermit.DisplayName}
-                    </>
-                  ) : (
-                    'All'
-                  )}
-                </Button>
-              </SelectHermit>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    variant='ghost'
-                    className='text-md h-[60px] w-full gap-2 rounded-none capitalize hover:bg-[#4665BA] hover:text-white'
-                  >
-                    Time Posted: {selectedTime.replace(/([A-Z])/g, ' $1')}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side='bottom'
-                  className='rounded-t-2xl border-0 p-0 pt-4'
-                >
-                  <Button
-                    variant='ghost'
-                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                    onClick={() => setSelectedTime('today')}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                    onClick={() => setSelectedTime('thisWeek')}
-                  >
-                    This week
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                    onClick={() => setSelectedTime('thisMonth')}
-                  >
-                    This month
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    className='text-md h-[60px] w-full gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-                    onClick={() => setSelectedTime('allTime')}
-                  >
-                    All time
-                  </Button>
-                </SheetContent>
-              </Sheet>
-            </SheetContent>
-          </Sheet>
-        </Form>
+        <HornFilters
+          {...{
+            selectedHermit,
+            setSelectedHermit,
+            selectedTime,
+            setSelectedTime,
+          }}
+        />
       </div>
       <div className='grid w-full grid-cols-2 gap-[10px]'>
         {clips.map((clip: any) => (
