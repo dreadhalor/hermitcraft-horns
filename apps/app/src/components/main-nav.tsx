@@ -24,11 +24,11 @@ export const MainNav = () => {
   return (
     <div className='sticky bottom-0 left-0 h-[60px] w-full shrink-0'>
       <Tabs className='h-full w-full' value={getActiveTab(pathname)}>
-        <TabsList className='grid h-full w-full grid-cols-3 rounded-b-none bg-[#4665BA] pb-0'>
+        <TabsList className='grid h-full w-full grid-cols-3 rounded-none bg-[#4665BA] p-0'>
           <TabsTrigger
             value='horns'
             asChild
-            className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
+            className='flex h-full items-center justify-center gap-2 rounded-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
           >
             <Link href='/'>
               <GoatHornSVG fill='white' className='h-7 w-7' />
@@ -38,7 +38,7 @@ export const MainNav = () => {
           <TabsTrigger
             value='create'
             asChild
-            className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
+            className='flex h-full items-center justify-center gap-2 rounded-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
           >
             <Link href='/create'>
               <FaFilm size={24} />
@@ -48,7 +48,7 @@ export const MainNav = () => {
           <TabsTrigger
             value='profile'
             asChild
-            className='flex h-full items-center justify-center gap-2 rounded-b-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
+            className='flex h-full items-center justify-center gap-2 rounded-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
           >
             <Link href='/profile'>
               <FaCircleUser size={24} />

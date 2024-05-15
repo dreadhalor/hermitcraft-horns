@@ -10,6 +10,7 @@ import { MainNav } from '@/components/main-nav';
 import { UserProvider } from '@/providers/user-provider';
 import { AppProvider } from '@/providers/app-provider';
 import { ClipProvider } from '@/providers/clip-provider';
+import { Toaster } from 'sonner';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -46,6 +47,7 @@ export default function RootLayout({
                         {children}
                         <MainNav />
                       </div>
+                      <Toaster />
                     </UserProvider>
                   </Suspense>
                 </TooltipProvider>

@@ -82,7 +82,7 @@ const ProfilePage = () => {
         )}
       </div>
       <SignedIn>
-        <div className='flex items-baseline gap-[10px]'>
+        <div className='mb-4 flex items-baseline gap-[10px]'>
           <span className='text-2xl'>{usernameDisplay}</span>
           {user && <EditUsernameDialog />}
         </div>

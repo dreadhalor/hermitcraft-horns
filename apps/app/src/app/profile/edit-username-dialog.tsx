@@ -26,8 +26,12 @@ import { usernameSchema } from '@/schemas';
 import { trpc } from '@/trpc/client';
 import { getQueryKey } from '@trpc/react-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
-const EditUsernameDialogContent = () => {
+interface ContentProps {
+  setOpen: (open: boolean) => void;
+}
+const EditUsernameDialogContent = ({ setOpen }: ContentProps) => {
   const { user } = useHHUser();
   const form = useForm({
     resolver: zodResolver(usernameSchema),
@@ -42,14 +46,16 @@ const EditUsernameDialogContent = () => {
 
   const updateUsernameMutation = trpc.updateUsername.useMutation({
     onSuccess: () => {
+      toast.success(
+        `Username updated! Nice to meet you, @${form.getValues().username}!`,
+      );
       queryClient.invalidateQueries({ queryKey: userQueryKey });
       queryClient.invalidateQueries({ queryKey: clipsQueryKey });
     },
+    onSettled: () => setOpen(false),
   });
 
   const onSubmit = async (values: { username: string }) => {
-    console.log(values);
-
     // there must be a better way to do this
     const unique = await fetch(
       `/api/trpc/validateUsername?input=${JSON.stringify({ username: values.username })}`,
@@ -76,7 +82,9 @@ const EditUsernameDialogContent = () => {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <DialogHeader>
           <DialogTitle>Edit username</DialogTitle>
-          <DialogDescription>Get your username just right.</DialogDescription>
+          <DialogDescription className='text-gray-600'>
+            Get your username just right.
+          </DialogDescription>
         </DialogHeader>
         <div className='grid gap-4 py-4'>
           <FormField
@@ -84,7 +92,7 @@ const EditUsernameDialogContent = () => {
             name='username'
             render={({ field }) => (
               <FormItem className='grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1'>
-                <FormLabel className='w-min text-right'>Name</FormLabel>
+                <FormLabel className='w-min text-right'>Username</FormLabel>
                 <FormControl>
                   <div className='flex flex-1 gap-0'>
                     <span className='flex items-center rounded-l-md border bg-[#354B87] px-1 text-white'>
@@ -126,8 +134,10 @@ const EditUsernameDialogContent = () => {
 };
 
 export const EditUsernameDialog = () => {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant='link'
@@ -137,7 +147,7 @@ export const EditUsernameDialog = () => {
         </Button>
       </DialogTrigger>
       <DialogContent className='border-0 sm:max-w-[425px]'>
-        <EditUsernameDialogContent />
+        <EditUsernameDialogContent setOpen={setOpen} />
       </DialogContent>
     </Dialog>
   );

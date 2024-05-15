@@ -30,6 +30,5 @@ export const validateUsername = publicProcedure
   .input(usernameSchema)
   .query(async ({ input: { username } }) => {
     const existingUser = await getUserByUsername(username);
-    console.log('existingUser', existingUser);
     return !existingUser;
   });

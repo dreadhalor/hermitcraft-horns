@@ -18,7 +18,6 @@ export const getUserByUsername = async (username: string) => {
     .select()
     .from(schema.users)
     .where(eq(schema.users.username, username));
-  console.log('result', result);
   return result[0];
 };
 export const updateUsername = async (userId: string, username: string) => {
