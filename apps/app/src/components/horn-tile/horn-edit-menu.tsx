@@ -15,7 +15,17 @@ import { useEditClip } from '@/hooks/use-edit-clip';
 import { useApp } from '@/providers/app-provider';
 import { useDeleteClip } from '@/hooks/use-delete-clip';
 import { DBClip } from '@drizzle/db';
-import { SheetClose } from '../ui/sheet';
+import { SheetClose } from '@ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@ui/alert-dialog';
 
 interface Props {
   horn: DBClip;
@@ -63,18 +73,38 @@ export const HornEditMenu = ({ horn }: Props) => {
             </div>
           </div>
           <div className='grid w-full grid-cols-4 gap-2'>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant='destructive'
+                  type='reset'
+                  className='w-full brightness-90'
+                >
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className='border-0'>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription className='text-gray-600'>
+                    Deleting this horn is permanent!
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <Button
+                    variant='destructive'
+                    onClick={() => deleteClip({ id: horn.id })}
+                  >
+                    Delete Horn
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button type='submit' className='col-span-3'>
               Save
             </Button>
             <SheetClose ref={closeRef} className='sr-only' />
-            <Button
-              variant='destructive'
-              type='reset'
-              className='w-full brightness-90'
-              onClick={() => deleteClip({ id: horn.id })}
-            >
-              Delete
-            </Button>
           </div>
         </form>
       </Form>
