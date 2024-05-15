@@ -14,11 +14,11 @@ import { SelectSeason } from './select-season';
 import { useEditClip } from '@/hooks/use-edit-clip';
 import { useApp } from '@/providers/app-provider';
 import { useDeleteClip } from '@/hooks/use-delete-clip';
-import { DrizzleClip } from '@drizzle/db';
+import { DBClip } from '@drizzle/db';
 import { SheetClose } from '../ui/sheet';
 
 interface Props {
-  horn: DrizzleClip;
+  horn: DBClip;
 }
 export const HornEditMenu = ({ horn }: Props) => {
   const { hermits } = useApp();

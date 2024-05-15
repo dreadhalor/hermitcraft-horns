@@ -230,7 +230,7 @@ export const getPaginatedClips = async ({
 
 export type Clip = typeof schema.clips.$inferInsert;
 export type DrizzleUser = typeof schema.users.$inferSelect;
-export type DrizzleClip = Awaited<ReturnType<typeof getAllClips>>[number];
+export type DBClip = Awaited<ReturnType<typeof getAllClips>>[number];
 export type Like = typeof schema.likes.$inferInsert;
 
 export const saveClip = async (clip: Clip) => {

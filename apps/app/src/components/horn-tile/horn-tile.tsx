@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { cn, getYouTubeId } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
-import { DrizzleClip } from '@drizzle/db';
+import { DBClip } from '@drizzle/db';
 import { useRouter } from 'next/navigation';
 
 type HornTileProps = {
-  horn: DrizzleClip;
+  horn: DBClip;
   className?: string;
   onClick?: () => void;
 };

@@ -14,15 +14,19 @@ import { Tabs, TabsContent } from '@ui/tabs';
 import { HornEditMenu } from './horn-edit-menu';
 import { kebabIt } from '@/lib/utils';
 import { Separator } from '@ui/separator';
+import { DBClip } from '@drizzle/db';
 
 type Props = {
-  horn: any;
+  horn: DBClip;
 };
 
 export const HornTileMenu = ({ horn }: Props) => {
   const [tab, setTab] = React.useState('main');
-  const { liked, likes, downloads, clipUrl = '' } = horn;
+  const { liked, likes, downloads, user: hornUser } = horn;
+  const clipUrl = horn.clipUrl ?? '';
+  const tagline = horn.tagline ?? '';
   const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
+  const isOwner = user?.id === hornUser?.id;
 
   const toggleLike = () => {
     if (liked) {
@@ -40,7 +44,7 @@ export const HornTileMenu = ({ horn }: Props) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${kebabIt(horn.tagline)}.mp3`;
+        link.download = `${kebabIt(tagline)}.mp3`;
         link.click();
         window.URL.revokeObjectURL(url);
       })
@@ -102,13 +106,15 @@ export const HornTileMenu = ({ horn }: Props) => {
                 <MdFileDownload size={22} className='ml-[-2px]' /> Download
               </Button>
             </SheetClose>
-            <Button
-              variant='ghost'
-              className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-              onClick={() => setTab('edit')}
-            >
-              <FaEdit size={16} className='ml-0.5 mr-1' /> Edit
-            </Button>
+            {isOwner && (
+              <Button
+                variant='ghost'
+                className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+                onClick={() => setTab('edit')}
+              >
+                <FaEdit size={16} className='ml-0.5 mr-1' /> Edit
+              </Button>
+            )}
             <div className='flex p-2 pt-1'>
               <SheetClose asChild>
                 <Button
