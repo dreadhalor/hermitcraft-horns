@@ -14,6 +14,7 @@ import { Hermit } from '@drizzle/db';
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useFormContext } from 'react-hook-form';
 import { FaBan } from 'react-icons/fa6';
+import { SelectHermitGrid } from './select-hermit-grid';
 
 interface Props {
   hermits: Hermit[];
@@ -64,37 +65,7 @@ export const SelectHermit = ({ hermits, onSelect, children }: Props) => {
                   <SheetTitle>Select Hermit</SheetTitle>
                   <SheetDescription>Who is this quote by?</SheetDescription>
                 </SheetHeader>
-                <div className='grid grid-cols-3'>
-                  {[null, ...hermits].map((channel) => (
-                    <SheetClose asChild key={channel?.ChannelID || 'none'}>
-                      <Button
-                        variant='ghost'
-                        className='flex h-auto w-auto flex-col items-center rounded-md p-1'
-                        onClick={() => {
-                          field.onChange(channel);
-                          onSelect?.(channel);
-                        }}
-                      >
-                        <span className='justify-center text-sm'>
-                          {channel?.DisplayName ?? 'None'}
-                        </span>
-
-                        {channel && (
-                          <img
-                            src={channel.ProfilePicture}
-                            alt={channel.DisplayName}
-                            className='aspect-square w-full'
-                          />
-                        )}
-                        {!channel && (
-                          <span className='flex flex-1 items-center justify-center text-[#354B87]'>
-                            <FaBan size={96} />
-                          </span>
-                        )}
-                      </Button>
-                    </SheetClose>
-                  ))}
-                </div>
+                <SelectHermitGrid field={field} onSelect={onSelect} />
               </div>
             </SheetContent>
           </Sheet>

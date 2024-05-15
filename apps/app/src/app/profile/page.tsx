@@ -2,7 +2,13 @@
 
 import { HornsList } from '@/components/horn-tile/horns-list';
 import { Button } from '@ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTrigger } from '@ui/sheet';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTrigger,
+} from '@ui/sheet';
 import {
   Select,
   SelectContent,
@@ -36,10 +42,13 @@ const ProfilePage = () => {
                 <FaUserFriends className='text-3xl' />
               </Button>
             </SheetTrigger>
-            <SheetContent className='rounded-t-2xl px-4 pb-4' side='bottom'>
+            <SheetContent
+              className='flex flex-col gap-1 rounded-t-2xl px-4 pb-4'
+              side='bottom'
+            >
               <SheetHeader className='mb-2'>Impersonate User</SheetHeader>
               <Select onValueChange={(userId) => impersonateUser(userId)}>
-                <SelectTrigger>
+                <SelectTrigger className='mb-2'>
                   <SelectValue placeholder='Select user' />
                 </SelectTrigger>
                 <SelectContent>
@@ -53,6 +62,9 @@ const ProfilePage = () => {
                       ))}
                 </SelectContent>
               </Select>
+              <SheetClose asChild>
+                <Button>Close</Button>
+              </SheetClose>
             </SheetContent>
           </Sheet>
         )}

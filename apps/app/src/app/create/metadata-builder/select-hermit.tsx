@@ -45,7 +45,7 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
         </SheetTrigger>
         <SheetContent
           side='bottom'
-          className='flex max-h-[90%] rounded-t-2xl border-0 p-0 pt-4'
+          className='flex max-h-[90%] flex-col gap-1 rounded-t-2xl border-0 p-0 pb-1 pt-4'
         >
           <div className='max-h-full w-full overflow-auto'>
             <SheetHeader>
@@ -80,6 +80,9 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
               ))}
             </div>
           </div>
+          <SheetClose asChild>
+            <Button className='mx-1'>Close</Button>
+          </SheetClose>
         </SheetContent>
       </Sheet>
     </div>

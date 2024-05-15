@@ -28,7 +28,7 @@ import { SelectHermit } from './select-hermit';
 import { useForm } from 'react-hook-form';
 import { Form } from '@ui/form';
 import { Sheet, SheetContent, SheetTrigger } from '@ui/sheet';
-import { HornFilters } from './horn-filters';
+import { HornFilters } from './horn-filters/horn-filters';
 
 interface Props {
   id?: string;

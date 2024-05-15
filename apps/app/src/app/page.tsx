@@ -10,7 +10,7 @@ const Home = () => {
     <main className='flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
       <Image src={Banner} alt='banner' className='w-full' />
       <Tabs className='w-full' defaultValue='horns'>
-        <TabsList className='grid w-full grid-cols-2 bg-[#4665BA]'>
+        <TabsList className='mb-2 grid w-full grid-cols-2 bg-[#4665BA]'>
           <TabsTrigger
             value='horns'
             className='text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
