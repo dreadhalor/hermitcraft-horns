@@ -12,6 +12,8 @@ import {
 } from '@ui/sheet';
 import { Hermit } from '@drizzle/db';
 import { FaBan } from 'react-icons/fa6';
+import { Separator } from '@ui/separator';
+import { cn } from '@/lib/utils';
 
 interface Props {
   hermits: Hermit[];
@@ -45,19 +47,22 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
         </SheetTrigger>
         <SheetContent
           side='bottom'
-          className='flex max-h-[90%] flex-col gap-1 rounded-t-2xl border-0 p-0 pb-1 pt-4'
+          className='flex max-h-[90%] flex-col gap-0 rounded-t-lg border-0 p-0 pt-2'
         >
+          <SheetHeader className='mb-1 px-4 text-start text-sm uppercase text-gray-600'>
+            Horn spoken by
+          </SheetHeader>
+          <Separator className='mx-4 w-auto bg-gray-600' />
           <div className='max-h-full w-full overflow-auto'>
-            <SheetHeader>
-              <SheetTitle>Select Hermit</SheetTitle>
-              <SheetDescription>Who is this quote by?</SheetDescription>
-            </SheetHeader>
             <div className='grid grid-cols-3'>
               {[null, ...hermits].map((channel) => (
                 <SheetClose asChild key={channel?.ChannelID || 'all'}>
                   <Button
                     variant='ghost'
-                    className='flex h-auto w-auto flex-col items-center rounded-md p-1'
+                    className={cn(
+                      'flex h-auto w-auto flex-col items-center rounded-md p-1',
+                      hermit?.ChannelID === channel?.ChannelID && 'bg-white',
+                    )}
                     onClick={() => setHermit(channel)}
                   >
                     <span className='justify-center text-sm'>
@@ -80,9 +85,16 @@ export const SelectHermit = ({ hermit, setHermit, hermits }: Props) => {
               ))}
             </div>
           </div>
-          <SheetClose asChild>
-            <Button className='mx-1'>Close</Button>
-          </SheetClose>
+          <div className='flex p-2 pt-1'>
+            <SheetClose asChild>
+              <Button
+                variant='outline'
+                className='h-[36px] flex-1 gap-2 rounded-full border-gray-600 text-sm hover:bg-[#4665BA] hover:text-white'
+              >
+                Close
+              </Button>
+            </SheetClose>
+          </div>
         </SheetContent>
       </Sheet>
     </div>

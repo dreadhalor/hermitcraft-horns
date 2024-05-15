@@ -71,7 +71,7 @@ export const HornTileMenu = ({ horn }: Props) => {
         side='bottom'
       >
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsContent value='main' className='data-[state=active]:pt-[8px]'>
+          <TabsContent value='main' className='data-[state=active]:pt-[10px]'>
             <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
               Horn Actions
             </SheetHeader>
@@ -120,7 +120,7 @@ export const HornTileMenu = ({ horn }: Props) => {
               </SheetClose>
             </div>
           </TabsContent>
-          <TabsContent value='edit' className='data-[state=active]:pt-[8px]'>
+          <TabsContent value='edit' className='data-[state=active]:pt-[10px]'>
             <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
               Edit Horn
             </SheetHeader>

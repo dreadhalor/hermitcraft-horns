@@ -53,7 +53,7 @@ export const HornFilters = ({
         </SheetTrigger>
         <SheetContent side='bottom' className='rounded-t-lg border-0 p-0'>
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsContent value='main' className='data-[state=active]:pt-[8px]'>
+            <TabsContent value='main' className='data-[state=active]:pt-[10px]'>
               <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
                 Filter Clips by
               </SheetHeader>
@@ -99,7 +99,7 @@ export const HornFilters = ({
             </TabsContent>
             <TabsContent
               value='time-select'
-              className='data-[state=active]:pt-[8px]'
+              className='data-[state=active]:pt-[10px]'
             >
               <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
                 Clips Posted from
@@ -121,7 +121,7 @@ export const HornFilters = ({
             </TabsContent>
             <TabsContent
               value='hermit-select'
-              className='flex max-h-[70vh] flex-col data-[state=active]:pt-[8px]'
+              className='flex max-h-[70vh] flex-col data-[state=active]:pt-[10px]'
             >
               <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
                 Horn spoken by

@@ -15,6 +15,7 @@ import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useFormContext } from 'react-hook-form';
 import { FaBan } from 'react-icons/fa6';
 import { SelectHermitGrid } from './select-hermit-grid';
+import { Separator } from '@ui/separator';
 
 interface Props {
   hermits: Hermit[];
@@ -60,12 +61,24 @@ export const SelectHermit = ({ hermits, onSelect, children }: Props) => {
               side='bottom'
               className='flex max-h-[90%] rounded-t-2xl border-0 p-0 pt-4'
             >
-              <div className='max-h-full w-full overflow-auto'>
-                <SheetHeader>
-                  <SheetTitle>Select Hermit</SheetTitle>
-                  <SheetDescription>Who is this quote by?</SheetDescription>
+              <div className='flex max-h-full w-full flex-col'>
+                <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
+                  Horn spoken by
                 </SheetHeader>
-                <SelectHermitGrid field={field} onSelect={onSelect} />
+                <Separator className='mx-4 w-auto bg-gray-600' />
+                <div className='flex-1 overflow-auto'>
+                  <SelectHermitGrid field={field} onSelect={onSelect} />
+                </div>
+                <div className='flex p-2 pt-1'>
+                  <SheetClose asChild>
+                    <Button
+                      variant='outline'
+                      className='h-[36px] flex-1 gap-2 rounded-full border-gray-600 text-sm hover:bg-[#4665BA] hover:text-white'
+                    >
+                      Close
+                    </Button>
+                  </SheetClose>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
