@@ -11,6 +11,7 @@ export const TaglineInput = () => {
     <>
       <Label htmlFor='clip-builder-tagline'>Tagline</Label>
       <Input
+        autoComplete='off'
         id='clip-builder-tagline'
         placeholder='What do they say?'
         className='text-[16px]'

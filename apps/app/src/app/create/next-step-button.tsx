@@ -5,6 +5,7 @@ import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
 import React from 'react';
 import { MAX_CLIP_LENGTH } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Props {
   activeTab: string;
@@ -24,6 +25,10 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
       const duration = playerRef.current.getDuration();
       if (clipEnd <= duration) {
         console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
+        toast(
+          `Generating horn... please wait! This could take up to a minute, depending on traffic - please don't close the tab. 🐐`,
+          { duration: 20000 },
+        );
         await createAndSaveClip({
           videoUrl,
           start: clipStart,

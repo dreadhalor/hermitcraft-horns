@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/trpc/client';
 import { useGenerateClip } from './use-generate-clip';
 import { SaveClipSchema } from '@/schemas';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 type CreateAndSaveClipParams = {
   videoUrl: string;
@@ -18,13 +20,9 @@ export const useCreateAndSaveClip = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
-  const {
-    generateClip,
-    uploadedAudioUrl,
-    isLoading: isGeneratingClip,
-    error: generateClipError,
-  } = useGenerateClip();
+  const { generateClip, uploadedAudioUrl } = useGenerateClip();
   const saveClipMutation = trpc.saveClip.useMutation();
+  const router = useRouter();
 
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [start, setStart] = useState<number | null>(null);
@@ -73,7 +71,7 @@ export const useCreateAndSaveClip = () => {
     const saveClipMetadata = async () => {
       if (uploadedAudioUrl) {
         try {
-          // Save the metadata to the database
+          // Step 2: save the metadata to the database
           const formValues = {
             start: `${start}`,
             end: `${end}`,
@@ -86,7 +84,10 @@ export const useCreateAndSaveClip = () => {
           } satisfies SaveClipSchema;
           console.log('Saving clip metadata...');
           await saveClipMutation.mutateAsync(formValues);
-          console.log('Clip metadata saved');
+          toast.success(
+            'Clip created successfully! Check it out in the home feed.',
+          );
+          router.push('/');
           setClipUrl(uploadedAudioUrl);
         } catch (error) {
           console.error('Error saving clip metadata:', error);
