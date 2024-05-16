@@ -8,8 +8,15 @@ import { ZoomSlider } from './sliders/zoom-slider';
 import { formatTime } from '@/lib/utils';
 
 export const ClipBuilderPane = () => {
-  const { clipStart, clipEnd, duration, playerRef, playTime, playing } =
-    useClipBuilder();
+  const {
+    clipStart,
+    clipEnd,
+    duration,
+    playerRef,
+    playTime,
+    setPlayTime,
+    playing,
+  } = useClipBuilder();
   const [isLooping, setIsLooping] = useState(false);
 
   const handleLoopToggle = () => {
@@ -44,9 +51,26 @@ export const ClipBuilderPane = () => {
           &nbsp;/&nbsp;
           {formatTime(duration)}
         </span>
-        <div className='grid w-full grid-cols-2 gap-2'>
+        <div className='my-2 grid w-full grid-cols-6 gap-2'>
           <Button
-            className='my-2'
+            onClick={() => {
+              if (playerRef.current) {
+                const newTime = Math.max(
+                  playerRef.current.getCurrentTime() - 5,
+                  0,
+                );
+                playerRef.current.seekTo(newTime);
+                setPlayTime(newTime);
+                if (playing) {
+                  playerRef.current.getInternalPlayer().playVideo();
+                }
+              }
+            }}
+          >
+            &larr;5s
+          </Button>
+          <Button
+            className='col-span-2'
             onClick={() => {
               if (playerRef.current) {
                 if (playing) {
@@ -59,8 +83,25 @@ export const ClipBuilderPane = () => {
           >
             {playing ? 'Pause' : 'Play'}
           </Button>
-          <Button onClick={handleLoopToggle} className='my-2'>
+          <Button onClick={handleLoopToggle} className='col-span-2'>
             {isLooping ? 'Stop Loop' : 'Loop Clip'}
+          </Button>
+          <Button
+            onClick={() => {
+              if (playerRef.current) {
+                const newTime = Math.min(
+                  playerRef.current.getCurrentTime() + 5,
+                  playerRef.current.getDuration(),
+                );
+                playerRef.current.seekTo(newTime);
+                setPlayTime(newTime);
+                if (playing) {
+                  playerRef.current.getInternalPlayer().playVideo();
+                }
+              }
+            }}
+          >
+            5s&rarr;
           </Button>
         </div>
         <div className='flex flex-col gap-2'>

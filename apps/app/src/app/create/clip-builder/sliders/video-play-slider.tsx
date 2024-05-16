@@ -11,6 +11,7 @@ interface Props {
 export const VideoPlaySlider = ({ min, max }: Props) => {
   const {
     playTime,
+    setPlayTime,
     playSliderValue,
     setPlaySliderValue,
     playerRef,
@@ -35,6 +36,7 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
     setCurrentlySeeking(false);
     if (playerRef.current) {
       playerRef.current.seekTo(value / 1000);
+      setPlayTime(value / 1000);
       if (playing) {
         playerRef.current.getInternalPlayer().playVideo();
       }

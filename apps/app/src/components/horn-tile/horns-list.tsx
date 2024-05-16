@@ -43,7 +43,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
     hermitId: selectedHermit?.ChannelID ?? undefined,
     sort: selectedSort,
     page: selectedPage,
-    limit: 20,
+    limit: 24,
     timeFilter: selectedTime,
     likedOnly: favorites,
   });
@@ -85,7 +85,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
           }}
         />
       </div>
-      <div className='grid w-full grid-cols-2 gap-[10px]'>
+      <div className='grid w-full grid-cols-2 gap-[10px] sm:grid-cols-3'>
         {clips.map((clip: any) => (
           <HornTile key={clip.id} horn={clip} />
         ))}

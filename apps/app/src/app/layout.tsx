@@ -9,7 +9,6 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { MainNav } from '@/components/main-nav';
 import { UserProvider } from '@/providers/user-provider';
 import { AppProvider } from '@/providers/app-provider';
-import { ClipProvider } from '@/providers/clip-provider';
 import { Toaster } from 'sonner';
 
 const fontSans = FontSans({
@@ -39,19 +38,19 @@ export default function RootLayout({
         >
           <TRPCProvider>
             <AppProvider>
-              <ClipProvider>
-                <TooltipProvider>
-                  <Suspense fallback={<div>Loading...</div>}>
-                    <UserProvider>
-                      <div className='flex h-full flex-col'>
+              <TooltipProvider>
+                <Suspense fallback={<div>Loading...</div>}>
+                  <UserProvider>
+                    <div className='flex h-full justify-center'>
+                      <div className='flex h-full w-full flex-col sm:max-w-lg'>
                         {children}
                         <MainNav />
                       </div>
-                      <Toaster />
-                    </UserProvider>
-                  </Suspense>
-                </TooltipProvider>
-              </ClipProvider>
+                    </div>
+                    <Toaster />
+                  </UserProvider>
+                </Suspense>
+              </TooltipProvider>
             </AppProvider>
           </TRPCProvider>
         </body>

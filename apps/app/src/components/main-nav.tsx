@@ -22,9 +22,9 @@ export const MainNav = () => {
   };
 
   return (
-    <div className='sticky bottom-0 left-0 h-[60px] w-full shrink-0'>
+    <div className='sticky bottom-0 left-0 h-[60px] w-full shrink-0 sm:bottom-4 sm:mx-auto sm:mt-4 sm:max-w-lg sm:drop-shadow-md'>
       <Tabs className='h-full w-full' value={getActiveTab(pathname)}>
-        <TabsList className='grid h-full w-full grid-cols-3 rounded-none bg-[#4665BA] p-0'>
+        <TabsList className='grid h-full w-full grid-cols-3 overflow-hidden rounded-none bg-[#4665BA] p-0 sm:rounded-full'>
           <TabsTrigger
             value='horns'
             asChild
