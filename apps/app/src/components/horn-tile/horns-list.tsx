@@ -25,9 +25,11 @@ import { HornFilters } from './horn-filters/horn-filters';
 
 interface Props {
   id?: string;
+  favorites?: boolean;
+  emptyMessage?: string | React.ReactNode;
 }
 
-export const HornsList = ({ id }: Props) => {
+export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
   const { user } = useHHUser();
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
@@ -43,7 +45,7 @@ export const HornsList = ({ id }: Props) => {
     page: selectedPage,
     limit: 20,
     timeFilter: selectedTime,
-    likedOnly: true,
+    likedOnly: favorites,
   });
 
   const { clips, totalPages = 5 } = data ?? {};
@@ -87,6 +89,11 @@ export const HornsList = ({ id }: Props) => {
         {clips.map((clip: any) => (
           <HornTile key={clip.id} horn={clip} />
         ))}
+        {clips.length === 0 && (
+          <div className='col-span-2 mt-4 text-center'>
+            {emptyMessage || 'No horns found matching these filters!'}
+          </div>
+        )}
       </div>
       <Pagination className='w-full'>
         <PaginationContent className='px-4'>

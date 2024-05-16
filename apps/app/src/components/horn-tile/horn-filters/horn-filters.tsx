@@ -54,8 +54,20 @@ export const HornFilters = ({
         <SheetContent side='bottom' className='rounded-t-lg border-0 p-0'>
           <Tabs value={tab} onValueChange={setTab}>
             <TabsContent value='main' className='data-[state=active]:pt-[10px]'>
-              <SheetHeader className='mb-2 px-4 text-start text-sm uppercase text-gray-600'>
+              <SheetHeader className='mb-2 flex flex-row items-center justify-between px-4 text-start text-sm uppercase text-gray-600'>
                 Filter Clips by
+                <SheetClose asChild>
+                  <Button
+                    variant='link'
+                    className='h-auto w-auto p-0 text-xs text-red-700'
+                    onClick={() => {
+                      setSelectedHermit(null);
+                      setSelectedTime('allTime');
+                    }}
+                  >
+                    clear filters
+                  </Button>
+                </SheetClose>
               </SheetHeader>
               <Separator className='mx-4 w-auto bg-gray-600' />
               <Button
