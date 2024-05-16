@@ -57,12 +57,21 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
                 ref={playerRef}
                 controls
                 onReady={() => {
-                  console.log('Player ready');
                   setPlayerReady(true);
+                  if (initialClipStart !== undefined) {
+                    playerRef.current?.seekTo(initialClipStart);
+                  }
                 }}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
                 className='h-full max-h-full w-full max-w-full'
+                config={{
+                  youtube: {
+                    embedOptions: {
+                      host: 'https://www.youtube-nocookie.com',
+                    },
+                  },
+                }}
               />
             ) : (
               <div className='text-center text-lg text-gray-500'>
