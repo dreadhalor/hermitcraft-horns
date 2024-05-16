@@ -53,6 +53,8 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
           {isClient &&
             (videoUrl ? (
               <ReactPlayer
+                height='100%'
+                width='100%'
                 url={videoUrl}
                 ref={playerRef}
                 controls
@@ -64,7 +66,6 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
                 }}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
-                className='h-full max-h-full w-full max-w-full'
                 config={{
                   youtube: {
                     embedOptions: {
