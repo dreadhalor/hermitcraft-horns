@@ -60,6 +60,7 @@ interface GetAllClipsParams {
   hermitId?: string;
   sort?: string;
   timeFilter?: TimeRange;
+  likedOnly?: boolean;
 }
 export const getAllClips = async ({
   userId,
@@ -67,8 +68,9 @@ export const getAllClips = async ({
   hermitId,
   sort,
   timeFilter,
+  likedOnly,
 }: GetAllClipsParams) => {
-  const filters = [
+  const sqlFilters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
     timeFilter ? getTimeFilter(timeFilter) : undefined,
@@ -97,7 +99,7 @@ export const getAllClips = async ({
       ),
     })
     .from(schema.clips)
-    .where(and(...filters))
+    .where(and(...sqlFilters))
     .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
     .leftJoin(
       schema.hermitcraftChannels,
@@ -111,8 +113,8 @@ export const getAllClips = async ({
     )
     .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`);
 
-  const parsedFields = result.map(
-    async ({ clips, users, hermitcraftChannels, likesCount }) => ({
+  const parsedFields = await Promise.all(
+    result.map(async ({ clips, users, hermitcraftChannels, likesCount }) => ({
       ...clips,
       user: users,
       hermit: hermitcraftChannels,
@@ -120,10 +122,14 @@ export const getAllClips = async ({
       end: parseFloat(clips.end),
       liked: userId ? await hasLikedClip(userId, clips.id) : false,
       likes: likesCount,
-    }),
+    })),
   );
 
-  return await Promise.all(parsedFields);
+  const filteredClips = likedOnly
+    ? parsedFields.filter((clip) => clip.liked)
+    : parsedFields;
+
+  return filteredClips;
 };
 
 interface GetPaginatedClipsParams {
@@ -134,6 +140,7 @@ interface GetPaginatedClipsParams {
   page?: number;
   limit?: number;
   timeFilter?: TimeRange;
+  likedOnly?: boolean;
 }
 export const getPaginatedClips = async ({
   userId,
@@ -143,8 +150,9 @@ export const getPaginatedClips = async ({
   page = 1,
   limit = 20,
   timeFilter,
+  likedOnly,
 }: GetPaginatedClipsParams) => {
-  const filters = [
+  const sqlFilters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
     timeFilter ? getTimeFilter(timeFilter) : undefined,
@@ -176,7 +184,7 @@ export const getPaginatedClips = async ({
         ),
       })
       .from(schema.clips)
-      .where(and(...filters))
+      .where(and(...sqlFilters))
       .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
       .leftJoin(
         schema.hermitcraftChannels,
@@ -194,11 +202,11 @@ export const getPaginatedClips = async ({
     db
       .select({ count: sql<number>`count(*)`.as('count') })
       .from(schema.clips)
-      .where(and(...filters)),
+      .where(and(...sqlFilters)),
   ]);
 
-  const parsedFields = result.map(
-    async ({ clips, users, hermitcraftChannels, likesCount }) => ({
+  const parsedFields = await Promise.all(
+    result.map(async ({ clips, users, hermitcraftChannels, likesCount }) => ({
       ...clips,
       user: users,
       hermit: hermitcraftChannels,
@@ -206,14 +214,21 @@ export const getPaginatedClips = async ({
       end: parseFloat(clips.end),
       liked: userId ? await hasLikedClip(userId, clips.id) : false,
       likes: likesCount,
-    }),
+    })),
   );
 
-  const totalCount = totalCountResult[0].count;
+  const filteredClips = likedOnly
+    ? parsedFields.filter((clip) => clip.liked)
+    : parsedFields;
+
+  const totalCount = likedOnly
+    ? filteredClips.length
+    : totalCountResult[0].count;
+
   const totalPages = Math.ceil(totalCount / limit);
 
   return {
-    clips: await Promise.all(parsedFields),
+    clips: filteredClips,
     totalPages,
   };
 };

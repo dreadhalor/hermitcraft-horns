@@ -24,6 +24,7 @@ import React from 'react';
 import { FaUserFriends } from 'react-icons/fa';
 import { Separator } from '@ui/separator';
 import { EditUsernameDialog } from './edit-username-dialog';
+import { Tabs } from '@/components/ui/tabs';
 
 const ProfilePage = () => {
   const { user, impersonateUser } = useHHUser();

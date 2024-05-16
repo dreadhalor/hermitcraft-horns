@@ -43,6 +43,7 @@ export const HornsList = ({ id }: Props) => {
     page: selectedPage,
     limit: 20,
     timeFilter: selectedTime,
+    likedOnly: true,
   });
 
   const { clips, totalPages = 5 } = data ?? {};

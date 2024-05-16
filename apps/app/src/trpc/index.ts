@@ -36,11 +36,12 @@ export const appRouter = router({
         hermitId: z.string().optional(),
         sort: z.string().optional(),
         timeFilter: z.custom<TimeRange>().optional(),
+        likedOnly: z.boolean().optional(),
       }),
     )
     .query(
       async ({
-        input: { userId, filterUserId, hermitId, sort, timeFilter },
+        input: { userId, filterUserId, hermitId, sort, timeFilter, likedOnly },
       }) => {
         const result = await getAllClips({
           userId,
@@ -48,6 +49,7 @@ export const appRouter = router({
           hermitId,
           sort,
           timeFilter,
+          likedOnly,
         });
         return result;
       },
@@ -62,6 +64,7 @@ export const appRouter = router({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(20),
         timeFilter: z.custom<TimeRange>().optional(),
+        likedOnly: z.boolean().optional(),
       }),
     )
     .query(
@@ -74,6 +77,7 @@ export const appRouter = router({
           page,
           limit,
           timeFilter,
+          likedOnly,
         },
       }) => {
         const result = await drizzleGetPaginatedClips({
@@ -84,6 +88,7 @@ export const appRouter = router({
           page,
           limit,
           timeFilter,
+          likedOnly,
         });
         return result;
       },
