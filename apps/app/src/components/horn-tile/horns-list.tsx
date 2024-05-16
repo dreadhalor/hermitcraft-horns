@@ -5,10 +5,7 @@ import { Card } from '@ui/card';
 import { HornTile } from './horn-tile';
 import { trpc } from '@/trpc/client';
 import { useHHUser } from '@/providers/user-provider';
-import { FaSliders } from 'react-icons/fa6';
-import { Button } from '@ui/button';
 import { Hermit } from '@drizzle/db';
-import { useApp } from '@/providers/app-provider';
 import {
   Select,
   SelectContent,
@@ -24,10 +21,6 @@ import {
   PaginationLink,
 } from '@ui/pagination';
 import { TimeRange, getPaginationRange } from '@/lib/utils';
-import { SelectHermit } from './select-hermit';
-import { useForm } from 'react-hook-form';
-import { Form } from '@ui/form';
-import { Sheet, SheetContent, SheetTrigger } from '@ui/sheet';
 import { HornFilters } from './horn-filters/horn-filters';
 
 interface Props {
@@ -41,8 +34,6 @@ export const HornsList = ({ id }: Props) => {
   const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
   const [selectedTime, setSelectedTime] = useState<TimeRange>('allTime');
   const [selectedPage, setSelectedPage] = useState<number>(1);
-
-  const form = useForm();
 
   const { data, isLoading } = trpc.getPaginatedClips.useQuery({
     userId: user?.id ?? '',

@@ -5,8 +5,13 @@ import {
   getAllUsers as drizzleGetAllUsers,
   updateUsername as drizzleUpdateUsername,
   getUserByUsername,
+  addUsername as drizzleAddUsername,
 } from '@drizzle/db';
-import { updateUsernameSchema, usernameSchema } from '@/schemas';
+import {
+  updateUsernameSchema,
+  usernameSchema,
+  usernameStringSchema,
+} from '@/schemas';
 
 export const getUser = publicProcedure
   .input(z.object({ userId: z.string() }))
@@ -31,4 +36,17 @@ export const validateUsername = publicProcedure
   .query(async ({ input: { username } }) => {
     const existingUser = await getUserByUsername(username);
     return !existingUser;
+  });
+
+export const addUsernames = publicProcedure
+  .input(z.array(usernameStringSchema))
+  .mutation(async ({ input }) => {
+    console.log('input', input);
+    input.forEach(async (username) => {
+      try {
+        await drizzleAddUsername(username);
+      } catch (e) {
+        console.log('error adding username', e);
+      }
+    });
   });

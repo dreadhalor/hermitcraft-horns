@@ -86,3 +86,7 @@ export const likes = pgTable(
     };
   },
 );
+
+export const newUsernames = pgTable('newUsernames', {
+  username: text('username').primaryKey(),
+});

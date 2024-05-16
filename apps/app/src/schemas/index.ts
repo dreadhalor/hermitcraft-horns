@@ -29,11 +29,12 @@ export const editClipFrontendSchema = z.object({
 });
 export type EditClipFrontendSchema = z.infer<typeof editClipFrontendSchema>;
 
+export const usernameStringSchema = z
+  .string()
+  .min(5, 'Username must be at least 5 characters')
+  .max(15, 'Username must be at most 15 characters');
 export const usernameSchema = z.object({
-  username: z
-    .string()
-    .min(5, 'Username must be at least 5 characters')
-    .max(12, 'Username must be at most 12 characters'),
+  username: usernameStringSchema,
 });
 export type UsernameSchema = z.infer<typeof usernameSchema>;
 
