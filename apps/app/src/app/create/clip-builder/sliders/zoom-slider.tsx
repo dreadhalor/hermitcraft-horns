@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn, formatTime } from '@/lib/utils';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
@@ -40,6 +40,7 @@ export const ZoomSlider = () => {
           setZoomStart(value[0]);
           setZoomEnd(value[1]);
         }}
+        step={1000}
         onPointerDown={() => setSliderActive(true)}
         onPointerUp={() => setSliderActive(false)}
       >

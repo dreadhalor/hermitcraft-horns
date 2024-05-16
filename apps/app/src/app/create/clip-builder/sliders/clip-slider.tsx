@@ -16,7 +16,7 @@ export const ClipSlider = () => {
   return (
     <div className='flex flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Clip: {clipEnd - clipStart} seconds ({formatTime(clipStart)}
+        Clip: {(clipEnd - clipStart) / 1000} seconds ({formatTime(clipStart)}
         &nbsp;&rarr;&nbsp;
         {formatTime(clipEnd)})
       </span>
@@ -32,6 +32,7 @@ export const ClipSlider = () => {
           setClipStart(value[0]);
           setClipEnd(value[1]);
         }}
+        step={100}
         onPointerDown={() => setSliderActive(true)}
         onPointerUp={() => setSliderActive(false)}
       >

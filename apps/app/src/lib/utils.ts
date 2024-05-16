@@ -5,20 +5,36 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const formatTime = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
+export function formatTime(milliseconds: number, granularity?: string): string {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const remainingMilliseconds = milliseconds % 1000;
 
-  const formattedHours = String(hours).padStart(2, '0');
-  const formattedMinutes = String(minutes).padStart(2, '0');
-  const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+  // Format remaining milliseconds with leading zeros
+  let formattedMilliseconds = String(remainingMilliseconds).padStart(3, '0');
 
-  const hasHours = hours > 0;
-  return hasHours
-    ? `${formattedHours}:${formattedMinutes}:${formattedSeconds}`
-    : `${formattedMinutes}:${formattedSeconds}`;
-};
+  // Remove trailing zeros from the milliseconds part
+  formattedMilliseconds = formattedMilliseconds.replace(/0+$/, '');
+
+  let timeString = '';
+
+  if (hours > 0) {
+    timeString += `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  } else if (minutes > 0) {
+    timeString += `${minutes}:${String(seconds).padStart(2, '0')}`;
+  } else {
+    timeString += `0:${String(seconds).padStart(2, '0')}`;
+  }
+
+  // Append milliseconds if there are any
+  if (formattedMilliseconds && granularity !== 'seconds') {
+    timeString += `.${formattedMilliseconds}`;
+  }
+
+  return timeString;
+}
 
 export const getYouTubeId = (url: string) => {
   const urlParams = new URLSearchParams(new URL(url).search);

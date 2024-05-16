@@ -8,15 +8,8 @@ import { ZoomSlider } from './sliders/zoom-slider';
 import { formatTime } from '@/lib/utils';
 
 export const ClipBuilderPane = () => {
-  const {
-    clipStart,
-    clipEnd,
-    duration,
-    playerRef,
-    playTime,
-    playing,
-    videoUrl,
-  } = useClipBuilder();
+  const { clipStart, clipEnd, duration, playerRef, playTime, playing } =
+    useClipBuilder();
   const [isLooping, setIsLooping] = useState(false);
 
   const handleLoopToggle = () => {
@@ -26,15 +19,15 @@ export const ClipBuilderPane = () => {
   useEffect(() => {
     if (isLooping && playerRef.current) {
       const player = playerRef.current;
-      player.seekTo(clipStart);
+      player.seekTo(clipStart / 1000);
       player.getInternalPlayer().playVideo();
 
       const loopInterval = setInterval(() => {
-        if (player.getCurrentTime() >= clipEnd) {
-          player.seekTo(clipStart);
+        if (player.getCurrentTime() * 1000 >= clipEnd) {
+          player.seekTo(clipStart / 1000);
           player.getInternalPlayer().playVideo();
         }
-      }, 100);
+      }, 50);
 
       return () => {
         clearInterval(loopInterval);
@@ -46,7 +39,9 @@ export const ClipBuilderPane = () => {
     <div className='flex h-full flex-col'>
       <div className='flex flex-1 flex-col px-4 pt-4'>
         <span className='text-sm'>
-          {playing ? 'Playing' : 'Paused'}: {formatTime(playTime)} /{' '}
+          {playing ? 'Playing' : 'Paused'}:&nbsp;
+          {formatTime(playTime * 1000, 'seconds')}
+          &nbsp;/&nbsp;
           {formatTime(duration)}
         </span>
         <div className='grid w-full grid-cols-2 gap-2'>

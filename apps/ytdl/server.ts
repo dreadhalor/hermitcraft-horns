@@ -112,22 +112,25 @@ app.use(
   })
 );
 
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
+function formatTime(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const remainingMilliseconds = milliseconds % 1000;
 
   const formattedHours = String(hours).padStart(2, '0');
   const formattedMinutes = String(minutes).padStart(2, '0');
-  const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+  const formattedSeconds = String(seconds).padStart(2, '0');
+  const formattedMilliseconds = String(remainingMilliseconds).padStart(3, '0');
 
-  return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  return `${formattedHours}:${formattedMinutes}:${formattedSeconds}.${formattedMilliseconds}`;
 }
 
 async function downloadAudioSlice(
   videoUrl: string,
-  start: number,
-  end: number
+  startMilliseconds: number,
+  endMilliseconds: number
 ): Promise<string> {
   try {
     // Create the media-output folder if it doesn't exist
@@ -137,8 +140,8 @@ async function downloadAudioSlice(
     }
 
     const outputFilename = `${dir}/audio_slice_${Date.now()}.mp3`;
-    const startTime = formatTime(start);
-    const endTime = formatTime(end);
+    const startTime = formatTime(startMilliseconds);
+    const endTime = formatTime(endMilliseconds);
     console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
 
     const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;

@@ -18,13 +18,15 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
   const { createAndSaveClip, isLoading: isSaving } = useCreateAndSaveClip();
   const { user } = useHHUser();
 
-  const clipLength = clipEnd - clipStart;
+  const clipLength = (clipEnd - clipStart) / 1000;
 
   const handleExport = async () => {
     if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
+      const duration = playerRef.current.getDuration() * 1000;
       if (clipEnd <= duration) {
-        console.log(`Exporting video from ${clipStart}s to ${clipEnd}s`);
+        console.log(
+          `Exporting video from ${(clipStart / 1000).toFixed(1)}s to ${(clipEnd / 1000).toFixed(1)}s`,
+        );
         toast(
           `Generating horn... please wait! This could take up to a minute, depending on traffic - please don't close the tab. 🐐`,
           { duration: 20000 },

@@ -23,7 +23,7 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
 
   useEffect(() => {
     if (!currentlySeeking) {
-      setPlaySliderValue(playTime);
+      setPlaySliderValue(playTime * 1000);
     }
   }, [playTime]);
 
@@ -34,7 +34,7 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
   const handlePlaySliderValueCommit = (value: number) => {
     setCurrentlySeeking(false);
     if (playerRef.current) {
-      playerRef.current.seekTo(value);
+      playerRef.current.seekTo(value / 1000);
       if (playing) {
         playerRef.current.getInternalPlayer().playVideo();
       }
@@ -49,6 +49,7 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
         )}
         min={min}
         max={max}
+        step={1000}
         value={[playSliderValue]}
         onValueChange={([val]) => handlePlaySliderChange(val)}
         onValueCommit={([val]) => handlePlaySliderValueCommit(val)}

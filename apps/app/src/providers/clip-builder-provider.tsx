@@ -78,21 +78,22 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   // we want to be able to play the clip through once in a function we will export & trigger with a button
   const playClip = () => {
     if (playerRef.current) {
-      playerRef.current.seekTo(clipStart);
+      playerRef.current.seekTo(clipStart / 1000);
       playerRef.current.getInternalPlayer().playVideo();
       setPlaying(true);
     }
 
     const interval = setInterval(() => {
       if (playerRef.current) {
-        if (playerRef.current.getCurrentTime() >= clipEnd) {
-          playerRef.current.seekTo(clipStart);
+        // multiply by 1000 because floating point division is weird
+        if (playerRef.current.getCurrentTime() * 1000 >= clipEnd) {
+          playerRef.current.seekTo(clipStart / 1000);
           playerRef.current.getInternalPlayer().pauseVideo();
           setPlaying(false);
           clearInterval(interval);
         }
       }
-    }, 100);
+    }, 50);
   };
 
   useEffect(() => {

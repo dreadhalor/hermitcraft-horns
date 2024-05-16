@@ -30,14 +30,14 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
 
   useEffect(() => {
     if (playerRef?.current) {
-      setDuration(playerRef.current.getDuration());
+      setDuration(playerRef.current.getDuration() * 1000);
     }
   }, [playerRef, playerReady]);
 
   useEffect(() => {
     if (initialClipStart !== undefined) {
       setClipStart(initialClipStart);
-      setPlayTime(initialClipStart);
+      setPlayTime(initialClipStart / 1000);
     }
     if (initialClipEnd !== undefined) {
       setClipEnd(initialClipEnd);
@@ -61,7 +61,7 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
                 onReady={() => {
                   setPlayerReady(true);
                   if (initialClipStart !== undefined) {
-                    playerRef.current?.seekTo(initialClipStart);
+                    playerRef.current?.seekTo(initialClipStart / 1000);
                   }
                 }}
                 onPlay={() => setPlaying(true)}
