@@ -84,6 +84,7 @@ export const useCreateAndSaveClip = () => {
           } satisfies SaveClipSchema;
           console.log('Saving clip metadata...');
           await saveClipMutation.mutateAsync(formValues);
+          toast.dismiss();
           toast.success(
             'Clip created successfully! Check it out in the home feed.',
           );

@@ -16,8 +16,9 @@ export const ClipSlider = () => {
   return (
     <div className='flex flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Clip: {formatTime(clipStart)} &rarr; {formatTime(clipEnd)} (
-        {clipEnd - clipStart} seconds)
+        Clip: {clipEnd - clipStart} seconds ({formatTime(clipStart)}
+        &nbsp;&rarr;&nbsp;
+        {formatTime(clipEnd)})
       </span>
       <VideoPlaySlider min={zoomStart} max={zoomEnd} />
       <SliderPrimitive.Root
