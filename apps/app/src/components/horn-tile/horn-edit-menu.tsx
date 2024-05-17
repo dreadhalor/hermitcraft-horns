@@ -14,7 +14,6 @@ import { SelectSeason } from './select-season';
 import { useEditClip } from '@/hooks/use-edit-clip';
 import { useApp } from '@/providers/app-provider';
 import { useDeleteClip } from '@/hooks/use-delete-clip';
-import { DBClip } from '@drizzle/db';
 import { SheetClose } from '@ui/sheet';
 import {
   AlertDialog,
@@ -26,9 +25,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@ui/alert-dialog';
+import { Horn } from '@/trpc';
 
 interface Props {
-  horn: DBClip;
+  horn: Horn;
 }
 export const HornEditMenu = ({ horn }: Props) => {
   const { hermits } = useApp();

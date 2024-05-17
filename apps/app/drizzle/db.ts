@@ -54,6 +54,45 @@ const getTimeFilter = (timeFilter: TimeRange) => {
   }
 };
 
+export const getClip = async (clipId: number) => {
+  const result = await db
+    .select({
+      clips: schema.clips,
+      users: schema.users,
+      hermitcraftChannels: schema.hermitcraftChannels,
+      likesCount: sql<number>`cast(count(${schema.likes.clip}) as int)`.as(
+        'likes_count',
+      ),
+    })
+    .from(schema.clips)
+    .where(eq(schema.clips.id, clipId))
+    .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
+    .leftJoin(
+      schema.hermitcraftChannels,
+      eq(schema.clips.hermit, schema.hermitcraftChannels.ChannelID),
+    )
+    .leftJoin(schema.likes, eq(schema.clips.id, schema.likes.clip))
+    .groupBy(
+      schema.clips.id,
+      schema.users.id,
+      schema.hermitcraftChannels.ChannelID,
+    );
+
+  const parsedFields = await Promise.all(
+    result.map(async ({ clips, users, hermitcraftChannels, likesCount }) => ({
+      ...clips,
+      user: users,
+      hermit: hermitcraftChannels,
+      start: parseFloat(clips.start),
+      end: parseFloat(clips.end),
+      liked: false,
+      likes: likesCount,
+    })),
+  );
+
+  return parsedFields[0];
+};
+
 interface GetAllClipsParams {
   userId: string;
   filterUserId?: string;
@@ -240,7 +279,6 @@ export const getPaginatedClips = async ({
 
 export type Clip = typeof schema.clips.$inferInsert;
 export type DrizzleUser = typeof schema.users.$inferSelect;
-export type DBClip = Awaited<ReturnType<typeof getAllClips>>[number];
 export type Like = typeof schema.likes.$inferInsert;
 
 export const saveClip = async (clip: Clip) => {

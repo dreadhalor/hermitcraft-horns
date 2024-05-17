@@ -6,18 +6,19 @@ import {
   SheetHeader,
   SheetTrigger,
 } from '@ui/sheet';
-import { Button } from '@ui/button';
+import { Button, buttonVariants } from '@ui/button';
 import { FaHeart, FaRegHeart, FaEdit } from 'react-icons/fa';
 import { MdFileDownload } from 'react-icons/md';
 import { useHHUser } from '@/providers/user-provider';
 import { Tabs, TabsContent } from '@ui/tabs';
 import { HornEditMenu } from './horn-edit-menu';
-import { kebabIt } from '@/lib/utils';
+import { cn, kebabIt } from '@/lib/utils';
 import { Separator } from '@ui/separator';
-import { DBClip } from '@drizzle/db';
+import Link from 'next/link';
+import { Horn } from '@/trpc';
 
 type Props = {
-  horn: DBClip;
+  horn: Horn;
   disabled?: boolean;
 };
 
@@ -82,6 +83,17 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
               Horn Actions
             </SheetHeader>
             <Separator className='mx-4 w-auto bg-gray-600' />
+            <SheetClose asChild>
+              <Link
+                href={`/horn/${horn.id}`}
+                className={cn(
+                  buttonVariants({ variant: 'ghost' }),
+                  'text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white',
+                )}
+              >
+                Go to horn
+              </Link>
+            </SheetClose>
             <SheetClose asChild>
               <Button
                 disabled={!user}

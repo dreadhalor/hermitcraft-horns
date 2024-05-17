@@ -7,6 +7,7 @@ import {
   editClip as drizzleEditClip,
   deleteClip as drizzleDeleteClip,
   getPaginatedClips as drizzleGetPaginatedClips,
+  getClip as drizzleGetClip,
 } from '@drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
@@ -28,6 +29,12 @@ export const appRouter = router({
   enqueueTask,
   checkTaskStatus,
   ...UserRouterEndpoints,
+  getClip: publicProcedure
+    .input(z.object({ clipId: z.number() }))
+    .query(async ({ input: { clipId } }) => {
+      const result = await drizzleGetClip(clipId);
+      return result;
+    }),
   getClips: publicProcedure
     .input(
       z.object({
@@ -139,3 +146,4 @@ export const appRouter = router({
 export type AppRouter = typeof appRouter;
 type Outputs = inferRouterOutputs<AppRouter>;
 export type HHUser = Outputs['getUser'];
+export type Horn = Outputs['getClip'];
