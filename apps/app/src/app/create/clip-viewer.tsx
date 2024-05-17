@@ -35,7 +35,6 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
   useEffect(() => {
     if (playerRef?.current && playerReady) {
       const duration = playerRef.current.getDuration() * 1000;
-      console.log('duration', duration);
       setDuration(duration);
       if (initialClipStart !== undefined) {
         setClipStart(initialClipStart);

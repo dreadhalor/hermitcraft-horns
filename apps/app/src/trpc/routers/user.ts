@@ -41,7 +41,6 @@ export const validateUsername = publicProcedure
 export const addUsernames = publicProcedure
   .input(z.array(usernameStringSchema))
   .mutation(async ({ input }) => {
-    console.log('input', input);
     input.forEach(async (username) => {
       try {
         await drizzleAddUsername(username);

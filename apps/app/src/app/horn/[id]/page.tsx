@@ -18,8 +18,6 @@ const HornPage = () => {
     userId: user?.id,
   });
 
-  console.log('page-level horn', horn);
-
   if (isLoading || !horn || !user) {
     return (
       <div className='flex flex-1 items-center justify-center'>Loading...</div>

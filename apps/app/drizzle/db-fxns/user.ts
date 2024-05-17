@@ -63,7 +63,6 @@ export const getNewUsername = async () => {
     return `user-${Math.floor(Math.random() * 100000)}`;
   }
   const randomIndex = Math.floor(Math.random() * availableNameCount);
-  console.log('randomIndex', randomIndex);
 
   // select random username from newUsernames with randomIndex
   const result = await db
