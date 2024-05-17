@@ -19,6 +19,9 @@ const ProfilePage = () => {
 
   const usernameDisplay = user ? `@${user?.username}` : `Loading...`;
 
+  const isAdmin =
+    user?.username == 'dreadhalor' || user?.username == 'dreadhalor-dev';
+
   return (
     <div className='flex flex-1 flex-col p-[20px]'>
       <div className='flex items-center justify-between'>
@@ -31,7 +34,7 @@ const ProfilePage = () => {
           </button>
           <h1 className='text-3xl font-bold'>Profile</h1>
         </div>
-        {user?.username == 'dreadhalor' && <ImpersonateUserMenu />}
+        {isAdmin && <ImpersonateUserMenu />}
       </div>
       <SignedIn>
         <div className='mb-4 flex items-baseline gap-[10px]'>
