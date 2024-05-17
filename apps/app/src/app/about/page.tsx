@@ -33,23 +33,28 @@ const AboutPage = () => {
         made one everyone can use for free!
       </p>
       <p className='text-lg text-gray-700'>
-        Here, you can easily load up any YouTube video in the&nbsp;
+        Here, you can easily load up any YouTube video in the{' '}
         <Link
           href='/create'
           className='text-blue-700 underline hover:text-blue-800'
         >
           Create
-        </Link>
-        &nbsp;tab & create as many downloadable horns of all of your favorite
-        Hermit quotes as you want, along with viewing others' favorite quotes
-        too! Download as many as you want & use them in your own servers!
+        </Link>{' '}
+        tab & create as many downloadable horns of all of your favorite Hermit
+        quotes as you want, along with viewing others' favorite quotes too!
+        Download as many as you want & use them in your own servers!
       </p>
       <p className='text-lg text-gray-700'>
-        On top of that, you can find the context of any horn by simply clicking
-        'View clip' on a horn & the source video will be automatically loaded
-        into the{' '}
+        On top of that, you can find the context of any horn by simply clicking{' '}
         <Link
-          href='/create'
+          href='/create?id=dV7FzUOlYc8&start=1457300&end=1459600'
+          className='text-blue-700 underline hover:text-blue-800'
+        >
+          'View clip'
+        </Link>{' '}
+        on a horn & the source video will be automatically loaded into the{' '}
+        <Link
+          href='/create?id=Ic3YU4WbyJo'
           className='text-blue-700 underline hover:text-blue-800'
         >
           Create
@@ -86,8 +91,19 @@ const AboutPage = () => {
           className='text-blue-700 underline hover:text-blue-800'
         >
           @dreadhalor
-        </a>
-        .
+        </a>{' '}
+        or open an issue in the GitHub repo & I'll get back to you as soon as I
+        can, though first{' '}
+        <Link
+          href='/horn/5295705f-e2a8-4939-8376-07d9b978ae7d'
+          className='text-blue-700 underline hover:text-blue-800'
+        >
+          I may have to put you on hold...
+        </Link>
+      </p>
+      <p>
+        Oh, & if anyone's looking for a software engineer... I'm ✨recently
+        unemployed & could use a job✨ 😉
       </p>
     </div>
   );
