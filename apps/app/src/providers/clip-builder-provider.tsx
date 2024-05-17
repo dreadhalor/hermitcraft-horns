@@ -83,17 +83,22 @@ export const ClipBuilderProvider = ({ children }: Props) => {
       setPlaying(true);
     }
 
+    const intervalLength = 100;
+
     const interval = setInterval(() => {
       if (playerRef.current) {
         // multiply by 1000 because floating point division is weird
-        if (playerRef.current.getCurrentTime() * 1000 >= clipEnd) {
+        if (
+          playerRef.current.getCurrentTime() * 1000 >=
+          clipEnd - intervalLength
+        ) {
           playerRef.current.seekTo(clipStart / 1000);
           playerRef.current.getInternalPlayer().pauseVideo();
           setPlaying(false);
           clearInterval(interval);
         }
       }
-    }, 50);
+    }, intervalLength);
   };
 
   useEffect(() => {

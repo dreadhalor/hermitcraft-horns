@@ -29,6 +29,7 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
 
   const clipLength = (clipEnd - clipStart) / 1000;
   const disabled = clipLength > MAX_CLIP_LENGTH || !user;
+  const lastDotDisabled = !hermit;
 
   useEffect(() => {
     setHermits(hermits);
@@ -68,7 +69,7 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
             className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
           />
           <TabsTrigger
-            disabled={disabled}
+            disabled={disabled || lastDotDisabled}
             value='preview'
             className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
           />

@@ -47,7 +47,7 @@ export const HornPreviewTile = ({
         <div className='flex h-full w-full flex-col p-[4px]'>
           <div className='flex justify-between'>
             <span className='text-[10px]'>{username ?? 'no user'}</span>
-            <HornTileMenu horn={horn} />
+            <HornTileMenu horn={horn} disabled />
           </div>
           <span className='my-auto text-center font-bold'>{tagline}</span>
           <div className='flex justify-center'>

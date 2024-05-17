@@ -29,12 +29,14 @@ export const ClipBuilderPane = () => {
       player.seekTo(clipStart / 1000);
       player.getInternalPlayer().playVideo();
 
+      const intervalLength = 100;
+
       const loopInterval = setInterval(() => {
-        if (player.getCurrentTime() * 1000 >= clipEnd) {
+        if (player.getCurrentTime() * 1000 >= clipEnd - intervalLength) {
           player.seekTo(clipStart / 1000);
           player.getInternalPlayer().playVideo();
         }
-      }, 50);
+      }, intervalLength);
 
       return () => {
         clearInterval(loopInterval);
