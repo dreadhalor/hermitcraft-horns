@@ -11,10 +11,6 @@ import {
 import { FormControl, FormField, FormItem, FormLabel } from '@ui/form';
 import { useFormContext } from 'react-hook-form';
 
-interface Props {
-  name: string;
-}
-
 export const SelectSeason = () => {
   const form = useFormContext();
 
@@ -33,6 +29,7 @@ export const SelectSeason = () => {
             </FormControl>
             <SelectContent>
               <SelectGroup>
+                <SelectItem value='unknown'>N/A</SelectItem>
                 <SelectItem value='10'>10</SelectItem>
                 <SelectItem value='9'>9</SelectItem>
                 <SelectItem value='8'>8</SelectItem>

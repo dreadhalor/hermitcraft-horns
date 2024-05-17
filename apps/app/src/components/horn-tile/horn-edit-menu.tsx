@@ -49,10 +49,11 @@ export const HornEditMenu = ({ horn }: Props) => {
   });
 
   const onSubmit = async (values: EditClipFrontendSchema) => {
-    const { hermit, ...rest } = values;
+    const { hermit, season, ...rest } = values;
     const backendValues = {
       ...rest,
       hermit: hermit?.ChannelID,
+      season: season !== 'unknown' ? season : '',
     } satisfies EditClipSchema;
     await editClip(backendValues);
     closeRef.current?.click();
