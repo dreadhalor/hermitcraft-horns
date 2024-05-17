@@ -20,6 +20,21 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
 
   const clipLength = (clipEnd - clipStart) / 1000;
 
+  const getErrorMessage = () => {
+    if (!user) return 'Sign in to generate horn!';
+    if (!videoUrl) return 'No video selected!';
+    if (activeTab === 'clip-builder') {
+      if (clipLength > MAX_CLIP_LENGTH) return 'Max clip length 15s!';
+      if (clipLength < 0.1) return 'No clip selected!';
+    }
+    if (activeTab === 'metadata') {
+      if (!hermit) return 'Select a Hermit!';
+    }
+
+    return '';
+  };
+  const isErrored = getErrorMessage() !== '';
+
   const handleExport = async () => {
     if (playerRef.current) {
       const duration = playerRef.current.getDuration() * 1000;
@@ -63,28 +78,24 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
     <div className='mb-4 flex w-full flex-col'>
       {activeTab !== 'preview' ? (
         <Button
+          type='button'
           onClick={handleNext}
-          disabled={clipLength > MAX_CLIP_LENGTH || !user}
+          disabled={isErrored || isSaving}
         >
-          {!user ? (
-            'Sign in to generate horn!'
-          ) : clipLength > MAX_CLIP_LENGTH ? (
-            'Max clip length 15s!'
-          ) : (
-            <>Next &rarr;</>
-          )}
+          {isErrored ? getErrorMessage() : <>Next &rarr;</>}
         </Button>
       ) : (
         <Button
+          type='button'
           onClick={handleExport}
-          disabled={isSaving || !user}
+          disabled={isErrored || isSaving}
           className='font-bold'
         >
-          {user
-            ? isSaving
+          {isErrored
+            ? getErrorMessage()
+            : isSaving
               ? 'Generating...'
-              : 'Generate Horn'
-            : 'Sign in to generate horn!'}
+              : 'Generate Horn'}
         </Button>
       )}
     </div>

@@ -14,7 +14,7 @@ export const PreviewPane = () => {
     <div className='flex h-full w-full items-center justify-center px-4'>
       <div className='grid grid-cols-1 gap-1'>
         <HornPreview />
-        <Button className='w-full' onClick={playClip}>
+        <Button type='button' className='w-full' onClick={playClip}>
           Play
         </Button>
         {clipUrl && <p>Clip URL: {clipUrl}</p>}

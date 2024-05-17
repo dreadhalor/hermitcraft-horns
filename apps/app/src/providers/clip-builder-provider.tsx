@@ -109,10 +109,6 @@ export const ClipBuilderProvider = ({ children }: Props) => {
     }
   }, [playerRef, setPlayTime, playing]);
 
-  useEffect(() => {
-    setZoomEnd(duration);
-  }, [duration, setZoomEnd]);
-
   return (
     <Suspense
       fallback={

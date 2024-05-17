@@ -58,6 +58,8 @@ export const HornEditMenu = ({ horn }: Props) => {
     closeRef.current?.click();
   };
 
+  const valid = !!form.getValues('hermit');
+
   return (
     <>
       <Form {...form}>
@@ -101,8 +103,8 @@ export const HornEditMenu = ({ horn }: Props) => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button type='submit' className='col-span-3'>
-              Save
+            <Button type='submit' className='col-span-3' disabled={!valid}>
+              {valid ? 'Save' : 'Select a hermit!'}
             </Button>
             <SheetClose ref={closeRef} className='sr-only' />
           </div>

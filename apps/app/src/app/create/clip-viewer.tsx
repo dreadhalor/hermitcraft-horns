@@ -25,24 +25,40 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
     setPlaying,
     setClipStart,
     setClipEnd,
+    setZoomStart,
+    setZoomEnd,
     setPlayTime,
   } = useClipBuilder();
 
+  const initZoomMargin = 5000;
+
   useEffect(() => {
-    if (playerRef?.current) {
-      setDuration(playerRef.current.getDuration() * 1000);
+    if (playerRef?.current && playerReady) {
+      const duration = playerRef.current.getDuration() * 1000;
+      console.log('duration', duration);
+      setDuration(duration);
+      if (initialClipStart !== undefined) {
+        setClipStart(initialClipStart);
+        setZoomStart(Math.max(0, initialClipStart - initZoomMargin));
+        setPlayTime(initialClipStart / 1000);
+      } else {
+        setClipStart(0);
+        setZoomStart(0);
+        setPlayTime(0);
+      }
+      if (initialClipEnd !== undefined) {
+        setClipEnd(initialClipEnd);
+        setZoomEnd(Math.min(initialClipEnd + initZoomMargin, duration));
+      } else {
+        setClipEnd(0);
+        setZoomEnd(duration);
+      }
     }
   }, [playerRef, playerReady]);
 
   useEffect(() => {
-    if (initialClipStart !== undefined) {
-      setClipStart(initialClipStart);
-      setPlayTime(initialClipStart / 1000);
-    }
-    if (initialClipEnd !== undefined) {
-      setClipEnd(initialClipEnd);
-    }
-  }, [initialClipStart, initialClipEnd]);
+    setPlayerReady(false);
+  }, [videoUrl]);
 
   return (
     <>
@@ -59,7 +75,7 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
                 ref={playerRef}
                 controls
                 onReady={() => {
-                  setPlayerReady(true);
+                  setPlayerReady(() => true);
                   if (initialClipStart !== undefined) {
                     playerRef.current?.seekTo(initialClipStart / 1000);
                   }

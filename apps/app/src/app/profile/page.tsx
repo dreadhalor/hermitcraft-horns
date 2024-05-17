@@ -7,8 +7,7 @@ import { useHHUser } from '@/providers/user-provider';
 import { SignedIn, SignedOut, useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { EditUsernameDialog } from './edit-username-dialog';
-import { Tabs } from '@/components/ui/tabs';
-import { TabsList, TabsTrigger, TabsContent } from '@ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ui/tabs';
 import { ImpersonateUserMenu } from './impersonate-user-menu';
 
 const ProfilePage = () => {

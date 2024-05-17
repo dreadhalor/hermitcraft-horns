@@ -8,14 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ui/select';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel } from '@ui/form';
 import { useFormContext } from 'react-hook-form';
 
 interface Props {

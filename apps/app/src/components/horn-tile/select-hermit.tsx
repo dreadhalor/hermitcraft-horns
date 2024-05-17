@@ -5,15 +5,12 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetDescription,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from '@ui/sheet';
 import { Hermit } from '@drizzle/db';
-import { FormControl, FormField, FormItem } from '@/components/ui/form';
+import { FormControl, FormField, FormItem } from '@ui/form';
 import { useFormContext } from 'react-hook-form';
-import { FaBan } from 'react-icons/fa6';
 import { SelectHermitGrid } from './select-hermit-grid';
 import { Separator } from '@ui/separator';
 

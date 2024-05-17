@@ -53,6 +53,7 @@ export const ClipBuilderPane = () => {
         </span>
         <div className='my-2 grid w-full grid-cols-6 gap-2'>
           <Button
+            type='button'
             onClick={() => {
               if (playerRef.current) {
                 const newTime = Math.max(
@@ -70,6 +71,7 @@ export const ClipBuilderPane = () => {
             &larr;5s
           </Button>
           <Button
+            type='button'
             className='col-span-2'
             onClick={() => {
               if (playerRef.current) {
@@ -83,10 +85,15 @@ export const ClipBuilderPane = () => {
           >
             {playing ? 'Pause' : 'Play'}
           </Button>
-          <Button onClick={handleLoopToggle} className='col-span-2'>
+          <Button
+            type='button'
+            onClick={handleLoopToggle}
+            className='col-span-2'
+          >
             {isLooping ? 'Stop Loop' : 'Loop Clip'}
           </Button>
           <Button
+            type='button'
             onClick={() => {
               if (playerRef.current) {
                 const newTime = Math.min(

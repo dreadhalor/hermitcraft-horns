@@ -35,12 +35,16 @@ export const ClipMetadataBuilder = ({
         <div className='flex flex-1 flex-col gap-1'>
           <TaglineInput />
           <Label htmlFor='clip-builder-season'>Season</Label>
-          <Select value={season} onValueChange={setSeason}>
+          <Select
+            value={season}
+            onValueChange={(v) => setSeason(v !== 'unknown' ? v : '')}
+          >
             <SelectTrigger id='clip-builder-season'>
               <SelectValue placeholder='Select season' />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
+                <SelectItem value='unknown'>N/A</SelectItem>
                 <SelectItem value='10'>10</SelectItem>
                 <SelectItem value='9'>9</SelectItem>
                 <SelectItem value='8'>8</SelectItem>
