@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import GoatHornImage from '@/assets/goat-horn.webp';
+import { getYouTubeId } from '@/lib/utils';
 
 export const Navbar = () => {
   const [inputValue, setInputValue] = useState('');
@@ -16,7 +17,7 @@ export const Navbar = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // get the id from the input - the input should be a YouTube video URL
-    const id = inputValue.split('v=')[1];
+    const id = getYouTubeId(inputValue);
     // if not a valid YouTube URL, bail
     if (!id) return;
     router.push(`?id=${id}`);
