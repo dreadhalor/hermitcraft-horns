@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { EditUsernameDialog } from './edit-username-dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ui/tabs';
 import { ImpersonateUserMenu } from './impersonate-user-menu';
+import GoatHornImage from '@/assets/goat-horn.webp';
+import Image from 'next/image';
 
 const ProfilePage = () => {
   const { user } = useHHUser();
@@ -20,7 +22,15 @@ const ProfilePage = () => {
   return (
     <div className='flex flex-1 flex-col p-[20px]'>
       <div className='flex items-center justify-between'>
-        <h1 className='text-3xl font-bold'>Profile</h1>
+        <div className='flex gap-2'>
+          <button
+            className='relative -mt-[2px] aspect-square h-[36px]'
+            onClick={() => router.push('/')}
+          >
+            <Image src={GoatHornImage} alt='goat horn image' fill />
+          </button>
+          <h1 className='text-3xl font-bold'>Profile</h1>
+        </div>
         {user?.username == 'dreadhalor' && <ImpersonateUserMenu />}
       </div>
       <SignedIn>
