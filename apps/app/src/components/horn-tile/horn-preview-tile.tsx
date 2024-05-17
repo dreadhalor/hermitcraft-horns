@@ -95,7 +95,13 @@ const HornTileBorder = () => {
 
   useEffect(() => {
     const calculatePercentage = () => {
-      if (playing && clipStart !== undefined && clipEnd !== undefined) {
+      if (
+        playing &&
+        clipStart !== undefined &&
+        clipEnd !== undefined &&
+        playTime * 1000 >= clipStart &&
+        playTime * 1000 <= clipEnd
+      ) {
         const clipDuration = clipEnd - clipStart;
         const elapsedTime = playTime * 1000 - clipStart;
         const progress = (elapsedTime / clipDuration) * 100;
