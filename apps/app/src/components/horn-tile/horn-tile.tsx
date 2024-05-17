@@ -1,7 +1,13 @@
 'use client';
 
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import { useEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { cn, getYouTubeId } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
@@ -12,9 +18,15 @@ type HornTileProps = {
   horn: Horn;
   className?: string;
   onClick?: () => void;
+  ref?: React.ForwardedRef<{
+    togglePlayback: () => void;
+  }>;
 };
 
-export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
+export const HornTile = forwardRef<
+  { togglePlayback: () => void },
+  HornTileProps
+>(({ horn, className, onClick }, ref) => {
   const { tagline, clipUrl, season, user, hermit, start, end } = horn;
   const { username } = user ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -38,6 +50,14 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
       audioRef.current.load();
     }
   }, [clipUrl]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      togglePlayback: handlePlayClick,
+    }),
+    [audioRef],
+  );
 
   return (
     <div
@@ -80,7 +100,7 @@ export const HornTile = ({ horn, className, onClick }: HornTileProps) => {
       </div>
     </div>
   );
-};
+});
 
 type HornTileBorderProps = {
   audioRef: React.RefObject<HTMLAudioElement>;

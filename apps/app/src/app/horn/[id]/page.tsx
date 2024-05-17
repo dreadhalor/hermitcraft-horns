@@ -7,11 +7,14 @@ import { useHHUser } from '@/providers/user-provider';
 import Image from 'next/image';
 import Link from 'next/link';
 import Banner from '@/assets/banner.png';
+import { Button } from '@ui/button';
+import { useRef } from 'react';
 
 const HornPage = () => {
   const { id } = useParams();
   const { user } = useHHUser();
   const hornIdNum = id as string;
+  const hornRef = useRef<any>();
 
   const { data: horn, isLoading } = trpc.getClip.useQuery({
     clipId: hornIdNum,
@@ -47,8 +50,19 @@ const HornPage = () => {
       >
         By Scott Hetrick &rarr;
       </Link>
-      <div className='flex w-full flex-1 items-center justify-center'>
-        <HornTile horn={horn} className='max-w-[250px]' />
+      <div className='flex w-full max-w-[250px] flex-1 flex-col items-center justify-center gap-2'>
+        <HornTile horn={horn} ref={hornRef} />
+        <Button
+          className='w-full'
+          onClick={() => {
+            hornRef.current?.togglePlayback();
+          }}
+        >
+          Play / Stop
+        </Button>
+        <Link href='/' className='mt-2 hover:underline'>
+          &larr; Back to home
+        </Link>
       </div>
     </main>
   );
