@@ -11,19 +11,23 @@ import Banner from '@/assets/banner.png';
 const HornPage = () => {
   const { id } = useParams();
   const { user } = useHHUser();
-  const hornIdNum = parseInt(id as string);
+  const hornIdNum = id as string;
 
   const { data: horn, isLoading } = trpc.getClip.useQuery({
     clipId: hornIdNum,
   });
 
   if (isLoading || !horn || !user) {
-    return <div>Loading...</div>;
+    return (
+      <div className='flex flex-1 items-center justify-center'>Loading...</div>
+    );
   }
 
   return (
     <main className='flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
-      <Image src={Banner} alt='banner' className='w-full' />
+      <Link href='/' className='w-full'>
+        <Image src={Banner} alt='banner' className='w-full' />
+      </Link>
       <Link
         href='/about'
         className='my-[-10px] text-sm font-semibold text-[#354B87] hover:underline'

@@ -10,9 +10,9 @@ type UserContextValue = {
   user: HHUser | null;
   superUser: HHUser | null;
   impersonateUser: (userId: string) => void;
-  likeClip: (userId: string, clipId: number) => void;
-  unlikeClip: (userId: string, clipId: number) => void;
-  incrementClipDownloads: (clipId: number) => Promise<void>;
+  likeClip: (userId: string, clipId: string) => void;
+  unlikeClip: (userId: string, clipId: string) => void;
+  incrementClipDownloads: (clipId: string) => Promise<void>;
 };
 
 const UserContext = createContext<UserContextValue>({} as UserContextValue);
@@ -52,10 +52,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     },
   });
 
-  const likeClip = (userId: string, clipId: number) => {
+  const likeClip = (userId: string, clipId: string) => {
     likeClipMutation.mutate({ userId, clipId });
   };
-  const unlikeClip = (userId: string, clipId: number) => {
+  const unlikeClip = (userId: string, clipId: string) => {
     unlikeClipMutation.mutate({ userId, clipId });
   };
 
@@ -65,7 +65,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         queryClient.invalidateQueries({ queryKey });
       },
     });
-  const incrementClipDownloads = async (clipId: number) => {
+  const incrementClipDownloads = async (clipId: string) => {
     await incrementClipDownloadsMutation.mutateAsync({ clipId });
   };
 

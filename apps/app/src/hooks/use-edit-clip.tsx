@@ -5,7 +5,7 @@ import { getQueryKey } from '@trpc/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 
 type EditClipParams = {
-  id: number;
+  id: string;
   hermit?: string;
   tagline?: string;
   season?: string;

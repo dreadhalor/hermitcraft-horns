@@ -4,7 +4,7 @@ import { getQueryKey } from '@trpc/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 
 type DeleteClipParams = {
-  id: number;
+  id: string;
 };
 
 export const useDeleteClip = () => {

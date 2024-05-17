@@ -30,7 +30,7 @@ export const appRouter = router({
   checkTaskStatus,
   ...UserRouterEndpoints,
   getClip: publicProcedure
-    .input(z.object({ clipId: z.number() }))
+    .input(z.object({ clipId: z.string() }))
     .query(async ({ input: { clipId } }) => {
       const result = await drizzleGetClip(clipId);
       return result;
@@ -69,7 +69,7 @@ export const appRouter = router({
         hermitId: z.string().optional(),
         sort: z.string().optional(),
         page: z.number().min(1).default(1),
-        limit: z.number().min(1).max(100).default(20),
+        limit: z.number().min(1).max(100).optional(),
         timeFilter: z.custom<TimeRange>().optional(),
         likedOnly: z.boolean().optional(),
       }),
@@ -116,27 +116,27 @@ export const appRouter = router({
       return true;
     }),
   deleteClip: publicProcedure
-    .input(z.object({ clipId: z.number() }))
+    .input(z.object({ clipId: z.string() }))
     .mutation(async ({ input }) => {
       console.log('Deleting clip:', input);
       await drizzleDeleteClip(input.clipId);
       return true;
     }),
   likeClip: publicProcedure
-    .input(z.object({ userId: z.string(), clipId: z.number() }))
+    .input(z.object({ userId: z.string(), clipId: z.string() }))
     .mutation(async ({ input: { userId, clipId } }) => {
       likeClip({ user: userId, clip: clipId });
       return true;
     }),
   unlikeClip: publicProcedure
-    .input(z.object({ userId: z.string(), clipId: z.number() }))
+    .input(z.object({ userId: z.string(), clipId: z.string() }))
     .mutation(async ({ input: { userId, clipId } }) => {
       unlikeClip({ user: userId, clip: clipId });
       return true;
     }),
 
   incrementClipDownloads: publicProcedure
-    .input(z.object({ clipId: z.number() }))
+    .input(z.object({ clipId: z.string() }))
     .mutation(async ({ input: { clipId } }) => {
       await incrementClipDownloads(clipId);
       return true;

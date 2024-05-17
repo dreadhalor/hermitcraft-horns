@@ -8,6 +8,7 @@ import {
   boolean,
   integer,
   index,
+  uuid,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
@@ -25,7 +26,7 @@ export const users = pgTable(
 );
 
 export const clips = pgTable('clips', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   user: text('user')
     .notNull()
     .references(() => users.id),
@@ -71,10 +72,10 @@ export const likes = pgTable(
     user: text('user')
       .references(() => users.id)
       .notNull(),
-    clip: integer('clip')
+    clip: uuid('clip')
       .references(() => clips.id, { onDelete: 'cascade' })
       .notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
   },
   (likes) => {
     return {

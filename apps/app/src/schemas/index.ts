@@ -14,7 +14,7 @@ export const saveClipSchema = z.object({
 export type SaveClipSchema = z.infer<typeof saveClipSchema>;
 
 export const editClipSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   tagline: z.string().optional(),
   season: z.string().optional(),
   hermit: z.string().optional(),
@@ -22,7 +22,7 @@ export const editClipSchema = z.object({
 export type EditClipSchema = z.infer<typeof editClipSchema>;
 
 export const editClipFrontendSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   tagline: z.string().optional(),
   season: z.string().optional(),
   hermit: z.custom<Hermit | null>(),

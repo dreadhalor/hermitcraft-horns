@@ -10,7 +10,7 @@ export const db = drizzle(vercelSql, { schema });
 
 export * from './db-fxns/user';
 
-export const hasLikedClip = async (userId: string, clipId: number) => {
+export const hasLikedClip = async (userId: string, clipId: string) => {
   const result = await db
     .select()
     .from(schema.likes)
@@ -19,7 +19,7 @@ export const hasLikedClip = async (userId: string, clipId: number) => {
 
   return result.length > 0;
 };
-export const countLikes = async (clipId: number) => {
+export const countLikes = async (clipId: string) => {
   const result = await db
     .select()
     .from(schema.likes)
@@ -54,7 +54,7 @@ const getTimeFilter = (timeFilter: TimeRange) => {
   }
 };
 
-export const getClip = async (clipId: number) => {
+export const getClip = async (clipId: string) => {
   const result = await db
     .select({
       clips: schema.clips,
@@ -292,7 +292,7 @@ export const editClip = async (newClipValues: EditClipSchema) => {
     .where(eq(schema.clips.id, newClipValues.id));
   return result;
 };
-export const deleteClip = async (clipId: number) => {
+export const deleteClip = async (clipId: string) => {
   const result = await db
     .delete(schema.clips)
     .where(eq(schema.clips.id, clipId));
@@ -328,7 +328,7 @@ export const unlikeClip = async (like: Like) => {
   return result;
 };
 
-export const incrementClipDownloads = async (clipId: number) => {
+export const incrementClipDownloads = async (clipId: string) => {
   const result = await db
     .update(schema.clips)
     .set({
