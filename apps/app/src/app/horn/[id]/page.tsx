@@ -15,7 +15,10 @@ const HornPage = () => {
 
   const { data: horn, isLoading } = trpc.getClip.useQuery({
     clipId: hornIdNum,
+    userId: user?.id,
   });
+
+  console.log('page-level horn', horn);
 
   if (isLoading || !horn || !user) {
     return (

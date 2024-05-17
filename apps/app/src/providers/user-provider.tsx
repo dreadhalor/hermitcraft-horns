@@ -39,16 +39,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     { enabled: !!impersonatedUserId },
   );
 
-  const queryKey = getQueryKey(trpc.getPaginatedClips);
+  const getPaginatedClipsQueryKey = getQueryKey(trpc.getPaginatedClips);
+  const getClipQueryKey = getQueryKey(trpc.getClip);
 
   const likeClipMutation = trpc.likeClip.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: getPaginatedClipsQueryKey });
+      queryClient.invalidateQueries({ queryKey: getClipQueryKey });
     },
   });
   const unlikeClipMutation = trpc.unlikeClip.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: getPaginatedClipsQueryKey });
+      queryClient.invalidateQueries({ queryKey: getClipQueryKey });
     },
   });
 
@@ -62,7 +65,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const incrementClipDownloadsMutation =
     trpc.incrementClipDownloads.useMutation({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey });
+        queryClient.invalidateQueries({ queryKey: getPaginatedClipsQueryKey });
+        queryClient.invalidateQueries({ queryKey: getClipQueryKey });
       },
     });
   const incrementClipDownloads = async (clipId: string) => {

@@ -54,7 +54,7 @@ const getTimeFilter = (timeFilter: TimeRange) => {
   }
 };
 
-export const getClip = async (clipId: string) => {
+export const getClip = async (clipId: string, userId?: string) => {
   const result = await db
     .select({
       clips: schema.clips,
@@ -85,7 +85,7 @@ export const getClip = async (clipId: string) => {
       hermit: hermitcraftChannels,
       start: parseFloat(clips.start),
       end: parseFloat(clips.end),
-      liked: false,
+      liked: userId ? await hasLikedClip(userId, clips.id) : false,
       likes: likesCount,
     })),
   );

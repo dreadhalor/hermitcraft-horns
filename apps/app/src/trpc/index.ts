@@ -30,9 +30,9 @@ export const appRouter = router({
   checkTaskStatus,
   ...UserRouterEndpoints,
   getClip: publicProcedure
-    .input(z.object({ clipId: z.string() }))
-    .query(async ({ input: { clipId } }) => {
-      const result = await drizzleGetClip(clipId);
+    .input(z.object({ clipId: z.string(), userId: z.string().optional() }))
+    .query(async ({ input: { clipId, userId } }) => {
+      const result = await drizzleGetClip(clipId, userId);
       return result;
     }),
   getClips: publicProcedure
