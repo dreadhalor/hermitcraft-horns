@@ -16,11 +16,13 @@ export const useEditClip = () => {
   const [error, setError] = useState<any>(null);
 
   const queryClient = useQueryClient();
-  const queryKey = getQueryKey(trpc.getPaginatedClips);
+  const paginatedClipsQueryKey = getQueryKey(trpc.getPaginatedClips);
+  const getClipQueryKey = getQueryKey(trpc.getClip);
 
   const editClipMutation = trpc.editClip.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: paginatedClipsQueryKey });
+      queryClient.invalidateQueries({ queryKey: getClipQueryKey });
     },
   });
 

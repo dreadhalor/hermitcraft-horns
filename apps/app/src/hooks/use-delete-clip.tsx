@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { trpc } from '@/trpc/client';
 import { getQueryKey } from '@trpc/react-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePathname, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 type DeleteClipParams = {
   id: string;
 };
 
 export const useDeleteClip = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
 
@@ -16,6 +21,10 @@ export const useDeleteClip = () => {
 
   const deleteClipMutation = trpc.deleteClip.useMutation({
     onSuccess: () => {
+      toast.success('Horn deleted!');
+      if (pathname.startsWith('/horn')) {
+        router.push('/');
+      }
       queryClient.invalidateQueries({ queryKey });
     },
   });

@@ -18,6 +18,18 @@ const HornPage = () => {
     userId: user?.id,
   });
 
+  if (!isLoading && !horn) {
+    return (
+      <div className='flex flex-1 items-center justify-center'>
+        No horn here, sorry! Try&nbsp;
+        <Link href='/' className='underline'>
+          going back
+        </Link>
+        .
+      </div>
+    );
+  }
+
   if (isLoading || !horn || !user) {
     return (
       <div className='flex flex-1 items-center justify-center'>Loading...</div>
