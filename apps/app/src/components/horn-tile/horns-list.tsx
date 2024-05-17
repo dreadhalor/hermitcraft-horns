@@ -43,7 +43,6 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
     hermitId: selectedHermit?.ChannelID ?? undefined,
     sort: selectedSort,
     page: selectedPage,
-    limit: 24,
     timeFilter: selectedTime,
     likedOnly: favorites,
   });
@@ -90,7 +89,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
           <HornTile key={clip.id} horn={clip} />
         ))}
         {clips.length === 0 && (
-          <div className='col-span-2 mt-4 text-center'>
+          <div className='col-span-2 mt-4 text-center sm:col-span-3'>
             {emptyMessage || 'No horns found matching these filters!'}
           </div>
         )}

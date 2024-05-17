@@ -151,7 +151,7 @@ export const getPaginatedClips = async ({
   hermitId,
   sort,
   page = 1,
-  limit = 20,
+  limit = 24,
   timeFilter,
   likedOnly,
 }: GetPaginatedClipsParams) => {
