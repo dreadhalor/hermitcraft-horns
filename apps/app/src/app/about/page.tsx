@@ -8,7 +8,7 @@ import Link from 'next/link';
 const AboutPage = () => {
   const router = useRouter();
   return (
-    <div className='about-page flex flex-1 flex-col gap-6 py-8'>
+    <div className='about-page flex flex-1 flex-col gap-6 px-8 py-8 sm:px-0'>
       <div className='flex items-center gap-4'>
         <button
           className='relative -mt-[2px] aspect-square h-[48px] transition-transform duration-300 ease-in-out hover:scale-110'
