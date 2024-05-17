@@ -43,7 +43,6 @@ export const useCreateAndSaveClip = () => {
   }: CreateAndSaveClipParams) => {
     if (!userId) throw new Error('User must be provided to create clip');
     if (!videoUrl) throw new Error('Video URL must be provided to create clip');
-    if (!start) throw new Error('Start time must be provided to create clip');
     if (!end) throw new Error('End time must be provided to create clip');
 
     setVideoUrl(videoUrl);
