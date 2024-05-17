@@ -14,7 +14,7 @@ const Home = () => {
         href='/about'
         className='my-[-10px] text-sm font-semibold text-[#354B87] hover:underline'
       >
-        By Scott Hetrick
+        By Scott Hetrick &rarr;
       </Link>
       <Tabs className='w-full' defaultValue='horns'>
         <TabsList className='mb-2 grid w-full grid-cols-2'>
