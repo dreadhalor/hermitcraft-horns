@@ -74,6 +74,13 @@ export const getAllClips = async ({
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
     timeFilter ? getTimeFilter(timeFilter) : undefined,
+    likedOnly && userId
+      ? sql`EXISTS (
+      SELECT 1 FROM ${schema.likes}
+      WHERE ${schema.likes.clip} = ${schema.clips.id}
+      AND ${schema.likes.user} = ${userId}
+    )`
+      : undefined,
   ].filter(Boolean);
 
   const sortFxn = (sort: string) => {
@@ -125,11 +132,7 @@ export const getAllClips = async ({
     })),
   );
 
-  const filteredClips = likedOnly
-    ? parsedFields.filter((clip) => clip.liked)
-    : parsedFields;
-
-  return filteredClips;
+  return parsedFields;
 };
 
 interface GetPaginatedClipsParams {
@@ -156,6 +159,13 @@ export const getPaginatedClips = async ({
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
     timeFilter ? getTimeFilter(timeFilter) : undefined,
+    likedOnly && userId
+      ? sql`EXISTS (
+      SELECT 1 FROM ${schema.likes}
+      WHERE ${schema.likes.clip} = ${schema.clips.id}
+      AND ${schema.likes.user} = ${userId}
+    )`
+      : undefined,
   ].filter(Boolean);
 
   const sortFxn = (sort: string) => {
@@ -200,7 +210,9 @@ export const getPaginatedClips = async ({
       .offset(offset)
       .limit(limit),
     db
-      .select({ count: sql<number>`count(*)`.as('count') })
+      .select({
+        count: sql<number>`count(*)`.as('count'),
+      })
       .from(schema.clips)
       .where(and(...sqlFilters)),
   ]);
@@ -217,18 +229,11 @@ export const getPaginatedClips = async ({
     })),
   );
 
-  const filteredClips = likedOnly
-    ? parsedFields.filter((clip) => clip.liked)
-    : parsedFields;
-
-  const totalCount = likedOnly
-    ? filteredClips.length
-    : totalCountResult[0].count;
-
+  const totalCount = totalCountResult[0].count;
   const totalPages = Math.ceil(totalCount / limit);
 
   return {
-    clips: filteredClips,
+    clips: parsedFields,
     totalPages,
   };
 };
