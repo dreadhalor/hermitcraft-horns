@@ -37,7 +37,6 @@ export const ourFileRouter = {
     audio: {
       maxFileSize: '8MB',
       maxFileCount: 1,
-      contentDisposition: 'attachment',
     },
   }).onUploadComplete((data) => {
     console.log('Upload completed', data);

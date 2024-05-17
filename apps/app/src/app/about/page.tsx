@@ -55,9 +55,8 @@ const AboutPage = () => {
           Create
         </Link>{' '}
         tab with the clip already set up for you so you won't have to wonder
-        what episode & how far into the episode it's from! Whether it's from a
-        short, an episode or a full stream, you can easily find the context of
-        any horn!
+        what episode or how far into the episode it's from! Whether it's from an
+        episode or a livestream, you can easily find the context of any horn!
       </p>
       <p className='text-lg text-gray-700'>
         & of course, this is just the initial release of the site. There will be

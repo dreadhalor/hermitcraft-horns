@@ -84,17 +84,24 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
             <Separator className='mx-4 w-auto bg-gray-600' />
             <SheetClose asChild>
               <Button
+                disabled={!user}
                 variant='ghost'
                 className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
                 onClick={toggleLike}
               >
-                {liked ? (
-                  <>
-                    <FaHeart className='mr-1' /> Unfavorite
-                  </>
+                {user ? (
+                  liked ? (
+                    <>
+                      <FaHeart className='mr-1' /> Unfavorite
+                    </>
+                  ) : (
+                    <>
+                      <FaRegHeart className='mr-1' /> Favorite
+                    </>
+                  )
                 ) : (
                   <>
-                    <FaRegHeart className='mr-1' /> Favorite
+                    <FaRegHeart className='mr-1' /> Sign in to favorite horns!
                   </>
                 )}
               </Button>

@@ -37,8 +37,10 @@ export function formatTime(milliseconds: number, granularity?: string): string {
 }
 
 export const getYouTubeId = (url: string) => {
-  const urlParams = new URLSearchParams(new URL(url).search);
-  return urlParams.get('v');
+  const regex =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
+  const match = url.match(regex);
+  return match ? match[1] : null;
 };
 
 export const getPaginationRange = ({

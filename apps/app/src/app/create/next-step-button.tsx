@@ -44,7 +44,7 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
         );
         toast(
           `Generating horn... please wait! This could take up to a minute, depending on traffic - please don't close the tab. 🐐`,
-          { duration: 20000 },
+          { duration: Infinity },
         );
         await createAndSaveClip({
           videoUrl,
