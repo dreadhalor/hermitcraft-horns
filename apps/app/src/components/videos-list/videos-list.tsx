@@ -10,7 +10,7 @@ export const VideosList = async () => {
   });
   return (
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px]'>
-      <span className='text-white'>Latest</span>
+      <span className='text-white'>Latest 25 Videos</span>
       <div className='flex flex-col gap-2 rounded-[5px] bg-white p-2'>
         {videos.map((video) => (
           <VideoListItem key={video.id} video={video} />
