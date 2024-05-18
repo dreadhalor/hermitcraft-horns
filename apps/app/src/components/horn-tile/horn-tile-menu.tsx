@@ -19,6 +19,7 @@ import { Horn } from '@/trpc';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import GoatHornSVG from '@/assets/goat-horn-icon.svg';
 import { toast } from 'sonner';
+import { usePathname } from 'next/navigation';
 
 type Props = {
   horn: Horn;
@@ -31,6 +32,7 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
   const clipUrl = horn.clipUrl ?? '';
   const tagline = horn.tagline ?? '';
   const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
+  const pathname = usePathname();
   const isOwner = user?.id === hornUser?.id;
 
   const toggleLike = () => {
@@ -96,18 +98,20 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
             </SheetHeader>
             <Separator className='mx-4 w-auto bg-gray-600' />
             <div className='grid grid-cols-[auto_1fr]'>
-              <SheetClose asChild>
-                <Link
-                  href={`/horn/${horn.id}`}
-                  className={cn(
-                    buttonVariants({ variant: 'ghost' }),
-                    'text-md group col-span-2 grid h-[60px] w-full grid-cols-subgrid items-center justify-start gap-3 rounded-none hover:bg-[#4665BA] hover:text-white',
-                  )}
-                >
-                  <GoatHornSVG className='h-5 w-5 transition-colors group-hover:fill-white' />
-                  <span>Go to horn</span>
-                </Link>
-              </SheetClose>
+              {!pathname.startsWith('/horn') && (
+                <SheetClose asChild>
+                  <Link
+                    href={`/horn/${horn.id}`}
+                    className={cn(
+                      buttonVariants({ variant: 'ghost' }),
+                      'text-md group col-span-2 grid h-[60px] w-full grid-cols-subgrid items-center justify-start gap-3 rounded-none hover:bg-[#4665BA] hover:text-white',
+                    )}
+                  >
+                    <GoatHornSVG className='h-5 w-5 transition-colors group-hover:fill-white' />
+                    <span>Go to horn</span>
+                  </Link>
+                </SheetClose>
+              )}
               <SheetClose asChild>
                 <Button
                   variant='ghost'
