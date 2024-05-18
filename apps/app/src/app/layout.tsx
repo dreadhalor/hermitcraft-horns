@@ -10,6 +10,8 @@ import { MainNav } from '@/components/main-nav';
 import { UserProvider } from '@/providers/user-provider';
 import { AppProvider } from '@/providers/app-provider';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -53,6 +55,8 @@ export default function RootLayout({
               </TooltipProvider>
             </AppProvider>
           </TRPCProvider>
+          <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
