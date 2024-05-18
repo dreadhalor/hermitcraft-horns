@@ -102,8 +102,16 @@ const AboutPage = () => {
         </Link>
       </p>
       <p>
-        Oh, & if anyone's looking for a software engineer... I'm ✨recently
-        unemployed & could use a job✨ 😉
+        Oh, & if anyone's looking for a software engineer...{' '}
+        <a
+          href='https://scottjhetrick.com'
+          target='_blank'
+          rel='noreferrer'
+          className='text-blue-700 underline hover:text-blue-800'
+        >
+          I'm ✨recently unemployed & could use a job✨
+        </a>{' '}
+        😉
       </p>
     </div>
   );
