@@ -11,6 +11,8 @@ export const ZoomSlider = () => {
     setZoomStart,
     zoomEnd,
     setZoomEnd,
+    fineZoomStart,
+    fineZoomEnd,
     duration,
     clipStart,
     clipEnd,
@@ -18,6 +20,9 @@ export const ZoomSlider = () => {
 
   const clipStartRelative = duration ? clipStart / duration : 0;
   const clipEndRelative = duration ? clipEnd / duration : 0;
+
+  const fineZoomStartRelative = duration ? fineZoomStart / duration : 0;
+  const fineZoomEndRelative = duration ? fineZoomEnd / duration : 0;
 
   const [sliderActive, setSliderActive] = React.useState(false);
   const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);
@@ -47,6 +52,15 @@ export const ZoomSlider = () => {
       >
         <SliderPrimitive.Track className='relative h-5 w-full grow bg-primary/20'>
           <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,60%,60%)]' />
+          <SliderPrimitive.Range asChild>
+            <div
+              className='absolute inset-y-0 bg-[hsl(240,55%,50%)]'
+              style={{
+                left: `${fineZoomStartRelative * 100}%`,
+                right: `${(1 - fineZoomEndRelative) * 100}%`,
+              }}
+            ></div>
+          </SliderPrimitive.Range>
           <SliderPrimitive.Range asChild>
             <div
               className='absolute inset-y-0 bg-[hsl(0,50%,50%)]'
