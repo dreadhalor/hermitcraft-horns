@@ -10,6 +10,13 @@ type ClipBuilderContextType = {
   setZoomStart: (value: number) => void;
   zoomEnd: number;
   setZoomEnd: (value: number) => void;
+  fineZoomStart: number;
+  setFineZoomStart: (value: number) => void;
+  fineZoomEnd: number;
+  setFineZoomEnd: (value: number) => void;
+  usingFineZoom: boolean;
+  setUsingFineZoom: (value: boolean) => void;
+  getClipZoomRange: () => [number, number];
   playTime: number;
   setPlayTime: (value: number) => void;
   playSliderValue: number;
@@ -53,6 +60,11 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [zoomStart, setZoomStart] = useState(0);
   const [zoomEnd, setZoomEnd] = useState(0);
 
+  const [fineZoomStart, setFineZoomStart] = useState(0);
+  const [fineZoomEnd, setFineZoomEnd] = useState(0);
+
+  const [usingFineZoom, setUsingFineZoom] = useState(false);
+
   const [playTime, setPlayTime] = useState(0);
   const [playSliderValue, setPlaySliderValue] = useState(0);
 
@@ -74,6 +86,28 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const searchParams = useSearchParams();
   const videoId = searchParams.get('id') || '';
   const videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
+
+  useEffect(() => {
+    if (!usingFineZoom) {
+      setFineZoomStart(zoomStart);
+      setFineZoomEnd(zoomEnd);
+      return;
+    }
+    // check for zoomStart
+    if (fineZoomStart < zoomStart) {
+      setFineZoomStart(zoomStart);
+    }
+    if (fineZoomEnd < zoomStart) {
+      setFineZoomEnd(zoomStart);
+    }
+    // check for zoomEnd
+    if (fineZoomStart > zoomEnd) {
+      setFineZoomStart(zoomEnd);
+    }
+    if (fineZoomEnd > zoomEnd) {
+      setFineZoomEnd(zoomEnd);
+    }
+  }, [fineZoomStart, zoomStart, fineZoomEnd, zoomEnd]);
 
   // we want to be able to play the clip through once in a function we will export & trigger with a button
   const playClip = () => {
@@ -114,6 +148,13 @@ export const ClipBuilderProvider = ({ children }: Props) => {
     }
   }, [playerRef, setPlayTime, playing]);
 
+  const getClipZoomRange = (): [number, number] => {
+    if (usingFineZoom) {
+      return [fineZoomStart, fineZoomEnd];
+    }
+    return [zoomStart, zoomEnd];
+  };
+
   return (
     <Suspense
       fallback={
@@ -128,6 +169,13 @@ export const ClipBuilderProvider = ({ children }: Props) => {
           setZoomStart,
           zoomEnd,
           setZoomEnd,
+          fineZoomStart,
+          setFineZoomStart,
+          fineZoomEnd,
+          setFineZoomEnd,
+          usingFineZoom,
+          setUsingFineZoom,
+          getClipZoomRange,
           playTime,
           setPlayTime,
           playSliderValue,

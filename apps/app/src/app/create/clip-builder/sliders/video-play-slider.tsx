@@ -51,7 +51,7 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
         )}
         min={min}
         max={max}
-        step={1000}
+        step={100}
         value={[playSliderValue]}
         onValueChange={([val]) => handlePlaySliderChange(val)}
         onValueCommit={([val]) => handlePlaySliderValueCommit(val)}

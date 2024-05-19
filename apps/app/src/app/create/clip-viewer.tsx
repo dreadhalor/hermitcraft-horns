@@ -27,6 +27,8 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
     setClipEnd,
     setZoomStart,
     setZoomEnd,
+    setFineZoomStart,
+    setFineZoomEnd,
     setPlayTime,
   } = useClipBuilder();
 
@@ -38,19 +40,25 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
       setDuration(duration);
       if (initialClipStart !== undefined) {
         setClipStart(initialClipStart);
-        setZoomStart(Math.max(0, initialClipStart - initZoomMargin));
+        const initZoomStart = Math.max(0, initialClipStart - initZoomMargin);
+        setZoomStart(initZoomStart);
+        setFineZoomStart(initZoomStart);
         setPlayTime(initialClipStart / 1000);
       } else {
         setClipStart(0);
         setZoomStart(0);
+        setFineZoomStart(0);
         setPlayTime(0);
       }
       if (initialClipEnd !== undefined) {
         setClipEnd(initialClipEnd);
-        setZoomEnd(Math.min(initialClipEnd + initZoomMargin, duration));
+        const initZoomEnd = Math.min(initialClipEnd + initZoomMargin, duration);
+        setZoomEnd(initZoomEnd);
+        setFineZoomEnd(initZoomEnd);
       } else {
         setClipEnd(0);
         setZoomEnd(duration);
+        setFineZoomEnd(duration);
       }
     }
   }, [playerRef, playerReady]);

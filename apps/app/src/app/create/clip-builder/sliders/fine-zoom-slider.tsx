@@ -5,65 +5,51 @@ import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/tooltip';
 
-export const ZoomSlider = () => {
+export const FineZoomSlider = () => {
   const {
     zoomStart,
-    setZoomStart,
-    zoomEnd,
-    setZoomEnd,
-    usingFineZoom,
     fineZoomStart,
+    setFineZoomStart,
+    zoomEnd,
     fineZoomEnd,
-    duration,
+    setFineZoomEnd,
     clipStart,
     clipEnd,
   } = useClipBuilder();
 
-  const clipStartRelative = duration ? clipStart / duration : 0;
-  const clipEndRelative = duration ? clipEnd / duration : 0;
+  const zoomRange = zoomEnd - zoomStart;
 
-  const fineZoomStartRelative = duration ? fineZoomStart / duration : 0;
-  const fineZoomEndRelative = duration ? fineZoomEnd / duration : 0;
+  const clipStartRelative = (clipStart - zoomStart) / zoomRange;
+  const clipEndRelative = (clipEnd - zoomStart) / zoomRange;
 
   const [sliderActive, setSliderActive] = React.useState(false);
   const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);
   const [rightThumbFocused, setRightThumbFocused] = React.useState(false);
 
   return (
-    <div className='flex w-full flex-col'>
+    <div className='mt-2 flex flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Zoom: {formatDuration(zoomEnd - zoomStart)} [{formatTime(zoomStart)} -{' '}
-        {formatTime(zoomEnd)}]
+        Fine Zoom: {formatDuration(fineZoomEnd - fineZoomStart)} [
+        {formatTime(fineZoomStart)} - {formatTime(fineZoomEnd)}]
       </span>
-      <VideoPlaySlider min={0} max={duration} />
+      <VideoPlaySlider min={zoomStart} max={zoomEnd} />
       <SliderPrimitive.Root
         className={cn(
           'relative flex w-full touch-none select-none items-center',
         )}
-        min={0}
-        max={duration || 0}
-        value={[zoomStart, zoomEnd]}
+        min={zoomStart}
+        max={zoomEnd}
+        value={[fineZoomStart, fineZoomEnd]}
         onValueChange={(value) => {
-          setZoomStart(value[0]);
-          setZoomEnd(value[1]);
+          setFineZoomStart(value[0]);
+          setFineZoomEnd(value[1]);
         }}
-        step={1000}
+        step={100}
         onPointerDown={() => setSliderActive(true)}
         onPointerUp={() => setSliderActive(false)}
       >
-        <SliderPrimitive.Track className='relative h-5 w-full grow bg-primary/20'>
-          <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,60%,60%)]' />
-          {usingFineZoom && (
-            <SliderPrimitive.Range asChild>
-              <div
-                className='absolute inset-y-0 bg-[hsl(240,55%,50%)]'
-                style={{
-                  left: `${fineZoomStartRelative * 100}%`,
-                  right: `${(1 - fineZoomEndRelative) * 100}%`,
-                }}
-              ></div>
-            </SliderPrimitive.Range>
-          )}
+        <SliderPrimitive.Track className='relative h-5 w-full grow border-x-[3px] border-[#262673] bg-[hsl(240,60%,60%)]'>
+          <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,55%,50%)]' />
           <SliderPrimitive.Range asChild>
             <div
               className='absolute inset-y-0 bg-[hsl(0,50%,50%)]'
@@ -89,7 +75,7 @@ export const ZoomSlider = () => {
               </SliderPrimitive.Thumb>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{formatTime(zoomStart)}</p>
+              <p>{formatTime(fineZoomStart)}</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip open={rightThumbFocused && sliderActive}>
@@ -108,14 +94,14 @@ export const ZoomSlider = () => {
               </SliderPrimitive.Thumb>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{formatTime(zoomEnd)}</p>
+              <p>{formatTime(fineZoomEnd)}</p>
             </TooltipContent>
           </Tooltip>
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
       <span className='mt-0.5 flex items-center justify-between text-sm leading-4'>
-        <span>{formatTime(0)}</span>
-        <span>{formatTime(duration)}</span>
+        <span>{formatTime(fineZoomStart)}</span>
+        <span>{formatTime(fineZoomEnd)}</span>
       </span>
     </div>
   );

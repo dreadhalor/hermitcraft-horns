@@ -1,22 +1,30 @@
 import React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
-import { cn, formatTime } from '@/lib/utils';
+import { cn, formatDuration, formatTime } from '@/lib/utils';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/tooltip';
 
 export const ClipSlider = () => {
-  const { zoomStart, zoomEnd, clipStart, setClipStart, clipEnd, setClipEnd } =
-    useClipBuilder();
+  const {
+    getClipZoomRange,
+    clipStart,
+    setClipStart,
+    clipEnd,
+    setClipEnd,
+    usingFineZoom,
+  } = useClipBuilder();
 
   const [sliderActive, setSliderActive] = React.useState(false);
   const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);
   const [rightThumbFocused, setRightThumbFocused] = React.useState(false);
 
+  const [zoomStart, zoomEnd] = getClipZoomRange();
+
   return (
     <div className='flex flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Clip: {(clipEnd - clipStart) / 1000} seconds ({formatTime(clipStart)}
+        Clip: {formatDuration(clipEnd - clipStart)} ({formatTime(clipStart)}
         &nbsp;&rarr;&nbsp;
         {formatTime(clipEnd)})
       </span>
@@ -29,14 +37,20 @@ export const ClipSlider = () => {
         max={zoomEnd}
         value={[Math.max(clipStart, zoomStart), Math.min(clipEnd, zoomEnd)]}
         onValueChange={(value) => {
-          setClipStart(value[0]);
-          setClipEnd(value[1]);
+          const [start, end] = value;
+          setClipStart(start);
+          setClipEnd(end);
         }}
-        step={100}
+        step={usingFineZoom ? 50 : 100}
         onPointerDown={() => setSliderActive(true)}
         onPointerUp={() => setSliderActive(false)}
       >
-        <SliderPrimitive.Track className='relative h-5 w-full grow border-x-[3px] border-[#262673] bg-[hsl(240,50%,50%)]'>
+        <SliderPrimitive.Track
+          className={cn(
+            'relative h-5 w-full grow border-x-[3px] border-[#262673]',
+            usingFineZoom ? 'bg-[hsl(240,55%,50%)]' : 'bg-[hsl(240,60%,60%)]',
+          )}
+        >
           <SliderPrimitive.Range className='absolute h-full bg-[hsl(0,50%,50%)]' />
           <Tooltip open={leftThumbFocused && sliderActive}>
             <TooltipTrigger asChild>
