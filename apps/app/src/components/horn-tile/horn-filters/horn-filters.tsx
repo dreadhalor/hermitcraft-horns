@@ -75,11 +75,13 @@ export const HornFilters = ({
             <Separator className='mx-4 w-auto bg-gray-600' />
             <Button
               variant='ghost'
-              className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
+              className='text-md h-[60px] w-full justify-start gap-2 truncate rounded-none hover:bg-[#4665BA] hover:text-white'
               onClick={() => setTab('quote-search')}
             >
-              <IoChatbubbleOutline size={24} />
-              Quote: {selectedQuote ? `"${selectedQuote}"` : 'None'}
+              <IoChatbubbleOutline size={24} className='shrink-0' />
+              <span className='flex-1 truncate'>
+                Quote: {selectedQuote ? `"${selectedQuote}"` : 'None'}
+              </span>
             </Button>
             <Button
               variant='ghost'
