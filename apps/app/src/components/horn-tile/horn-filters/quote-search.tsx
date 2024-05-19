@@ -48,7 +48,7 @@ export const QuoteSearch = ({ selectedQuote, setSelectedQuote }: Props) => {
                   spellCheck={false}
                   placeholder='Search for a quote'
                   {...field}
-                  className='py-4'
+                  className='py-4 text-base'
                 />
               </FormControl>
             </FormItem>

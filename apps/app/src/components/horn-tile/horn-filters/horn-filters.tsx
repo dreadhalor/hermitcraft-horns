@@ -73,45 +73,50 @@ export const HornFilters = ({
               </SheetClose>
             </SheetHeader>
             <Separator className='mx-4 w-auto bg-gray-600' />
-            <Button
-              variant='ghost'
-              className='text-md h-[60px] w-full justify-start gap-2 truncate rounded-none hover:bg-[#4665BA] hover:text-white'
-              onClick={() => setTab('quote-search')}
-            >
-              <IoChatbubbleOutline size={24} className='shrink-0' />
-              <span className='flex-1 truncate'>
-                Quote: {selectedQuote ? `"${selectedQuote}"` : 'None'}
-              </span>
-            </Button>
-            <Button
-              variant='ghost'
-              className='text-md h-[60px] w-full justify-start gap-2 rounded-none hover:bg-[#4665BA] hover:text-white'
-              onClick={() => setTab('hermit-select')}
-            >
-              <FaRegUser size={24} />
-              Hermit:{' '}
-              {selectedHermit ? (
-                <>
-                  <img
-                    src={selectedHermit.ProfilePicture}
-                    alt={selectedHermit.DisplayName}
-                    className='aspect-square w-[40px]'
-                  />
-                  {selectedHermit.DisplayName}
-                </>
-              ) : (
-                'All'
-              )}
-            </Button>
-
-            <Button
-              variant='ghost'
-              className='text-md h-[60px] w-full justify-start gap-2 rounded-none capitalize hover:bg-[#4665BA] hover:text-white'
-              onClick={() => setTab('time-select')}
-            >
-              <IoCalendarOutline size={24} />
-              Time Posted: {selectedTime.replace(/([A-Z])/g, ' $1')}
-            </Button>
+            <div className='grid grid-cols-[auto_1fr]'>
+              <Button
+                variant='ghost'
+                className='text-md col-span-2 grid h-[60px] w-full grid-cols-subgrid items-center justify-start gap-3 rounded-none text-start hover:bg-[#4665BA] hover:text-white'
+                onClick={() => setTab('quote-search')}
+              >
+                <IoChatbubbleOutline size={24} className='shrink-0' />
+                <span className='truncate'>
+                  Quote: {selectedQuote ? `"${selectedQuote}"` : 'None'}
+                </span>
+              </Button>
+              <Button
+                variant='ghost'
+                className='text-md col-span-2 grid h-[60px] w-full grid-cols-subgrid items-center justify-start gap-3 rounded-none text-start hover:bg-[#4665BA] hover:text-white'
+                onClick={() => setTab('hermit-select')}
+              >
+                <FaRegUser size={22} />
+                <span>
+                  Hermit:{' '}
+                  {selectedHermit ? (
+                    <>
+                      <img
+                        src={selectedHermit.ProfilePicture}
+                        alt={selectedHermit.DisplayName}
+                        className='aspect-square w-[40px]'
+                      />
+                      {selectedHermit.DisplayName}
+                    </>
+                  ) : (
+                    'All'
+                  )}
+                </span>
+              </Button>
+              <Button
+                variant='ghost'
+                className='text-md col-span-2 grid h-[60px] w-full grid-cols-subgrid items-center justify-start gap-3 rounded-none text-start capitalize hover:bg-[#4665BA] hover:text-white'
+                onClick={() => setTab('time-select')}
+              >
+                <IoCalendarOutline size={24} />
+                <span>
+                  Time Posted: {selectedTime.replace(/([A-Z])/g, ' $1')}
+                </span>
+              </Button>
+            </div>
             <div className='flex p-2 pt-1'>
               <SheetClose asChild>
                 <Button
