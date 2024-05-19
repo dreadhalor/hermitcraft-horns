@@ -72,6 +72,7 @@ export const appRouter = router({
         limit: z.number().min(1).max(100).optional(),
         timeFilter: z.custom<TimeRange>().optional(),
         likedOnly: z.boolean().optional(),
+        searchTerm: z.string().optional(),
       }),
     )
     .query(
@@ -85,6 +86,7 @@ export const appRouter = router({
           limit,
           timeFilter,
           likedOnly,
+          searchTerm,
         },
       }) => {
         const result = await drizzleGetPaginatedClips({
@@ -96,6 +98,7 @@ export const appRouter = router({
           limit,
           timeFilter,
           likedOnly,
+          searchTerm,
         });
         return result;
       },

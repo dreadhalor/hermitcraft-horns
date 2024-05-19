@@ -56,7 +56,7 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
       <TabsContent value='preview' className='flex-1 overflow-auto'>
         <PreviewPane />
       </TabsContent>
-      <div className='mx-4 flex gap-2'>
+      <div className='mx-4 mt-2 flex gap-2'>
         <TabsList className='flex gap-2 bg-transparent'>
           <TabsTrigger
             disabled={disabled}

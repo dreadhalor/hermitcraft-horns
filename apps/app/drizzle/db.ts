@@ -183,6 +183,7 @@ interface GetPaginatedClipsParams {
   limit?: number;
   timeFilter?: TimeRange;
   likedOnly?: boolean;
+  searchTerm?: string;
 }
 export const getPaginatedClips = async ({
   userId,
@@ -193,7 +194,9 @@ export const getPaginatedClips = async ({
   limit = 24,
   timeFilter,
   likedOnly,
+  searchTerm,
 }: GetPaginatedClipsParams) => {
+  console.log('searchTerm', searchTerm);
   const sqlFilters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
@@ -205,9 +208,16 @@ export const getPaginatedClips = async ({
       AND ${schema.likes.user} = ${userId}
     )`
       : undefined,
+    searchTerm
+      ? sql`similarity(${schema.clips.tagline}, ${searchTerm}) > 0.1`
+      : undefined,
   ].filter(Boolean);
 
-  const sortFxn = (sort: string) => {
+  const sortFxn = (sort: string | undefined, searchTerm?: string) => {
+    if (searchTerm) {
+      return sql`similarity(${schema.clips.tagline}, ${searchTerm}) DESC`;
+    }
+
     switch (sort) {
       case 'newest':
         return sql`${schema.clips.createdAt} DESC`;
@@ -245,7 +255,7 @@ export const getPaginatedClips = async ({
         schema.users.id,
         schema.hermitcraftChannels.ChannelID,
       )
-      .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`)
+      .orderBy(sortFxn(sort, searchTerm))
       .offset(offset)
       .limit(limit),
     db
