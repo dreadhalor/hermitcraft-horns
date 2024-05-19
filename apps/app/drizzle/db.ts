@@ -213,7 +213,11 @@ export const getPaginatedClips = async ({
       : undefined,
   ].filter(Boolean);
 
-  const sortFxn = (sort: string) => {
+  const sortFxn = (sort: string | undefined, searchTerm?: string) => {
+    if (searchTerm) {
+      return sql`similarity(${schema.clips.tagline}, ${searchTerm}) DESC`;
+    }
+
     switch (sort) {
       case 'newest':
         return sql`${schema.clips.createdAt} DESC`;
@@ -251,7 +255,7 @@ export const getPaginatedClips = async ({
         schema.users.id,
         schema.hermitcraftChannels.ChannelID,
       )
-      .orderBy(sort ? sortFxn(sort) : sql`${schema.clips.id} DESC`)
+      .orderBy(sortFxn(sort, searchTerm))
       .offset(offset)
       .limit(limit),
     db
