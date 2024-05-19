@@ -11,6 +11,7 @@ export const ZoomSlider = () => {
     setZoomStart,
     zoomEnd,
     setZoomEnd,
+    usingFineZoom,
     fineZoomStart,
     fineZoomEnd,
     duration,
@@ -52,15 +53,17 @@ export const ZoomSlider = () => {
       >
         <SliderPrimitive.Track className='relative h-5 w-full grow bg-primary/20'>
           <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,60%,60%)]' />
-          <SliderPrimitive.Range asChild>
-            <div
-              className='absolute inset-y-0 bg-[hsl(240,55%,50%)]'
-              style={{
-                left: `${fineZoomStartRelative * 100}%`,
-                right: `${(1 - fineZoomEndRelative) * 100}%`,
-              }}
-            ></div>
-          </SliderPrimitive.Range>
+          {usingFineZoom && (
+            <SliderPrimitive.Range asChild>
+              <div
+                className='absolute inset-y-0 bg-[hsl(240,55%,50%)]'
+                style={{
+                  left: `${fineZoomStartRelative * 100}%`,
+                  right: `${(1 - fineZoomEndRelative) * 100}%`,
+                }}
+              ></div>
+            </SliderPrimitive.Range>
+          )}
           <SliderPrimitive.Range asChild>
             <div
               className='absolute inset-y-0 bg-[hsl(0,50%,50%)]'
