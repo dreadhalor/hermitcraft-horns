@@ -138,7 +138,7 @@ export const ClipBuilderPane = () => {
               value='fine-zoom'
               className='border-0 border-[#4665BA] pb-0 data-[state=open]:border-b'
             >
-              <AccordionHeader className='flex items-center gap-1'>
+              <AccordionHeader className='flex items-center gap-2'>
                 <ZoomSlider />
                 <AccordionTrigger noRotate asChild>
                   <Button
