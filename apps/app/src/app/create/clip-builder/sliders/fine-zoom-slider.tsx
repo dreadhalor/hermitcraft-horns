@@ -100,8 +100,8 @@ export const FineZoomSlider = () => {
         </SliderPrimitive.Track>
       </SliderPrimitive.Root>
       <span className='mt-0.5 flex items-center justify-between text-sm leading-4'>
-        <span>{formatTime(fineZoomStart)}</span>
-        <span>{formatTime(fineZoomEnd)}</span>
+        <span>{formatTime(zoomStart)}</span>
+        <span>{formatTime(zoomEnd)}</span>
       </span>
     </div>
   );
