@@ -144,7 +144,7 @@ async function downloadAudioSlice(
     const endTime = formatTime(endMilliseconds);
     console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
 
-    const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;
+    const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --audio-quality 0 --postprocessor-args "-af loudnorm=I=-16:LRA=11:TP=-1.5" --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;
 
     await new Promise<void>((resolve, reject) => {
       exec(command, (error, stdout, stderr) => {
