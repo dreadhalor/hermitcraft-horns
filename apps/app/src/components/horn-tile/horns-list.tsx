@@ -22,6 +22,7 @@ import {
 } from '@ui/pagination';
 import { TimeRange, getPaginationRange } from '@/lib/utils';
 import { HornFilters } from './horn-filters/horn-filters';
+import { Button } from '../ui/button';
 
 interface Props {
   id?: string;
@@ -34,6 +35,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
 
   const [selectedSort, setSelectedSort] = useState<string>('newest');
   const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<TimeRange>('allTime');
   const [selectedPage, setSelectedPage] = useState<number>(1);
 
@@ -45,6 +47,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
     page: selectedPage,
     timeFilter: selectedTime,
     likedOnly: favorites,
+    searchTerm: selectedQuote || undefined,
   });
 
   const { clips, totalPages = 5 } = data ?? {};
@@ -64,6 +67,18 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
 
   return (
     <Card className='flex w-full flex-col gap-[10px] overflow-hidden rounded-lg border-none bg-[#4665BA] p-[20px] text-white'>
+      {selectedQuote && (
+        <div className='flex items-baseline pb-2 text-start'>
+          Quote search:&nbsp;<strong>{selectedQuote}</strong>
+          <Button
+            variant='link'
+            className='ml-auto p-0 text-xs text-white'
+            onClick={() => setSelectedQuote(null)}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
       <div className='flex items-center justify-between'>
         <Select value={selectedSort} onValueChange={setSelectedSort}>
           <SelectTrigger className='w-[160px]'>
@@ -81,6 +96,8 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
             setSelectedHermit,
             selectedTime,
             setSelectedTime,
+            selectedQuote,
+            setSelectedQuote,
           }}
         />
       </div>

@@ -183,6 +183,7 @@ interface GetPaginatedClipsParams {
   limit?: number;
   timeFilter?: TimeRange;
   likedOnly?: boolean;
+  searchTerm?: string;
 }
 export const getPaginatedClips = async ({
   userId,
@@ -193,7 +194,9 @@ export const getPaginatedClips = async ({
   limit = 24,
   timeFilter,
   likedOnly,
+  searchTerm,
 }: GetPaginatedClipsParams) => {
+  console.log('searchTerm', searchTerm);
   const sqlFilters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
@@ -204,6 +207,9 @@ export const getPaginatedClips = async ({
       WHERE ${schema.likes.clip} = ${schema.clips.id}
       AND ${schema.likes.user} = ${userId}
     )`
+      : undefined,
+    searchTerm
+      ? sql`similarity(${schema.clips.tagline}, ${searchTerm}) > 0.1`
       : undefined,
   ].filter(Boolean);
 
