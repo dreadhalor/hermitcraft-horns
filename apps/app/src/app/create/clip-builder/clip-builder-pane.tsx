@@ -6,6 +6,16 @@ import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { ClipSlider } from './sliders/clip-slider';
 import { ZoomSlider } from './sliders/zoom-slider';
 import { formatTime } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionHeader,
+  AccordionItem,
+  AccordionTrigger,
+} from '@ui/accordion';
+import { FineZoomSlider } from './sliders/fine-zoom-slider';
+import OpenZoomSlider from '@/assets/open-zoom-slider.svg';
+import CloseZoomSlider from '@/assets/close-zoom-slider.svg';
 
 export const ClipBuilderPane = () => {
   const {
@@ -16,6 +26,8 @@ export const ClipBuilderPane = () => {
     playTime,
     setPlayTime,
     playing,
+    usingFineZoom,
+    setUsingFineZoom,
   } = useClipBuilder();
   const [isLooping, setIsLooping] = useState(false);
 
@@ -114,7 +126,40 @@ export const ClipBuilderPane = () => {
           </Button>
         </div>
         <div className='flex flex-col gap-2'>
-          <ZoomSlider />
+          <Accordion
+            value={usingFineZoom ? 'fine-zoom' : 'zoom'}
+            onValueChange={(value) => {
+              setUsingFineZoom(value === 'fine-zoom');
+            }}
+            type='single'
+            collapsible
+          >
+            <AccordionItem
+              value='fine-zoom'
+              className='border-0 border-[#4665BA] pb-0 data-[state=open]:border-b'
+            >
+              <AccordionHeader className='flex items-center gap-1'>
+                <ZoomSlider />
+                <AccordionTrigger noRotate asChild>
+                  <Button
+                    variant='outline'
+                    className='flex h-8 w-7 shrink-0 items-center justify-center border-0 bg-primary/15 p-0 hover:bg-primary/20'
+                  >
+                    {usingFineZoom ? (
+                      <CloseZoomSlider className='w-5' />
+                    ) : (
+                      <OpenZoomSlider className='w-5' />
+                    )}
+                  </Button>
+                </AccordionTrigger>
+              </AccordionHeader>
+
+              <AccordionContent wrapperClassName='mx-[-14px] px-[14px]'>
+                <FineZoomSlider />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          <div className='flex w-full items-center'></div>
           <ClipSlider />
         </div>
       </div>

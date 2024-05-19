@@ -35,6 +35,9 @@ export function formatTime(milliseconds: number, granularity?: string): string {
 
   return timeString;
 }
+export function formatDuration(milliseconds: number): string {
+  return `${milliseconds / 1000}s`;
+}
 
 export const getYouTubeId = (url: string) => {
   const regex =

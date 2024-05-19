@@ -1,6 +1,6 @@
 import React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
-import { cn, formatTime } from '@/lib/utils';
+import { cn, formatDuration, formatTime } from '@/lib/utils';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { VideoPlaySlider } from './video-play-slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/tooltip';
@@ -24,9 +24,10 @@ export const ZoomSlider = () => {
   const [rightThumbFocused, setRightThumbFocused] = React.useState(false);
 
   return (
-    <div className='flex flex-col'>
+    <div className='flex w-full flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Zoom: [{formatTime(zoomStart)} - {formatTime(zoomEnd)}]
+        Zoom: {formatDuration(zoomEnd - zoomStart)} [{formatTime(zoomStart)} -{' '}
+        {formatTime(zoomEnd)}]
       </span>
       <VideoPlaySlider min={0} max={duration} />
       <SliderPrimitive.Root
@@ -45,7 +46,7 @@ export const ZoomSlider = () => {
         onPointerUp={() => setSliderActive(false)}
       >
         <SliderPrimitive.Track className='relative h-5 w-full grow bg-primary/20'>
-          <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,50%,50%)]' />
+          <SliderPrimitive.Range className='absolute h-full bg-[hsl(240,60%,60%)]' />
           <SliderPrimitive.Range asChild>
             <div
               className='absolute inset-y-0 bg-[hsl(0,50%,50%)]'
