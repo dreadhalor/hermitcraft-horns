@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import p5 from 'p5';
 
 const progressColor = 'purple';
@@ -15,6 +15,34 @@ const Page = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [startSelection, setStartSelection] = useState<number | null>(null);
   const [endSelection, setEndSelection] = useState<number | null>(null);
+
+  const createAudioUrl = (buffer: AudioBuffer): string => {
+    const audioContext = new AudioContext();
+    const audioSource = audioContext.createBufferSource();
+    audioSource.buffer = buffer;
+
+    const destinationNode = audioContext.createMediaStreamDestination();
+    audioSource.connect(destinationNode);
+    audioSource.start();
+
+    const mediaRecorder = new MediaRecorder(destinationNode.stream);
+    const chunks: Blob[] = [];
+
+    mediaRecorder.ondataavailable = (event: BlobEvent) => {
+      chunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+    };
+
+    mediaRecorder.start();
+    setTimeout(() => mediaRecorder.stop(), buffer.duration * 1000);
+
+    return '';
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,69 +62,68 @@ const Page = () => {
     fileReader.readAsArrayBuffer(file);
   };
 
-  const drawWaveform = (
-    p: p5,
-    buffer: AudioBuffer,
-    isSeekWaveform: boolean
-  ) => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  const drawWaveform = useCallback(
+    (p: p5, buffer: AudioBuffer, isSeekWaveform: boolean) => {
+      const audio = audioRef.current;
+      if (!audio) return;
 
-    const width = p.width;
-    const height = p.height;
-    const data = buffer.getChannelData(0);
-    const step = Math.ceil(data.length / width);
-    const amp = height / 2;
-    const progress = audio.currentTime / audio.duration;
+      const width = p.width;
+      const height = p.height;
+      const data = buffer.getChannelData(0);
+      const step = Math.ceil(data.length / width);
+      const amp = height / 2;
+      const progress = audio.currentTime / audio.duration;
 
-    p.background(0);
-    p.strokeWeight(1);
+      p.background(0);
+      p.strokeWeight(1);
 
-    // Draw waveform before playhead
-    p.stroke(progressColor);
-    for (let i = 0; i < width * progress; i++) {
-      let min = 1.0;
-      let max = -1.0;
-      for (let j = 0; j < step; j++) {
-        const datum = data[i * step + j];
-        if (datum < min) {
-          min = datum;
+      // Draw waveform before playhead
+      p.stroke(progressColor);
+      for (let i = 0; i < width * progress; i++) {
+        let min = 1.0;
+        let max = -1.0;
+        for (let j = 0; j < step; j++) {
+          const datum = data[i * step + j];
+          if (datum < min) {
+            min = datum;
+          }
+          if (datum > max) {
+            max = datum;
+          }
         }
-        if (datum > max) {
-          max = datum;
-        }
+        p.line(i, (1 + min) * amp, i, (1 + max) * amp);
       }
-      p.line(i, (1 + min) * amp, i, (1 + max) * amp);
-    }
 
-    // Draw waveform after playhead
-    p.stroke(waveColor);
-    for (let i = Math.ceil(width * progress); i < width; i++) {
-      let min = 1.0;
-      let max = -1.0;
-      for (let j = 0; j < step; j++) {
-        const datum = data[i * step + j];
-        if (datum < min) {
-          min = datum;
+      // Draw waveform after playhead
+      p.stroke(waveColor);
+      for (let i = Math.ceil(width * progress); i < width; i++) {
+        let min = 1.0;
+        let max = -1.0;
+        for (let j = 0; j < step; j++) {
+          const datum = data[i * step + j];
+          if (datum < min) {
+            min = datum;
+          }
+          if (datum > max) {
+            max = datum;
+          }
         }
-        if (datum > max) {
-          max = datum;
-        }
+        p.line(i, (1 + min) * amp, i, (1 + max) * amp);
       }
-      p.line(i, (1 + min) * amp, i, (1 + max) * amp);
-    }
 
-    // Draw playhead
-    p.stroke(progressColor);
-    p.line(progress * width, 0, progress * width, height);
+      // Draw playhead
+      p.stroke(progressColor);
+      p.line(progress * width, 0, progress * width, height);
 
-    // Draw selection region
-    if (startSelection !== null && endSelection !== null) {
-      p.fill(selectionColor);
-      p.noStroke();
-      p.rect(startSelection, 0, endSelection - startSelection, height);
-    }
-  };
+      // Draw selection region
+      if (startSelection !== null && endSelection !== null) {
+        p.fill(selectionColor);
+        p.noStroke();
+        p.rect(startSelection, 0, endSelection - startSelection, height);
+      }
+    },
+    [startSelection, endSelection]
+  );
 
   const handleSeekClick = (event: MouseEvent) => {
     const audio = audioRef.current;
@@ -120,12 +147,45 @@ const Page = () => {
     setEndSelection(null);
   };
 
-  const handleSelectionEnd = () => {
+  const handleSelectionEnd = useCallback(() => {
     const p = selectionP5Ref.current;
     if (!p || startSelection === null) return;
 
     const x = p.mouseX;
     setEndSelection(x);
+  }, [startSelection]);
+
+  const handleCropClick = () => {
+    if (!audioBuffer || startSelection === null || endSelection === null)
+      return;
+
+    const startTime = (startSelection / seekP5Ref.current!.width) * duration;
+    const endTime = (endSelection / seekP5Ref.current!.width) * duration;
+
+    const sampleRate = audioBuffer.sampleRate;
+    const startSample = Math.floor(startTime * sampleRate);
+    const endSample = Math.floor(endTime * sampleRate);
+    const newLength = endSample - startSample;
+
+    const newAudioBuffer = new AudioContext().createBuffer(
+      audioBuffer.numberOfChannels,
+      newLength,
+      sampleRate
+    );
+
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+      const oldData = audioBuffer.getChannelData(channel);
+      const newData = newAudioBuffer.getChannelData(channel);
+      for (let i = 0; i < newLength; i++) {
+        newData[i] = oldData[i + startSample];
+      }
+    }
+
+    setAudioBuffer(newAudioBuffer);
+    setDuration(newAudioBuffer.duration);
+    createAudioUrl(newAudioBuffer);
+    setStartSelection(null);
+    setEndSelection(null);
   };
 
   useEffect(() => {
@@ -169,8 +229,11 @@ const Page = () => {
       if (selectionP5Ref.current) {
         selectionP5Ref.current.remove();
       }
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
     };
-  }, [audioBuffer, drawWaveform, handleSelectionEnd]);
+  }, [audioBuffer, audioUrl, drawWaveform, handleSelectionEnd]);
 
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
@@ -178,6 +241,7 @@ const Page = () => {
       <audio ref={audioRef} src={audioUrl || undefined} controls />
       <div id='seek-waveform' />
       <div id='selection-waveform' />
+      <button onClick={handleCropClick}>Crop</button>
     </div>
   );
 };
