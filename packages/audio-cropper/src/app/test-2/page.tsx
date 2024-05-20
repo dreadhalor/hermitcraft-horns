@@ -1,17 +1,26 @@
 'use client';
+
 import React, { useRef, useState, useEffect } from 'react';
 import { createAudioUrl, cropAudioBuffer, downloadAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 
 const Page = () => {
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const seekWaveformRef = useRef<WaveformSketch | null>(null);
   const selectionWaveformRef = useRef<WaveformSketch | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [duration, setDuration] = useState(0);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+  const [duration, setDuration] = useState(0);
   const [startSelection, setStartSelection] = useState<number | null>(null);
   const [endSelection, setEndSelection] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    audioContextRef.current = new AudioContext();
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,18 +31,20 @@ const Page = () => {
 
     fileReader.onload = async () => {
       const arrayBuffer = fileReader.result as ArrayBuffer;
-      const decodedAudio = await audioContext.decodeAudioData(arrayBuffer);
-      setAudioBuffer(decodedAudio);
-      setAudioUrl(URL.createObjectURL(file));
-      setDuration(decodedAudio.duration);
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      setAudioBuffer(audioBuffer);
+      setDuration(audioBuffer.duration);
     };
 
     fileReader.readAsArrayBuffer(file);
   };
 
   const handleSeekClick = (seekTime: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = seekTime;
+    if (!audioBuffer) return;
+
+    const audio = document.querySelector('audio');
+    if (audio) {
+      audio.currentTime = seekTime;
     }
   };
 
@@ -60,14 +71,39 @@ const Page = () => {
     );
     setAudioBuffer(cropped);
     setDuration(cropped.duration);
-    createAudioUrl(cropped, setAudioUrl);
-    setStartSelection(null);
-    setEndSelection(null);
+
+    seekWaveformRef.current?.setAudioBuffer(cropped);
+    selectionWaveformRef.current?.setAudioBuffer(cropped);
+  };
+
+  const togglePlayPause = () => {
+    if (!audioBuffer || !audioContextRef.current) return;
+
+    if (isPlaying) {
+      if (sourceRef.current) {
+        sourceRef.current.stop();
+        sourceRef.current.disconnect();
+        sourceRef.current = null;
+      }
+      setIsPlaying(false);
+    } else {
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+      source.start();
+      sourceRef.current = source;
+
+      source.onended = () => {
+        sourceRef.current = null;
+        setIsPlaying(false);
+      };
+
+      setIsPlaying(true);
+    }
   };
 
   useEffect(() => {
-    if (!audioRef.current) return;
-
+    if (!audioContextRef.current) return;
     seekWaveformRef.current = new WaveformSketch(
       500,
       200,
@@ -82,15 +118,11 @@ const Page = () => {
       undefined,
       handleSelectionChange
     );
-
     return () => {
       seekWaveformRef.current?.remove();
       selectionWaveformRef.current?.remove();
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
     };
-  }, [audioUrl]);
+  }, []);
 
   useEffect(() => {
     if (audioBuffer) {
@@ -102,7 +134,7 @@ const Page = () => {
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
-      <audio ref={audioRef} src={audioUrl || undefined} controls />
+      <button onClick={togglePlayPause}>{isPlaying ? 'Pause' : 'Play'}</button>
       <div id='seek-waveform' />
       <div id='selection-waveform' />
       <button onClick={handleCropClick}>Crop</button>

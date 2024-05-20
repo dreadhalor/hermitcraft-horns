@@ -1,32 +1,78 @@
 var lamejs = require('lamejs');
 
-export const createAudioUrl = (
+export const createAudioUrl = async (
   buffer: AudioBuffer,
   callback: (url: string) => void
 ) => {
   const audioContext = new AudioContext();
-  const audioSource = audioContext.createBufferSource();
-  audioSource.buffer = buffer;
+  const offlineContext = new OfflineAudioContext(
+    buffer.numberOfChannels,
+    buffer.length,
+    audioContext.sampleRate
+  );
+  const source = offlineContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(offlineContext.destination);
+  source.start();
 
-  const destinationNode = audioContext.createMediaStreamDestination();
-  audioSource.connect(destinationNode);
-  audioSource.start();
+  const renderedBuffer = await offlineContext.startRendering();
+  const wav = await audioBufferToWav(renderedBuffer);
+  const blob = new Blob([wav], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
+  callback(url);
+};
 
-  const mediaRecorder = new MediaRecorder(destinationNode.stream);
-  const chunks: Blob[] = [];
+// Helper function to convert AudioBuffer to WAV format
+const audioBufferToWav = async (buffer: AudioBuffer) => {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // 1 = PCM, 3 = IEEE Float
+  const bitDepth = 16; // 16-bit PCM
 
-  mediaRecorder.ondataavailable = (event: BlobEvent) => {
-    chunks.push(event.data);
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+
+  const wavDataBytes = buffer.length * blockAlign;
+
+  const headerBytes = 44;
+  const sumBytes = headerBytes + wavDataBytes;
+
+  const arrayBuffer = new ArrayBuffer(sumBytes);
+  const view = new DataView(arrayBuffer);
+
+  view.setUint32(0, 1380533830, false); // RIFF chunk descriptor
+  view.setUint32(4, sumBytes, true); // Files size
+  view.setUint32(8, 1463899717, false); // WAVE
+  view.setUint32(12, 1718449184, false); // fmt
+  view.setUint32(16, 16, true); // Length of the fmt data
+  view.setUint16(20, format, true); // Audio format
+  view.setUint16(22, numChannels, true); // Number of channels
+  view.setUint32(24, sampleRate, true); // Sample rate
+  view.setUint32(28, sampleRate * blockAlign, true); // Byte rate
+  view.setUint16(32, blockAlign, true); // Block align
+  view.setUint16(34, bitDepth, true); // Bit depth
+  view.setUint32(36, 1684108385, false); // data chunk
+  view.setUint32(40, wavDataBytes, true); // Size of the data section
+
+  // Write the PCM samples to the view
+  const floatTo16BitPCM = (
+    input: Float32Array,
+    output: DataView,
+    offset: number
+  ) => {
+    for (let i = 0; i < input.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, input[i]));
+      output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
   };
 
-  mediaRecorder.onstop = () => {
-    const blob = new Blob(chunks, { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    callback(url);
-  };
+  let offset = 44;
+  for (let i = 0; i < buffer.numberOfChannels; i++) {
+    floatTo16BitPCM(buffer.getChannelData(i), view, offset);
+    offset += buffer.length * 2;
+  }
 
-  mediaRecorder.start();
-  setTimeout(() => mediaRecorder.stop(), buffer.duration * 1000);
+  return arrayBuffer;
 };
 
 export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
@@ -111,4 +157,29 @@ export const cropAudioBuffer = (
   }
 
   return newAudioBuffer;
+};
+
+export const applyFade = (
+  buffer: AudioBuffer,
+  fadeInTime: number,
+  fadeOutTime: number
+) => {
+  const sampleRate = buffer.sampleRate;
+  const fadeInSamples = Math.floor(fadeInTime * sampleRate);
+  const fadeOutSamples = Math.floor(fadeOutTime * sampleRate);
+
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    const len = channelData.length;
+
+    for (let i = 0; i < fadeInSamples; i++) {
+      channelData[i] *= i / fadeInSamples;
+    }
+
+    for (let i = len - fadeOutSamples; i < len; i++) {
+      channelData[i] *= (len - i) / fadeOutSamples;
+    }
+  }
+
+  return buffer;
 };
