@@ -4,41 +4,17 @@ import p5 from 'p5';
 
 const progressColor = 'purple';
 const waveColor = 'violet';
+const selectionColor = 'rgba(255, 255, 255, 0.3)';
 
 const Page = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const p5Ref = useRef<p5 | null>(null);
+  const seekP5Ref = useRef<p5 | null>(null);
+  const selectionP5Ref = useRef<p5 | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const sketch = (p: p5) => {
-      p.setup = () => {
-        const canvas = p.createCanvas(500, 200);
-        canvas.mouseClicked(handleWaveformClick);
-        canvas.parent('main');
-      };
-
-      p.draw = () => {
-        if (!audioBuffer) return;
-        drawWaveform(p, audioBuffer);
-      };
-
-      p.mouseClicked = handleWaveformClick;
-    };
-
-    p5Ref.current = new p5(sketch);
-
-    return () => {
-      if (p5Ref.current) {
-        p5Ref.current.remove();
-      }
-    };
-  }, [audioBuffer]);
+  const [startSelection, setStartSelection] = useState<number | null>(null);
+  const [endSelection, setEndSelection] = useState<number | null>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,7 +34,11 @@ const Page = () => {
     fileReader.readAsArrayBuffer(file);
   };
 
-  const drawWaveform = (p: p5, buffer: AudioBuffer) => {
+  const drawWaveform = (
+    p: p5,
+    buffer: AudioBuffer,
+    isSeekWaveform: boolean
+  ) => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -77,7 +57,6 @@ const Page = () => {
     for (let i = 0; i < width * progress; i++) {
       let min = 1.0;
       let max = -1.0;
-
       for (let j = 0; j < step; j++) {
         const datum = data[i * step + j];
         if (datum < min) {
@@ -87,7 +66,6 @@ const Page = () => {
           max = datum;
         }
       }
-
       p.line(i, (1 + min) * amp, i, (1 + max) * amp);
     }
 
@@ -96,7 +74,6 @@ const Page = () => {
     for (let i = Math.ceil(width * progress); i < width; i++) {
       let min = 1.0;
       let max = -1.0;
-
       for (let j = 0; j < step; j++) {
         const datum = data[i * step + j];
         if (datum < min) {
@@ -106,20 +83,26 @@ const Page = () => {
           max = datum;
         }
       }
-
       p.line(i, (1 + min) * amp, i, (1 + max) * amp);
     }
 
     // Draw playhead
     p.stroke(progressColor);
     p.line(progress * width, 0, progress * width, height);
+
+    // Draw selection region
+    if (startSelection !== null && endSelection !== null) {
+      p.fill(selectionColor);
+      p.noStroke();
+      p.rect(startSelection, 0, endSelection - startSelection, height);
+    }
   };
 
-  const handleWaveformClick = (event: MouseEvent) => {
+  const handleSeekClick = (event: MouseEvent) => {
     const audio = audioRef.current;
-    if (!audio || !p5Ref.current) return;
+    if (!audio || !seekP5Ref.current) return;
 
-    const p = p5Ref.current;
+    const p = seekP5Ref.current;
     const x = p.mouseX;
     const width = p.width;
     const duration = audio.duration;
@@ -128,13 +111,73 @@ const Page = () => {
     audio.currentTime = seekTime;
   };
 
+  const handleSelectionStart = () => {
+    const p = selectionP5Ref.current;
+    if (!p) return;
+
+    const x = p.mouseX;
+    setStartSelection(x);
+    setEndSelection(null);
+  };
+
+  const handleSelectionEnd = () => {
+    const p = selectionP5Ref.current;
+    if (!p || startSelection === null) return;
+
+    const x = p.mouseX;
+    setEndSelection(x);
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const seekSketch = (p: p5) => {
+      p.setup = () => {
+        const canvas = p.createCanvas(500, 200);
+        canvas.mouseClicked(handleSeekClick);
+        canvas.parent('seek-waveform');
+      };
+
+      p.draw = () => {
+        if (!audioBuffer) return;
+        drawWaveform(p, audioBuffer, true);
+      };
+    };
+
+    const selectionSketch = (p: p5) => {
+      p.setup = () => {
+        const canvas = p.createCanvas(500, 200);
+        canvas.mousePressed(handleSelectionStart);
+        canvas.mouseReleased(handleSelectionEnd);
+        canvas.parent('selection-waveform');
+      };
+
+      p.draw = () => {
+        if (!audioBuffer) return;
+        drawWaveform(p, audioBuffer, false);
+      };
+    };
+
+    seekP5Ref.current = new p5(seekSketch);
+    selectionP5Ref.current = new p5(selectionSketch);
+
+    return () => {
+      if (seekP5Ref.current) {
+        seekP5Ref.current.remove();
+      }
+      if (selectionP5Ref.current) {
+        selectionP5Ref.current.remove();
+      }
+    };
+  }, [audioBuffer, drawWaveform, handleSelectionEnd]);
+
   return (
-    <div
-      className='w-full h-full flex flex-col items-center justify-center'
-      id='main'
-    >
+    <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
       <audio ref={audioRef} src={audioUrl || undefined} controls />
+      <div id='seek-waveform' />
+      <div id='selection-waveform' />
     </div>
   );
 };
