@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  howler:
-    specifier: ^2.2.4
-    version: 2.2.4
+  '@wavesurfer/react':
+    specifier: ^1.0.6
+    version: 1.0.6(react@18.3.1)(wavesurfer.js@7.7.15)
   next:
     specifier: 14.2.3
     version: 14.2.3(react-dom@18.3.1)(react@18.3.1)
@@ -17,6 +17,9 @@ dependencies:
   react-dom:
     specifier: ^18
     version: 18.3.1(react@18.3.1)
+  wavesurfer.js:
+    specifier: ^7.7.15
+    version: 7.7.15
 
 devDependencies:
   '@types/howler':
@@ -392,6 +395,16 @@ packages:
   /@ungap/structured-clone@1.2.0:
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
     dev: true
+
+  /@wavesurfer/react@1.0.6(react@18.3.1)(wavesurfer.js@7.7.15):
+    resolution: {integrity: sha512-ooDSebxs2Z00S6h7nGrA8SSXmins6MnJF944MiUVrnVeaoNDDIgursBIXo3MtZ9QLN3Vlt3cNLU3u16vsZZCJg==}
+    peerDependencies:
+      react: ^18.2.0
+      wavesurfer.js: '>=7.7.14'
+    dependencies:
+      react: 18.3.1
+      wavesurfer.js: 7.7.15
+    dev: false
 
   /acorn-jsx@5.3.2(acorn@8.11.3):
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -1503,10 +1516,6 @@ packages:
     dependencies:
       function-bind: 1.1.2
     dev: true
-
-  /howler@2.2.4:
-    resolution: {integrity: sha512-iARIBPgcQrwtEr+tALF+rapJ8qSc+Set2GJQl7xT1MQzWaVkFebdJhR3alVlSiUf5U7nAANKuj3aWpwerocD5w==}
-    dev: false
 
   /ignore@5.3.1:
     resolution: {integrity: sha512-5Fytz/IraMjqpwfd34ke28PTVMjZjJG2MPn5t7OE4eUCUNf8BAa7b5WUS9/Qvr6mwOQS7Mk6vdsMno5he+T8Xw==}
@@ -2745,6 +2754,10 @@ packages:
   /util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
     dev: true
+
+  /wavesurfer.js@7.7.15:
+    resolution: {integrity: sha512-qJE7sZ5qnFG9wBtU9+jBpYn7faWXZHEz1I25Xnf4EhGqqS2rFj/hxTtbIaETynalPajxC1xXd/9TnDHWO+mARA==}
+    dev: false
 
   /which-boxed-primitive@1.0.2:
     resolution: {integrity: sha512-bwZdv0AKLpplFY2KZRX6TvyuN7ojjr7lwkg6ml0roIy9YeuSr7JS372qlNW18UQYzgYK9ziGcerWqZOmEn9VNg==}

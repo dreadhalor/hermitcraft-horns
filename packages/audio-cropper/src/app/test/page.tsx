@@ -1,72 +1,41 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
-import { Howl } from 'howler';
+
+import React, { useRef } from 'react';
+import { useWavesurfer } from '@wavesurfer/react';
+
+const formatTime = (seconds: number) => {
+  // format to the ms, as this is the precision of the currentTime
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds - Math.floor(seconds)) * 1000);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}.${ms
+    .toString()
+    .padStart(3, '0')}`;
+};
 
 const Page = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const soundRef = useRef<Howl | null>(null);
-  const progressRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const sound = new Howl({
-      src: ['wels.mp3'],
-      format: ['mp3'],
-      onload: () => {
-        setDuration(sound.duration());
-      },
-      onplay: () => {
-        setIsPlaying(true);
-        requestAnimationFrame(step);
-      },
-      onpause: () => {
-        setIsPlaying(false);
-      },
-      onend: () => {
-        setIsPlaying(false);
-        setCurrentTime(0);
-      },
-      onseek: () => {
-        setCurrentTime(sound.seek() as number);
-      },
-    });
-
-    soundRef.current = sound;
-
-    return () => {
-      sound.unload();
-    };
-  }, []);
+  const { wavesurfer, isPlaying, currentTime } = useWavesurfer({
+    container: containerRef,
+    height: 200,
+    waveColor: 'violet',
+    progressColor: 'purple',
+    url: 'wels.mp3',
+  });
 
   const togglePlayPause = () => {
-    if (isPlaying) {
-      soundRef.current?.pause();
-    } else {
-      soundRef.current?.play();
+    wavesurfer && wavesurfer.playPause();
+  };
+
+  const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (wavesurfer) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - bounds.left;
+      const width = bounds.width;
+      const percentage = x / width;
+      wavesurfer.seekTo(percentage);
     }
-  };
-
-  const handleSeek = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const target = event.target as HTMLInputElement;
-    const value = parseFloat(target.value);
-    const seekTime = (value / 100) * duration;
-    soundRef.current?.seek(seekTime);
-    setCurrentTime(seekTime);
-  };
-
-  const step = () => {
-    const sound = soundRef.current;
-    if (sound && sound.playing()) {
-      setCurrentTime(sound.seek() as number);
-      requestAnimationFrame(step);
-    }
-  };
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
   return (
@@ -79,21 +48,13 @@ const Page = () => {
           {isPlaying ? 'Pause' : 'Play'}
         </button>
       </div>
-      <div className='w-full max-w-md'>
-        <input
-          type='range'
-          className='w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer'
-          min='0'
-          max='100'
-          step='0.01'
-          value={(currentTime / duration) * 100}
-          onChange={handleSeek}
-          ref={progressRef}
-        />
-        <div className='flex justify-between text-sm text-gray-600 mt-2'>
-          <div>{formatTime(currentTime)}</div>
-          <div>{formatTime(duration)}</div>
-        </div>
+      <div
+        className='w-full max-w-md relative'
+        ref={containerRef}
+        onClick={handleSeek}
+      />
+      <div className='flex justify-between text-sm text-gray-600 mt-2'>
+        <div>{formatTime(currentTime)}</div>
       </div>
     </div>
   );

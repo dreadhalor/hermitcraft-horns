@@ -9,10 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "howler": "^2.2.4",
+    "@wavesurfer/react": "^1.0.6",
     "next": "14.2.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "wavesurfer.js": "^7.7.15"
   },
   "devDependencies": {
     "@types/howler": "^2.2.11",
