@@ -84,3 +84,31 @@ export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
   a.click();
   URL.revokeObjectURL(url);
 };
+
+export const cropAudioBuffer = (
+  buffer: AudioBuffer,
+  startTime: number,
+  endTime: number,
+  duration: number
+) => {
+  const sampleRate = buffer.sampleRate;
+  const startSample = Math.floor((startTime / duration) * buffer.length);
+  const endSample = Math.floor((endTime / duration) * buffer.length);
+  const newLength = endSample - startSample;
+
+  const newAudioBuffer = new AudioContext().createBuffer(
+    buffer.numberOfChannels,
+    newLength,
+    sampleRate
+  );
+
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const oldData = buffer.getChannelData(channel);
+    const newData = newAudioBuffer.getChannelData(channel);
+    for (let i = 0; i < newLength; i++) {
+      newData[i] = oldData[i + startSample];
+    }
+  }
+
+  return newAudioBuffer;
+};

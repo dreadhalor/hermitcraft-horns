@@ -1,11 +1,8 @@
 'use client';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import p5 from 'p5';
-import { createAudioUrl, downloadAudio } from './audio-utils';
-
-const progressColor = 'purple';
-const waveColor = 'violet';
-const selectionColor = 'rgba(255, 255, 255, 0.3)';
+import { createAudioUrl, cropAudioBuffer, downloadAudio } from './audio-utils';
+import { progressColor, selectionColor, waveColor } from './constants';
 
 const Page = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -135,28 +132,10 @@ const Page = () => {
     const startTime = (startSelection / seekP5Ref.current!.width) * duration;
     const endTime = (endSelection / seekP5Ref.current!.width) * duration;
 
-    const sampleRate = audioBuffer.sampleRate;
-    const startSample = Math.floor(startTime * sampleRate);
-    const endSample = Math.floor(endTime * sampleRate);
-    const newLength = endSample - startSample;
-
-    const newAudioBuffer = new AudioContext().createBuffer(
-      audioBuffer.numberOfChannels,
-      newLength,
-      sampleRate
-    );
-
-    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-      const oldData = audioBuffer.getChannelData(channel);
-      const newData = newAudioBuffer.getChannelData(channel);
-      for (let i = 0; i < newLength; i++) {
-        newData[i] = oldData[i + startSample];
-      }
-    }
-
-    setAudioBuffer(newAudioBuffer);
-    setDuration(newAudioBuffer.duration);
-    createAudioUrl(newAudioBuffer, setAudioUrl);
+    const cropped = cropAudioBuffer(audioBuffer, startTime, endTime, duration);
+    setAudioBuffer(cropped);
+    setDuration(cropped.duration);
+    createAudioUrl(cropped, setAudioUrl);
     setStartSelection(null);
     setEndSelection(null);
   };
