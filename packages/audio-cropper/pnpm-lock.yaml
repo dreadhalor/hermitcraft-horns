@@ -11,6 +11,9 @@ dependencies:
   next:
     specifier: 14.2.3
     version: 14.2.3(react-dom@18.3.1)(react@18.3.1)
+  p5:
+    specifier: ^1.9.3
+    version: 1.9.3
   react:
     specifier: ^18
     version: 18.3.1
@@ -28,6 +31,9 @@ devDependencies:
   '@types/node':
     specifier: ^20
     version: 20.12.12
+  '@types/p5':
+    specifier: ^1.7.6
+    version: 1.7.6
   '@types/react':
     specifier: ^18
     version: 18.3.2
@@ -309,6 +315,10 @@ packages:
     resolution: {integrity: sha512-eWLDGF/FOSPtAvEqeRAQ4C8LSA7M1I7i0ky1I8U7kD1J5ITyW3AsRhQrKVoWf5pFKZ2kILsEGJhsI9r93PYnOw==}
     dependencies:
       undici-types: 5.26.5
+    dev: true
+
+  /@types/p5@1.7.6:
+    resolution: {integrity: sha512-6pLTOo0V3N5jZb5nTwjiv3lPHLK3Z/TjbhQUj8CTWXocUk1Z/f6OHTp3Pcwi1BhWnf5gqKUcyEb1gP0KIJuQgw==}
     dev: true
 
   /@types/prop-types@15.7.12:
@@ -2085,6 +2095,10 @@ packages:
     dependencies:
       p-limit: 3.1.0
     dev: true
+
+  /p5@1.9.3:
+    resolution: {integrity: sha512-RnLMqejKJ9ZmBlUpCnVLYF1UnV/NnC13MfOSZdvJXTRH1eQkBQkUVCw5rkyRWE6chI4t5KvIJsZZnFzmGJEgag==}
+    dev: false
 
   /parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
