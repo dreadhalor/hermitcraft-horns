@@ -1,13 +1,12 @@
 'use client';
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import p5 from 'p5';
+import React, { useRef, useState, useEffect } from 'react';
 import { createAudioUrl, cropAudioBuffer, downloadAudio } from './audio-utils';
-import { progressColor, selectionColor, waveColor } from './constants';
+import { WaveformSketch } from './waveform-sketch';
 
 const Page = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const seekP5Ref = useRef<p5 | null>(null);
-  const selectionP5Ref = useRef<p5 | null>(null);
+  const seekWaveformRef = useRef<WaveformSketch | null>(null);
+  const selectionWaveformRef = useRef<WaveformSketch | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -32,107 +31,33 @@ const Page = () => {
     fileReader.readAsArrayBuffer(file);
   };
 
-  const drawWaveform = useCallback(
-    (p: p5, buffer: AudioBuffer, isSeekWaveform: boolean) => {
-      const audio = audioRef.current;
-      if (!audio) return;
-
-      const width = p.width;
-      const height = p.height;
-      const data = buffer.getChannelData(0);
-      const step = Math.ceil(data.length / width);
-      const amp = height / 2;
-      const progress = audio.currentTime / audio.duration;
-
-      p.background(0);
-      p.strokeWeight(1);
-
-      // Draw waveform before playhead
-      p.stroke(progressColor);
-      for (let i = 0; i < width * progress; i++) {
-        let min = 1.0;
-        let max = -1.0;
-        for (let j = 0; j < step; j++) {
-          const datum = data[i * step + j];
-          if (datum < min) {
-            min = datum;
-          }
-          if (datum > max) {
-            max = datum;
-          }
-        }
-        p.line(i, (1 + min) * amp, i, (1 + max) * amp);
-      }
-
-      // Draw waveform after playhead
-      p.stroke(waveColor);
-      for (let i = Math.ceil(width * progress); i < width; i++) {
-        let min = 1.0;
-        let max = -1.0;
-        for (let j = 0; j < step; j++) {
-          const datum = data[i * step + j];
-          if (datum < min) {
-            min = datum;
-          }
-          if (datum > max) {
-            max = datum;
-          }
-        }
-        p.line(i, (1 + min) * amp, i, (1 + max) * amp);
-      }
-
-      // Draw playhead
-      p.stroke(progressColor);
-      p.line(progress * width, 0, progress * width, height);
-
-      // Draw selection region
-      if (startSelection !== null && endSelection !== null) {
-        p.fill(selectionColor);
-        p.noStroke();
-        p.rect(startSelection, 0, endSelection - startSelection, height);
-      }
-    },
-    [startSelection, endSelection]
-  );
-
-  const handleSeekClick = (event: MouseEvent) => {
-    const audio = audioRef.current;
-    if (!audio || !seekP5Ref.current) return;
-
-    const p = seekP5Ref.current;
-    const x = p.mouseX;
-    const width = p.width;
-    const duration = audio.duration;
-    const seekTime = (x / width) * duration;
-
-    audio.currentTime = seekTime;
+  const handleSeekClick = (seekTime: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = seekTime;
+    }
   };
 
-  const handleSelectionStart = () => {
-    const p = selectionP5Ref.current;
-    if (!p) return;
-
-    const x = p.mouseX;
-    setStartSelection(x);
-    setEndSelection(null);
+  const handleSelectionChange = (start: number | null, end: number | null) => {
+    if (start === null || end === null) {
+      setStartSelection(null);
+      setEndSelection(null);
+    }
+    const realStart = Math.min(start || 0, end || 0);
+    const realEnd = Math.max(start || 0, end || 0);
+    setStartSelection(realStart);
+    setEndSelection(realEnd);
   };
-
-  const handleSelectionEnd = useCallback(() => {
-    const p = selectionP5Ref.current;
-    if (!p || startSelection === null) return;
-
-    const x = p.mouseX;
-    setEndSelection(x);
-  }, [startSelection]);
 
   const handleCropClick = () => {
     if (!audioBuffer || startSelection === null || endSelection === null)
       return;
 
-    const startTime = (startSelection / seekP5Ref.current!.width) * duration;
-    const endTime = (endSelection / seekP5Ref.current!.width) * duration;
-
-    const cropped = cropAudioBuffer(audioBuffer, startTime, endTime, duration);
+    const cropped = cropAudioBuffer(
+      audioBuffer,
+      startSelection,
+      endSelection,
+      duration
+    );
     setAudioBuffer(cropped);
     setDuration(cropped.duration);
     createAudioUrl(cropped, setAudioUrl);
@@ -141,51 +66,38 @@ const Page = () => {
   };
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!audioRef.current) return;
 
-    const seekSketch = (p: p5) => {
-      p.setup = () => {
-        const canvas = p.createCanvas(500, 200);
-        canvas.mouseClicked(handleSeekClick);
-        canvas.parent('seek-waveform');
-      };
-
-      p.draw = () => {
-        if (!audioBuffer) return;
-        drawWaveform(p, audioBuffer, true);
-      };
-    };
-
-    const selectionSketch = (p: p5) => {
-      p.setup = () => {
-        const canvas = p.createCanvas(500, 200);
-        canvas.mousePressed(handleSelectionStart);
-        canvas.mouseReleased(handleSelectionEnd);
-        canvas.parent('selection-waveform');
-      };
-
-      p.draw = () => {
-        if (!audioBuffer) return;
-        drawWaveform(p, audioBuffer, false);
-      };
-    };
-
-    seekP5Ref.current = new p5(seekSketch);
-    selectionP5Ref.current = new p5(selectionSketch);
+    seekWaveformRef.current = new WaveformSketch(
+      500,
+      200,
+      'seek-waveform',
+      handleSeekClick,
+      undefined
+    );
+    selectionWaveformRef.current = new WaveformSketch(
+      500,
+      200,
+      'selection-waveform',
+      undefined,
+      handleSelectionChange
+    );
 
     return () => {
-      if (seekP5Ref.current) {
-        seekP5Ref.current.remove();
-      }
-      if (selectionP5Ref.current) {
-        selectionP5Ref.current.remove();
-      }
+      seekWaveformRef.current?.remove();
+      selectionWaveformRef.current?.remove();
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
     };
-  }, [audioBuffer, audioUrl, drawWaveform, handleSelectionEnd]);
+  }, [audioUrl]);
+
+  useEffect(() => {
+    if (audioBuffer) {
+      seekWaveformRef.current?.setAudioBuffer(audioBuffer);
+      selectionWaveformRef.current?.setAudioBuffer(audioBuffer);
+    }
+  }, [audioBuffer]);
 
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
