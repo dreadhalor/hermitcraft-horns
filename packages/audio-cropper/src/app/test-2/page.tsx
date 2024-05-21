@@ -8,7 +8,6 @@ import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
 
 const Page = () => {
-  const ctx = useAudioContext();
   const {
     audioBuffer,
     duration,
@@ -28,7 +27,11 @@ const Page = () => {
     rewindAudio,
     currentTime,
     setCurrentTime,
-  } = ctx;
+    undo,
+    redo,
+    handleCrop,
+    handleTrim,
+  } = useAudioContext();
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
@@ -78,32 +81,20 @@ const Page = () => {
     if (!audioBuffer || startSelection === null || endSelection === null)
       return;
 
-    const cropped = cropAudioBuffer(
-      audioBuffer,
+    handleCrop(
       Math.min(startSelection, endSelection),
-      Math.max(startSelection, endSelection),
-      duration
+      Math.max(startSelection, endSelection)
     );
-    setStartSelection(null);
-    setEndSelection(null);
-    setAudioBuffer(cropped);
-    setDuration(cropped.duration);
   };
 
   const handleTrimClick = () => {
     if (!audioBuffer || startSelection === null || endSelection === null)
       return;
 
-    const trimmed = trimAudioBuffer(
-      audioBuffer,
+    handleTrim(
       Math.min(startSelection, endSelection),
-      Math.max(startSelection, endSelection),
-      duration
+      Math.max(startSelection, endSelection)
     );
-    setStartSelection(null);
-    setEndSelection(null);
-    setAudioBuffer(trimmed);
-    setDuration(trimmed.duration);
   };
 
   const handleBoundsChange = (start: number, end: number) => {
@@ -123,6 +114,8 @@ const Page = () => {
       <div className='flex gap-2 border-b'>
         <button onClick={handleCropClick}>Crop</button>
         <button onClick={handleTrimClick}>Trim</button>
+        <button onClick={undo}>Undo</button>
+        <button onClick={redo}>Redo</button>
       </div>
       <div>Current Time: {currentTime.toFixed(2)}</div>
       <div id='seek-waveform'>

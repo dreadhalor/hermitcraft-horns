@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { cropAudioBuffer, trimAudioBuffer } from './audio-utils';
 
 export type AudioContextValue = {
   audioBuffer: AudioBuffer | null;
@@ -22,12 +23,16 @@ export type AudioContextValue = {
   setDuration: (duration: number) => void;
   setStartSelection: (startSelection: number | null) => void;
   setEndSelection: (endSelection: number | null) => void;
-  setVisibleStartTime: (startTime: number) => void;
-  setVisibleEndTime: (endTime: number) => void;
+  setVisibleStartTime: (visibleStartTime: number) => void;
+  setVisibleEndTime: (visibleEndTime: number) => void;
   togglePlayPause: () => void;
   currentTime: number;
   setCurrentTime: (currentTime: number) => void;
   rewindAudio: () => void;
+  undo: () => void;
+  redo: () => void;
+  handleCrop: (start: number, end: number) => void;
+  handleTrim: (start: number, end: number) => void;
 };
 
 const AudioContext = createContext<AudioContextValue | undefined>(undefined);
@@ -53,12 +58,22 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [visibleStartTime, setVisibleStartTime] = useState(0);
   const [visibleEndTime, setVisibleEndTime] = useState(0);
+  const [undoStack, setUndoStack] = useState<AudioBuffer[]>([]);
+  const [redoStack, setRedoStack] = useState<AudioBuffer[]>([]);
 
   useEffect(() => {
     if (audioBuffer) {
       setVisibleEndTime(audioBuffer.duration);
     }
   }, [audioBuffer]);
+
+  useEffect(() => {
+    console.log('current time:', currentTime);
+  }, [currentTime]);
+
+  const pushToUndoStack = (buffer: AudioBuffer) => {
+    setUndoStack((prevStack) => [buffer, ...prevStack]);
+  };
 
   const togglePlayPause = () => {
     if (!audioBuffer || !audioContextRef.current) return;
@@ -71,6 +86,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       setIsPlaying(false);
     } else {
+      console.log('current time:', currentTime);
+      console.log('duration:', duration);
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContextRef.current.destination);
@@ -84,6 +101,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const startTime = audioContextRef.current.currentTime - currentTime;
       const updateCurrentTime = () => {
+        console.log('updating current time');
+        console.log('isPlaying:', isPlaying);
         if (sourceRef.current && audioContextRef.current) {
           setCurrentTime(audioContextRef.current.currentTime - startTime);
           requestAnimationFrame(updateCurrentTime);
@@ -91,7 +110,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       setIsPlaying(true);
-      requestAnimationFrame(updateCurrentTime);
+      requestAnimationFrame(() => {
+        updateCurrentTime();
+      });
     }
   };
 
@@ -106,6 +127,52 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setCurrentTime(0);
     setIsPlaying(false);
+  };
+
+  const handleCrop = (start: number, end: number) => {
+    if (!audioBuffer) return;
+
+    pushToUndoStack(audioBuffer);
+    setRedoStack([]);
+
+    const cropped = cropAudioBuffer(audioBuffer, start, end, duration);
+    setAudioBuffer(cropped);
+    setDuration(cropped.duration);
+    setStartSelection(null);
+    setEndSelection(null);
+  };
+
+  const handleTrim = (start: number, end: number) => {
+    if (!audioBuffer) return;
+
+    pushToUndoStack(audioBuffer);
+    setRedoStack([]);
+
+    const trimmed = trimAudioBuffer(audioBuffer, start, end, duration);
+    setAudioBuffer(trimmed);
+    setDuration(trimmed.duration);
+    setStartSelection(null);
+    setEndSelection(null);
+  };
+
+  const undo = () => {
+    if (undoStack.length > 0) {
+      const previousBuffer = undoStack[0];
+      setUndoStack((prevStack) => prevStack.slice(1));
+      setRedoStack((prevStack) => [audioBuffer!, ...prevStack]);
+      setAudioBuffer(previousBuffer);
+      setDuration(previousBuffer.duration);
+    }
+  };
+
+  const redo = () => {
+    if (redoStack.length > 0) {
+      const nextBuffer = redoStack[0];
+      setRedoStack((prevStack) => prevStack.slice(1));
+      setUndoStack((prevStack) => [audioBuffer!, ...prevStack]);
+      setAudioBuffer(nextBuffer);
+      setDuration(nextBuffer.duration);
+    }
   };
 
   const value: AudioContextValue = {
@@ -128,6 +195,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     currentTime,
     setCurrentTime,
     rewindAudio,
+    undo,
+    redo,
+    handleCrop,
+    handleTrim,
   };
 
   return (
