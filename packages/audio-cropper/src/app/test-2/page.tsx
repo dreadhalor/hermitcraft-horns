@@ -22,6 +22,7 @@ const Page = () => {
     togglePlayPause,
     rewindAudio,
     currentTime,
+    setCurrentTime,
   } = ctx;
 
   useEffect(() => {
@@ -49,12 +50,7 @@ const Page = () => {
   };
 
   const handleSeekClick = (seekTime: number) => {
-    if (!audioBuffer) return;
-
-    const audio = document.querySelector('audio');
-    if (audio) {
-      audio.currentTime = seekTime;
-    }
+    setCurrentTime(seekTime);
   };
 
   const handleSelectionChange = (start: number | null, end: number | null) => {
@@ -98,6 +94,7 @@ const Page = () => {
           startSelection={startSelection}
           endSelection={endSelection}
           onSeekClick={handleSeekClick}
+          setCurrentTime={setCurrentTime}
         />
       </div>
       <div id='selection-waveform'>

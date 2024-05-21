@@ -8,6 +8,8 @@ type WaveformProps = P5CanvasInstance<AudioContextValue> & {
   duration: number;
   startSelection: number | null;
   endSelection: number | null;
+  onSeekClick?: (seekTime: number) => void;
+  setCurrentTime?: (time: number) => void;
 };
 
 export const WaveformSketch = (p5: WaveformProps) => {
@@ -16,6 +18,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let duration: number = 0;
   let startSelection: number | null = null;
   let endSelection: number | null = null;
+  let onSeekClick: ((seekTime: number) => void) | undefined;
+  let setCurrentTime: ((time: number) => void) | undefined;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -24,6 +28,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (props.startSelection !== undefined)
       startSelection = props.startSelection;
     if (props.endSelection !== undefined) endSelection = props.endSelection;
+    if (props.onSeekClick) onSeekClick = props.onSeekClick;
+    if (props.setCurrentTime) setCurrentTime = props.setCurrentTime;
   };
 
   p5.setup = () => {
@@ -103,5 +109,22 @@ export const WaveformSketch = (p5: WaveformProps) => {
       return currentTime / audioBuffer.duration;
     }
     return 0;
+  };
+
+  p5.mouseClicked = () => {
+    if (
+      onSeekClick &&
+      audioBuffer &&
+      p5.mouseX >= 0 &&
+      p5.mouseX <= p5.width &&
+      p5.mouseY >= 0 &&
+      p5.mouseY <= p5.height
+    ) {
+      const seekTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      onSeekClick(seekTime);
+      if (setCurrentTime) {
+        setCurrentTime(seekTime);
+      }
+    }
   };
 };
