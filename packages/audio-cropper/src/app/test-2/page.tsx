@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { ReactP5Wrapper } from '@p5-wrapper/react';
-import { cropAudioBuffer, downloadAudio } from './audio-utils';
+import { cropAudioBuffer, downloadAudio, trimAudioBuffer } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
@@ -90,6 +90,22 @@ const Page = () => {
     setDuration(cropped.duration);
   };
 
+  const handleTrimClick = () => {
+    if (!audioBuffer || startSelection === null || endSelection === null)
+      return;
+
+    const trimmed = trimAudioBuffer(
+      audioBuffer,
+      Math.min(startSelection, endSelection),
+      Math.max(startSelection, endSelection),
+      duration
+    );
+    setStartSelection(null);
+    setEndSelection(null);
+    setAudioBuffer(trimmed);
+    setDuration(trimmed.duration);
+  };
+
   const handleBoundsChange = (start: number, end: number) => {
     setVisibleStartTime(start);
     setVisibleEndTime(end);
@@ -145,6 +161,7 @@ const Page = () => {
         />
       </div>
       <button onClick={handleCropClick}>Crop</button>
+      <button onClick={handleTrimClick}>Trim</button>
       <button onClick={() => downloadAudio(audioBuffer)}>Download</button>
     </div>
   );

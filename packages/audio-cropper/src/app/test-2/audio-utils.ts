@@ -183,3 +183,37 @@ export const applyFade = (
 
   return buffer;
 };
+
+export const trimAudioBuffer = (
+  buffer: AudioBuffer,
+  startTime: number,
+  endTime: number,
+  duration: number
+) => {
+  const sampleRate = buffer.sampleRate;
+  const startSample = Math.floor((startTime / duration) * buffer.length);
+  const endSample = Math.floor((endTime / duration) * buffer.length);
+
+  const newLength = buffer.length - (endSample - startSample);
+
+  const newAudioBuffer = new AudioContext().createBuffer(
+    buffer.numberOfChannels,
+    newLength,
+    sampleRate
+  );
+
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const oldData = buffer.getChannelData(channel);
+    const newData = newAudioBuffer.getChannelData(channel);
+
+    let newDataIndex = 0;
+    for (let i = 0; i < startSample; i++) {
+      newData[newDataIndex++] = oldData[i];
+    }
+    for (let i = endSample; i < buffer.length; i++) {
+      newData[newDataIndex++] = oldData[i];
+    }
+  }
+
+  return newAudioBuffer;
+};
