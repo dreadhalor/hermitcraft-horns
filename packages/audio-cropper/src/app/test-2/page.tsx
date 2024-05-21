@@ -114,11 +114,15 @@ const Page = () => {
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
-      <div className='flex gap-2'>
+      <div className='flex gap-2 border-b'>
         <button onClick={rewindAudio}>Rewind</button>
         <button onClick={togglePlayPause}>
           {isPlaying ? 'Pause' : 'Play'}
         </button>
+      </div>
+      <div className='flex gap-2 border-b'>
+        <button onClick={handleCropClick}>Crop</button>
+        <button onClick={handleTrimClick}>Trim</button>
       </div>
       <div>Current Time: {currentTime.toFixed(2)}</div>
       <div id='seek-waveform'>
@@ -160,8 +164,6 @@ const Page = () => {
           onBoundsChange={handleBoundsChange}
         />
       </div>
-      <button onClick={handleCropClick}>Crop</button>
-      <button onClick={handleTrimClick}>Trim</button>
       <button onClick={() => downloadAudio(audioBuffer)}>Download</button>
     </div>
   );
