@@ -98,8 +98,12 @@ const Page = () => {
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
-      <button onClick={rewindAudio}>Rewind</button>
-      <button onClick={togglePlayPause}>{isPlaying ? 'Pause' : 'Play'}</button>
+      <div className='flex gap-2'>
+        <button onClick={rewindAudio}>Rewind</button>
+        <button onClick={togglePlayPause}>
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+      </div>
       <div>Current Time: {currentTime.toFixed(2)}</div>
       <div id='seek-waveform'>
         <ReactP5Wrapper
