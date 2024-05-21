@@ -3,7 +3,6 @@ import {
   progressColor,
   selectionColor,
   waveColor,
-  selectionHandleColor,
   viewWindowColor,
   viewWindowHandleColor,
 } from './constants';
@@ -11,6 +10,7 @@ import { AudioContextValue } from './audio-provider';
 
 type MinimapProps = P5CanvasInstance<AudioContextValue> & {
   audioBuffer: AudioBuffer | null;
+  currentTime: number;
   visibleStartTime: number;
   visibleEndTime: number;
   onBoundsChange?: (start: number, end: number) => void;
@@ -18,6 +18,7 @@ type MinimapProps = P5CanvasInstance<AudioContextValue> & {
 
 export const MinimapSketch = (p5: MinimapProps) => {
   let audioBuffer: AudioBuffer | null = null;
+  let currentTime: number = 0;
   let visibleStartTime: number = 0;
   let visibleEndTime: number = 0;
   let onBoundsChange: ((start: number, end: number) => void) | undefined;
@@ -29,6 +30,7 @@ export const MinimapSketch = (p5: MinimapProps) => {
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
+    if (props.currentTime !== undefined) currentTime = props.currentTime;
     if (props.visibleStartTime !== undefined)
       visibleStartTime = props.visibleStartTime;
     if (props.visibleEndTime !== undefined)
@@ -56,8 +58,8 @@ export const MinimapSketch = (p5: MinimapProps) => {
     p.background(0);
     p.strokeWeight(1);
 
-    // Draw waveform
-    p.stroke(waveColor);
+    // Draw waveform lines before and after the playhead
+    const absoluteProgress = (currentTime / buffer.duration) * width;
     for (let i = 0; i < width; i++) {
       let min = 1.0;
       let max = -1.0;
@@ -70,8 +72,17 @@ export const MinimapSketch = (p5: MinimapProps) => {
           max = datum;
         }
       }
+      if (i < absoluteProgress) {
+        p.stroke(progressColor);
+      } else {
+        p.stroke(waveColor);
+      }
       p.line(i, (1 + min) * amp, i, (1 + max) * amp);
     }
+
+    // Draw playhead
+    p.stroke(progressColor);
+    p.line(absoluteProgress, 0, absoluteProgress, height);
 
     // Draw visible window
     p.fill(viewWindowColor);

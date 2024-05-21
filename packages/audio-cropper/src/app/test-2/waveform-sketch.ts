@@ -91,8 +91,10 @@ export const WaveformSketch = (p5: WaveformProps) => {
     p.background(0);
     p.strokeWeight(1);
 
-    // Draw waveform
-    p.stroke(waveColor);
+    // Draw waveform lines before and after the playhead
+    const progress =
+      ((currentTime - visibleStartTime) / (visibleEndTime - visibleStartTime)) *
+      width;
     for (let i = 0; i < width; i++) {
       let min = 1.0;
       let max = -1.0;
@@ -105,13 +107,15 @@ export const WaveformSketch = (p5: WaveformProps) => {
           max = datum;
         }
       }
+      if (i < progress) {
+        p.stroke(progressColor);
+      } else {
+        p.stroke(waveColor);
+      }
       p.line(i, (1 + min) * amp, i, (1 + max) * amp);
     }
 
     // Draw playhead
-    const progress =
-      ((currentTime - visibleStartTime) / (visibleEndTime - visibleStartTime)) *
-      width;
     p.stroke(progressColor);
     p.line(progress, 0, progress, height);
 

@@ -134,6 +134,7 @@ const Page = () => {
         <ReactP5Wrapper
           sketch={MinimapSketch as any}
           audioBuffer={audioBuffer}
+          currentTime={currentTime}
           visibleStartTime={visibleStartTime}
           visibleEndTime={visibleEndTime}
           onBoundsChange={handleBoundsChange}
