@@ -39,7 +39,6 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let isDraggingSelection = false;
   let pendingSelectionReset = false;
   let dragOffset = 0;
-  let selectionWidth = 0;
   let mouseReleasedInRegion = false;
   let dragStartX = 0;
   const minDragDistance = 5; // Minimum distance to start a selection
@@ -177,7 +176,6 @@ export const WaveformSketch = (p5: WaveformProps) => {
         }
 
         if (startSelection !== null && endSelection !== null) {
-          selectionWidth = Math.abs(endSelection - startSelection);
           if (Math.abs(p5.mouseX - startX) < handleSize) {
             isDraggingStart = true;
           } else if (Math.abs(p5.mouseX - endX) < handleSize) {
