@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
+    "@p5-wrapper/react": "^4.4.0",
     "@wavesurfer/react": "^1.0.6",
     "lamejs": "zhuker/lamejs",
     "next": "14.2.3",

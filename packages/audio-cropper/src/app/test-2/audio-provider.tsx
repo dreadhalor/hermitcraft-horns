@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 
-export interface AudioContextValue {
+export type AudioContextValue = {
   audioBuffer: AudioBuffer | null;
   duration: number;
   isPlaying: boolean;
@@ -24,7 +24,7 @@ export interface AudioContextValue {
   currentTime: number;
   setCurrentTime: (currentTime: number) => void;
   rewindAudio: () => void;
-}
+};
 
 const AudioContext = createContext<AudioContextValue | undefined>(undefined);
 
