@@ -15,7 +15,6 @@ type WaveformProps = P5CanvasInstance<AudioContextValue> & {
   endSelection: number | null;
   visibleStartTime: number;
   visibleEndTime: number;
-  isSelectionWaveform: boolean;
   onSeekClick?: (seekTime: number) => void;
   onSelectionChange?: (start: number | null, end: number | null) => void;
   setCurrentTime?: (time: number) => void;
@@ -29,7 +28,6 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let endSelection: number | null = null;
   let visibleStartTime: number = 0;
   let visibleEndTime: number = 0;
-  let isSelectionWaveform: boolean = false;
   let onSeekClick: ((seekTime: number) => void) | undefined;
   let onSelectionChange:
     | ((start: number | null, end: number | null) => void)
@@ -43,6 +41,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let pendingSelectionReset = false;
   let dragOffset = 0;
   let selectionWidth = 0;
+  let mouseReleasedInRegion = false;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -55,8 +54,6 @@ export const WaveformSketch = (p5: WaveformProps) => {
       visibleStartTime = props.visibleStartTime;
     if (props.visibleEndTime !== undefined)
       visibleEndTime = props.visibleEndTime;
-    if (props.isSelectionWaveform !== undefined)
-      isSelectionWaveform = props.isSelectionWaveform;
     if (props.onSeekClick) onSeekClick = props.onSeekClick;
     if (props.onSelectionChange) onSelectionChange = props.onSelectionChange;
     if (props.setCurrentTime) setCurrentTime = props.setCurrentTime;
@@ -184,10 +181,10 @@ export const WaveformSketch = (p5: WaveformProps) => {
           isDraggingSelection = true;
           dragOffset = p5.mouseX - startX;
         } else {
-          pendingSelectionReset = isSelectionWaveform;
+          pendingSelectionReset = true;
         }
       } else {
-        pendingSelectionReset = isSelectionWaveform;
+        pendingSelectionReset = true;
       }
     }
   };
@@ -279,6 +276,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
   };
 
   p5.mouseReleased = () => {
+    mouseReleasedInRegion =
+      isSelecting || isDraggingStart || isDraggingEnd || isDraggingSelection;
     if (isSelecting) {
       isSelecting = false;
     }
@@ -312,7 +311,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseX >= 0 &&
       p5.mouseX <= p5.width &&
       p5.mouseY >= 0 &&
-      p5.mouseY <= p5.height
+      p5.mouseY <= p5.height &&
+      !mouseReleasedInRegion
     ) {
       const seekTime = Math.max(
         visibleStartTime,
@@ -327,5 +327,6 @@ export const WaveformSketch = (p5: WaveformProps) => {
         setCurrentTime(seekTime);
       }
     }
+    mouseReleasedInRegion = false;
   };
 };

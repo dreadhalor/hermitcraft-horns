@@ -118,7 +118,7 @@ const Page = () => {
         <button onClick={redo}>Redo</button>
       </div>
       <div>Current Time: {currentTime.toFixed(2)}</div>
-      <div id='seek-waveform'>
+      <div id='waveform'>
         <ReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
@@ -129,22 +129,8 @@ const Page = () => {
           visibleStartTime={visibleStartTime}
           visibleEndTime={visibleEndTime}
           onSeekClick={handleSeekClick}
-          setCurrentTime={setCurrentTime}
-          isSelectionWaveform={false}
-        />
-      </div>
-      <div id='selection-waveform'>
-        <ReactP5Wrapper
-          sketch={WaveformSketch as any}
-          audioBuffer={audioBuffer}
-          currentTime={currentTime}
-          duration={duration}
-          startSelection={startSelection}
-          endSelection={endSelection}
-          visibleStartTime={visibleStartTime}
-          visibleEndTime={visibleEndTime}
           onSelectionChange={handleSelectionChange}
-          isSelectionWaveform={true}
+          setCurrentTime={setCurrentTime}
         />
       </div>
       <div id='minimap'>
