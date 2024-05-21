@@ -255,27 +255,19 @@ export const WaveformSketch = (p5: WaveformProps) => {
       startSelection !== null &&
       endSelection !== null
     ) {
-      const startX = Math.max(
+      const sectionDuration = endSelection - startSelection;
+      const newStartX = Math.max(
         visibleStartTime,
         Math.min(
-          visibleEndTime,
+          visibleEndTime - sectionDuration,
           visibleStartTime +
             ((p5.mouseX - dragOffset) / p5.width) *
               (visibleEndTime - visibleStartTime)
         )
       );
-      const endX = startX + selectionWidth;
-      const newStartTime = Math.max(
-        visibleStartTime,
-        Math.min(
-          (startX / p5.width) * audioBuffer.duration,
-          visibleEndTime - selectionWidth
-        )
-      );
-      const newEndTime = Math.max(
-        newStartTime,
-        Math.min((endX / p5.width) * audioBuffer.duration, visibleEndTime)
-      );
+      const newEndX = newStartX + sectionDuration;
+      const newStartTime = newStartX;
+      const newEndTime = newEndX;
       startSelection = newStartTime;
       endSelection = newEndTime;
       onSelectionChange(startSelection, endSelection);
