@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { ReactP5Wrapper } from '@p5-wrapper/react';
 import { cropAudioBuffer, downloadAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
+import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
 
 const Page = () => {
@@ -14,11 +15,15 @@ const Page = () => {
     isPlaying,
     startSelection,
     endSelection,
+    visibleStartTime,
+    visibleEndTime,
     audioContextRef,
     setAudioBuffer,
     setDuration,
     setStartSelection,
     setEndSelection,
+    setVisibleStartTime,
+    setVisibleEndTime,
     togglePlayPause,
     rewindAudio,
     currentTime,
@@ -85,6 +90,11 @@ const Page = () => {
     setDuration(cropped.duration);
   };
 
+  const handleBoundsChange = (start: number, end: number) => {
+    setVisibleStartTime(start);
+    setVisibleEndTime(end);
+  };
+
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
@@ -99,6 +109,8 @@ const Page = () => {
           duration={duration}
           startSelection={startSelection}
           endSelection={endSelection}
+          visibleStartTime={visibleStartTime}
+          visibleEndTime={visibleEndTime}
           onSeekClick={handleSeekClick}
           setCurrentTime={setCurrentTime}
           isSelectionWaveform={false}
@@ -112,8 +124,19 @@ const Page = () => {
           duration={duration}
           startSelection={startSelection}
           endSelection={endSelection}
+          visibleStartTime={visibleStartTime}
+          visibleEndTime={visibleEndTime}
           onSelectionChange={handleSelectionChange}
           isSelectionWaveform={true}
+        />
+      </div>
+      <div id='minimap'>
+        <ReactP5Wrapper
+          sketch={MinimapSketch as any}
+          audioBuffer={audioBuffer}
+          visibleStartTime={visibleStartTime}
+          visibleEndTime={visibleEndTime}
+          onBoundsChange={handleBoundsChange}
         />
       </div>
       <button onClick={handleCropClick}>Crop</button>

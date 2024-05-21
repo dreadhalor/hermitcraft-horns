@@ -2,8 +2,8 @@ import { P5CanvasInstance } from '@p5-wrapper/react';
 import {
   progressColor,
   selectionColor,
-  selectionHandleColor,
   waveColor,
+  selectionHandleColor,
 } from './constants';
 import { AudioContextValue } from './audio-provider';
 
@@ -13,6 +13,8 @@ type WaveformProps = P5CanvasInstance<AudioContextValue> & {
   duration: number;
   startSelection: number | null;
   endSelection: number | null;
+  visibleStartTime: number;
+  visibleEndTime: number;
   isSelectionWaveform: boolean;
   onSeekClick?: (seekTime: number) => void;
   onSelectionChange?: (start: number | null, end: number | null) => void;
@@ -25,6 +27,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let duration: number = 0;
   let startSelection: number | null = null;
   let endSelection: number | null = null;
+  let visibleStartTime: number = 0;
+  let visibleEndTime: number = 0;
   let isSelectionWaveform: boolean = false;
   let onSeekClick: ((seekTime: number) => void) | undefined;
   let onSelectionChange:
@@ -47,6 +51,10 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (props.startSelection !== undefined)
       startSelection = props.startSelection;
     if (props.endSelection !== undefined) endSelection = props.endSelection;
+    if (props.visibleStartTime !== undefined)
+      visibleStartTime = props.visibleStartTime;
+    if (props.visibleEndTime !== undefined)
+      visibleEndTime = props.visibleEndTime;
     if (props.isSelectionWaveform !== undefined)
       isSelectionWaveform = props.isSelectionWaveform;
     if (props.onSeekClick) onSeekClick = props.onSeekClick;
@@ -68,37 +76,28 @@ export const WaveformSketch = (p5: WaveformProps) => {
     const width = p.width;
     const height = p.height;
     const data = buffer.getChannelData(0);
-    const step = Math.ceil(data.length / width);
     const amp = height / 2;
-    const progress = getCurrentProgress();
+
+    const startSample = Math.floor(
+      (visibleStartTime / buffer.duration) * data.length
+    );
+    const endSample = Math.ceil(
+      (visibleEndTime / buffer.duration) * data.length
+    );
+    const visibleData = data.slice(startSample, endSample);
+    const visibleDataLength = visibleData.length;
+    const step = Math.ceil(visibleDataLength / width);
 
     p.background(0);
     p.strokeWeight(1);
 
-    // Draw waveform before playhead
-    p.stroke(progressColor);
-    for (let i = 0; i < width * progress; i++) {
-      let min = 1.0;
-      let max = -1.0;
-      for (let j = 0; j < step; j++) {
-        const datum = data[i * step + j];
-        if (datum < min) {
-          min = datum;
-        }
-        if (datum > max) {
-          max = datum;
-        }
-      }
-      p.line(i, (1 + min) * amp, i, (1 + max) * amp);
-    }
-
-    // Draw waveform after playhead
+    // Draw waveform
     p.stroke(waveColor);
-    for (let i = Math.ceil(width * progress); i < width; i++) {
+    for (let i = 0; i < width; i++) {
       let min = 1.0;
       let max = -1.0;
       for (let j = 0; j < step; j++) {
-        const datum = data[i * step + j];
+        const datum = visibleData[i * step + j];
         if (datum < min) {
           min = datum;
         }
@@ -110,42 +109,39 @@ export const WaveformSketch = (p5: WaveformProps) => {
     }
 
     // Draw playhead
+    const progress =
+      ((currentTime - visibleStartTime) / (visibleEndTime - visibleStartTime)) *
+      width;
     p.stroke(progressColor);
-    p.line(progress * width, 0, progress * width, height);
+    p.line(progress, 0, progress, height);
 
     // Draw selection region
     if (startSelection !== null && endSelection !== null) {
       p.fill(selectionColor);
       p.noStroke();
-      p.rect(
-        (startSelection / buffer.duration) * width,
-        0,
-        ((endSelection - startSelection) / buffer.duration) * width,
-        height
-      );
+      const startX =
+        ((startSelection - visibleStartTime) /
+          (visibleEndTime - visibleStartTime)) *
+        width;
+      const endX =
+        ((endSelection - visibleStartTime) /
+          (visibleEndTime - visibleStartTime)) *
+        width;
+      p.rect(startX, 0, endX - startX, height);
 
       // Draw selection handles
       p.fill(selectionHandleColor);
-      p.noStroke();
       const handleSize = 4;
-      p.rect(
-        (startSelection / buffer.duration) * width - handleSize / 2,
-        0,
-        handleSize,
-        height
-      );
-      p.rect(
-        (endSelection / buffer.duration) * width - handleSize / 2,
-        0,
-        handleSize,
-        height
-      );
+      p.rect(startX - handleSize / 2, 0, handleSize, height);
+      p.rect(endX - handleSize / 2, 0, handleSize, height);
     }
   };
 
   const getCurrentProgress = () => {
     if (audioBuffer) {
-      return currentTime / audioBuffer.duration;
+      return (
+        (currentTime - visibleStartTime) / (visibleEndTime - visibleStartTime)
+      );
     }
     return 0;
   };
@@ -158,19 +154,17 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY >= 0 &&
       p5.mouseY <= p5.height
     ) {
-      const clickTime = (p5.mouseX / p5.width) * audioBuffer.duration;
       const handleSize = 10;
-      const startSelectionX =
-        startSelection !== null
-          ? (startSelection / audioBuffer.duration) * p5.width
-          : null;
-      const endSelectionX =
-        endSelection !== null
-          ? (endSelection / audioBuffer.duration) * p5.width
-          : null;
+      const startX =
+        (((startSelection !== null ? startSelection : 0) - visibleStartTime) /
+          (visibleEndTime - visibleStartTime)) *
+        p5.width;
+      const endX =
+        (((endSelection !== null ? endSelection : 0) - visibleStartTime) /
+          (visibleEndTime - visibleStartTime)) *
+        p5.width;
       const progressX = getCurrentProgress() * p5.width;
 
-      // Check if the playhead is being clicked
       if (Math.abs(p5.mouseX - progressX) < handleSize) {
         isDraggingPlayhead = true;
         return;
@@ -178,24 +172,13 @@ export const WaveformSketch = (p5: WaveformProps) => {
 
       if (startSelection !== null && endSelection !== null) {
         selectionWidth = endSelection - startSelection;
-        if (
-          startSelectionX !== null &&
-          Math.abs(p5.mouseX - startSelectionX) < handleSize
-        ) {
+        if (Math.abs(p5.mouseX - startX) < handleSize) {
           isDraggingStart = true;
-        } else if (
-          endSelectionX !== null &&
-          Math.abs(p5.mouseX - endSelectionX) < handleSize
-        ) {
+        } else if (Math.abs(p5.mouseX - endX) < handleSize) {
           isDraggingEnd = true;
-        } else if (
-          startSelectionX !== null &&
-          endSelectionX !== null &&
-          p5.mouseX > startSelectionX &&
-          p5.mouseX < endSelectionX
-        ) {
+        } else if (p5.mouseX > startX && p5.mouseX < endX) {
           isDraggingSelection = true;
-          dragOffset = p5.mouseX - startSelectionX;
+          dragOffset = p5.mouseX - startX;
         } else {
           pendingSelectionReset = isSelectionWaveform;
         }
@@ -208,10 +191,11 @@ export const WaveformSketch = (p5: WaveformProps) => {
   p5.mouseDragged = () => {
     if (pendingSelectionReset && audioBuffer) {
       const startTime = Math.max(
-        0,
+        visibleStartTime,
         Math.min(
-          (p5.mouseX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration
+          visibleEndTime,
+          visibleStartTime +
+            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
       startSelection = startTime;
@@ -223,39 +207,43 @@ export const WaveformSketch = (p5: WaveformProps) => {
       }
     } else if (isSelecting && onSelectionChange && audioBuffer) {
       const currentTime = Math.max(
-        0,
+        visibleStartTime,
         Math.min(
-          (p5.mouseX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration
+          visibleEndTime,
+          visibleStartTime +
+            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
       endSelection = currentTime;
       onSelectionChange(startSelection, endSelection);
     } else if (isDraggingPlayhead && setCurrentTime && audioBuffer) {
       const seekTime = Math.max(
-        0,
+        visibleStartTime,
         Math.min(
-          (p5.mouseX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration
+          visibleEndTime,
+          visibleStartTime +
+            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
       setCurrentTime(seekTime);
     } else if (isDraggingStart && onSelectionChange && audioBuffer) {
       const startTime = Math.max(
-        0,
+        visibleStartTime,
         Math.min(
-          (p5.mouseX / p5.width) * audioBuffer.duration,
-          endSelection !== null ? endSelection : audioBuffer.duration
+          visibleEndTime,
+          visibleStartTime +
+            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
       startSelection = startTime;
       onSelectionChange(startSelection, endSelection);
     } else if (isDraggingEnd && onSelectionChange && audioBuffer) {
       const endTime = Math.max(
-        startSelection !== null ? startSelection : 0,
+        visibleStartTime,
         Math.min(
-          (p5.mouseX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration
+          visibleEndTime,
+          visibleStartTime +
+            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
       endSelection = endTime;
@@ -267,18 +255,26 @@ export const WaveformSketch = (p5: WaveformProps) => {
       startSelection !== null &&
       endSelection !== null
     ) {
-      const startX = Math.max(0, p5.mouseX - dragOffset);
-      const endX = startX + (selectionWidth / audioBuffer.duration) * p5.width;
+      const startX = Math.max(
+        visibleStartTime,
+        Math.min(
+          visibleEndTime,
+          visibleStartTime +
+            ((p5.mouseX - dragOffset) / p5.width) *
+              (visibleEndTime - visibleStartTime)
+        )
+      );
+      const endX = startX + selectionWidth;
       const newStartTime = Math.max(
-        0,
+        visibleStartTime,
         Math.min(
           (startX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration - selectionWidth
+          visibleEndTime - selectionWidth
         )
       );
       const newEndTime = Math.max(
         newStartTime,
-        Math.min((endX / p5.width) * audioBuffer.duration, audioBuffer.duration)
+        Math.min((endX / p5.width) * audioBuffer.duration, visibleEndTime)
       );
       startSelection = newStartTime;
       endSelection = newEndTime;
@@ -323,10 +319,11 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY <= p5.height
     ) {
       const seekTime = Math.max(
-        0,
+        visibleStartTime,
         Math.min(
-          (p5.mouseX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration
+          visibleEndTime,
+          visibleStartTime +
+            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
       onSeekClick(seekTime);

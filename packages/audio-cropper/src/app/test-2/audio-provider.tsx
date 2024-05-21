@@ -14,12 +14,16 @@ export type AudioContextValue = {
   isPlaying: boolean;
   startSelection: number | null;
   endSelection: number | null;
+  visibleStartTime: number;
+  visibleEndTime: number;
   audioContextRef: React.MutableRefObject<AudioContext | null>;
   sourceRef: React.MutableRefObject<AudioBufferSourceNode | null>;
   setAudioBuffer: (buffer: AudioBuffer | null) => void;
   setDuration: (duration: number) => void;
   setStartSelection: (startSelection: number | null) => void;
   setEndSelection: (endSelection: number | null) => void;
+  setVisibleStartTime: (startTime: number) => void;
+  setVisibleEndTime: (endTime: number) => void;
   togglePlayPause: () => void;
   currentTime: number;
   setCurrentTime: (currentTime: number) => void;
@@ -47,10 +51,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   const [startSelection, setStartSelection] = useState<number | null>(null);
   const [endSelection, setEndSelection] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [visibleStartTime, setVisibleStartTime] = useState(0);
+  const [visibleEndTime, setVisibleEndTime] = useState(0);
 
   useEffect(() => {
-    console.log('current time:', currentTime);
-  }, [currentTime]);
+    if (audioBuffer) {
+      setVisibleEndTime(audioBuffer.duration);
+    }
+  }, [audioBuffer]);
 
   const togglePlayPause = () => {
     if (!audioBuffer || !audioContextRef.current) return;
@@ -63,8 +71,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       setIsPlaying(false);
     } else {
-      console.log('current time:', currentTime);
-      console.log('duration:', duration);
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContextRef.current.destination);
@@ -78,8 +84,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const startTime = audioContextRef.current.currentTime - currentTime;
       const updateCurrentTime = () => {
-        console.log('updating current time');
-        console.log('isPlaying:', isPlaying);
         if (sourceRef.current && audioContextRef.current) {
           setCurrentTime(audioContextRef.current.currentTime - startTime);
           requestAnimationFrame(updateCurrentTime);
@@ -87,9 +91,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       setIsPlaying(true);
-      requestAnimationFrame(() => {
-        updateCurrentTime();
-      });
+      requestAnimationFrame(updateCurrentTime);
     }
   };
 
@@ -112,12 +114,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     isPlaying,
     startSelection,
     endSelection,
+    visibleStartTime,
+    visibleEndTime,
     audioContextRef,
     sourceRef,
     setAudioBuffer,
     setDuration,
     setStartSelection,
     setEndSelection,
+    setVisibleStartTime,
+    setVisibleEndTime,
     togglePlayPause,
     currentTime,
     setCurrentTime,
