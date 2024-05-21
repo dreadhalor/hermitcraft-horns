@@ -1,26 +1,37 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { createAudioUrl, cropAudioBuffer, downloadAudio } from './audio-utils';
+import React, { useRef, useEffect } from 'react';
+import { cropAudioBuffer, downloadAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
+import { useAudioContext } from './audio-provider';
 
 const Page = () => {
-  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const ctx = useAudioContext();
+  const {
+    audioBuffer,
+    duration,
+    isPlaying,
+    startSelection,
+    endSelection,
+    audioContextRef,
+    setAudioBuffer,
+    setDuration,
+    setStartSelection,
+    setEndSelection,
+    togglePlayPause,
+    rewindAudio,
+    currentTime,
+  } = ctx;
+
   const seekWaveformRef = useRef<WaveformSketch | null>(null);
   const selectionWaveformRef = useRef<WaveformSketch | null>(null);
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-  const [duration, setDuration] = useState(0);
-  const [startSelection, setStartSelection] = useState<number | null>(null);
-  const [endSelection, setEndSelection] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
     return () => {
       audioContextRef.current?.close();
     };
-  }, []);
+  }, [audioContextRef]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,38 +87,13 @@ const Page = () => {
     selectionWaveformRef.current?.setAudioBuffer(cropped);
   };
 
-  const togglePlayPause = () => {
-    if (!audioBuffer || !audioContextRef.current) return;
-
-    if (isPlaying) {
-      if (sourceRef.current) {
-        sourceRef.current.stop();
-        sourceRef.current.disconnect();
-        sourceRef.current = null;
-      }
-      setIsPlaying(false);
-    } else {
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-      source.start();
-      sourceRef.current = source;
-
-      source.onended = () => {
-        sourceRef.current = null;
-        setIsPlaying(false);
-      };
-
-      setIsPlaying(true);
-    }
-  };
-
   useEffect(() => {
     if (!audioContextRef.current) return;
     seekWaveformRef.current = new WaveformSketch(
       500,
       200,
       'seek-waveform',
+      ctx,
       handleSeekClick,
       undefined
     );
@@ -115,6 +101,7 @@ const Page = () => {
       500,
       200,
       'selection-waveform',
+      ctx,
       undefined,
       handleSelectionChange
     );
@@ -134,7 +121,9 @@ const Page = () => {
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
+      <button onClick={() => rewindAudio()}>Rewind</button>
       <button onClick={togglePlayPause}>{isPlaying ? 'Pause' : 'Play'}</button>
+      <div>Current Time: {currentTime.toFixed(2)}</div>
       <div id='seek-waveform' />
       <div id='selection-waveform' />
       <button onClick={handleCropClick}>Crop</button>

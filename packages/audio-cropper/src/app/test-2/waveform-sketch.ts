@@ -1,5 +1,6 @@
 import p5 from 'p5';
 import { progressColor, selectionColor, waveColor } from './constants';
+import { AudioContextValue } from './audio-provider'; // Adjust this import based on the actual path
 
 export class WaveformSketch {
   private p5Instance: p5;
@@ -7,17 +8,24 @@ export class WaveformSketch {
   private startSelection: number | null = null;
   private endSelection: number | null = null;
   private dragStartInside = false;
+  private currentTime: number;
+  private duration: number;
 
   constructor(
     width: number,
     height: number,
     parent: string,
+    audioContext: AudioContextValue,
     private readonly onSeekClick?: (seekTime: number) => void,
     private readonly onSelectionChange?: (
       startTime: number | null,
       endTime: number | null
     ) => void
   ) {
+    this.audioBuffer = audioContext.audioBuffer;
+    this.currentTime = audioContext.currentTime;
+    this.duration = audioContext.duration;
+
     this.p5Instance = new p5((p: p5) => {
       p.setup = () => {
         const canvas = p.createCanvas(width, height);
@@ -126,9 +134,8 @@ export class WaveformSketch {
   }
 
   private getCurrentProgress() {
-    const audio = document.querySelector('audio');
-    if (audio && this.audioBuffer) {
-      return audio.currentTime / this.audioBuffer.duration;
+    if (this.audioBuffer) {
+      return this.currentTime / this.audioBuffer.duration;
     }
     return 0;
   }
