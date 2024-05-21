@@ -119,16 +119,17 @@ export const WaveformSketch = (p5: WaveformProps) => {
 
     // Draw selection region
     if (startSelection !== null && endSelection !== null) {
-      p.fill(selectionColor);
-      p.noStroke();
       const startX =
-        ((startSelection - visibleStartTime) /
+        ((Math.min(startSelection, endSelection) - visibleStartTime) /
           (visibleEndTime - visibleStartTime)) *
         width;
       const endX =
-        ((endSelection - visibleStartTime) /
+        ((Math.max(startSelection, endSelection) - visibleStartTime) /
           (visibleEndTime - visibleStartTime)) *
         width;
+
+      p.fill(selectionColor);
+      p.noStroke();
       p.rect(startX, 0, endX - startX, height);
 
       // Draw selection handles
@@ -157,32 +158,36 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY <= p5.height
     ) {
       const handleSize = 10;
-      const startX =
-        (((startSelection !== null ? startSelection : 0) - visibleStartTime) /
-          (visibleEndTime - visibleStartTime)) *
-        p5.width;
-      const endX =
-        (((endSelection !== null ? endSelection : 0) - visibleStartTime) /
-          (visibleEndTime - visibleStartTime)) *
-        p5.width;
-      const progressX = getCurrentProgress() * p5.width;
-
-      dragStartX = p5.mouseX;
-
-      if (Math.abs(p5.mouseX - progressX) < handleSize) {
-        isDraggingPlayhead = true;
-        return;
-      }
-
       if (startSelection !== null && endSelection !== null) {
-        selectionWidth = endSelection - startSelection;
-        if (Math.abs(p5.mouseX - startX) < handleSize) {
-          isDraggingStart = true;
-        } else if (Math.abs(p5.mouseX - endX) < handleSize) {
-          isDraggingEnd = true;
-        } else if (p5.mouseX > startX && p5.mouseX < endX) {
-          isDraggingSelection = true;
-          dragOffset = p5.mouseX - startX;
+        const startX =
+          ((Math.min(startSelection, endSelection) - visibleStartTime) /
+            (visibleEndTime - visibleStartTime)) *
+          p5.width;
+        const endX =
+          ((Math.max(startSelection, endSelection) - visibleStartTime) /
+            (visibleEndTime - visibleStartTime)) *
+          p5.width;
+        const progressX = getCurrentProgress() * p5.width;
+
+        dragStartX = p5.mouseX;
+
+        if (Math.abs(p5.mouseX - progressX) < handleSize) {
+          isDraggingPlayhead = true;
+          return;
+        }
+
+        if (startSelection !== null && endSelection !== null) {
+          selectionWidth = Math.abs(endSelection - startSelection);
+          if (Math.abs(p5.mouseX - startX) < handleSize) {
+            isDraggingStart = true;
+          } else if (Math.abs(p5.mouseX - endX) < handleSize) {
+            isDraggingEnd = true;
+          } else if (p5.mouseX > startX && p5.mouseX < endX) {
+            isDraggingSelection = true;
+            dragOffset = p5.mouseX - startX;
+          } else {
+            pendingSelectionReset = true;
+          }
         } else {
           pendingSelectionReset = true;
         }
@@ -261,7 +266,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
       startSelection !== null &&
       endSelection !== null
     ) {
-      const sectionDuration = endSelection - startSelection;
+      const sectionDuration = Math.abs(endSelection - startSelection);
       const newStartX = Math.max(
         0,
         Math.min(
