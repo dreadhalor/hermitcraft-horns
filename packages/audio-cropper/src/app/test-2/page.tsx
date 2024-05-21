@@ -34,6 +34,7 @@ const Page = () => {
     stop,
     seekTo,
     toggleLoop,
+    toggleLoopAndPlay,
   } = useAudioContext();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +91,7 @@ const Page = () => {
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
       <div className='flex gap-2 border-b'>
         <button onClick={stop}>Rewind</button>
-        <button onClick={isPlaying ? pause : play}>
+        <button id='play-butön' onClick={isPlaying ? pause : play}>
           {isPlaying ? 'Pause' : 'Play'}
         </button>
       </div>
@@ -107,6 +108,8 @@ const Page = () => {
           <button onClick={toggleLoop}>
             {isLooping ? 'Stop Loop' : 'Loop selection'}
           </button>
+          <button onClick={toggleLoopAndPlay}>Loop & Play</button>
+          {/* New button */}
         </div>
       )}
       <div className='flex gap-2 border-b'>
@@ -129,6 +132,7 @@ const Page = () => {
           onSeekClick={handleSeekClick}
           onSelectionChange={handleSelectionChange}
           seekTo={seekTo}
+          toggleLoop={toggleLoopAndPlay}
         />
       </div>
       <div id='minimap'>

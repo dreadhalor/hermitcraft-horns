@@ -98,6 +98,17 @@ export const useAudioPlayer = (
     setIsLooping((prev) => !prev);
   };
 
+  const toggleLoopAndPlay = () => {
+    if (!isLooping) {
+      setTimeout(() => {
+        document.getElementById('play-butön')?.click();
+      }, 0);
+    } else {
+      if (isPlaying) stop();
+    }
+    setIsLooping((prev) => !prev);
+  };
+
   return {
     isPlaying,
     currentTime,
@@ -106,6 +117,8 @@ export const useAudioPlayer = (
     stop,
     seekTo,
     isLooping,
+    setIsLooping,
     toggleLoop,
+    toggleLoopAndPlay,
   };
 };

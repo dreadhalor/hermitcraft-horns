@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import { cropAudioBuffer, trimAudioBuffer } from './audio-utils';
 import { useAudioPlayer } from './use-audio-player';
 
@@ -30,6 +36,7 @@ export type AudioContextValue = {
   stop: () => void;
   seekTo: (time: number) => void;
   toggleLoop: () => void;
+  toggleLoopAndPlay: () => void;
 };
 
 const AudioContext = createContext<AudioContextValue | undefined>(undefined);
@@ -63,6 +70,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     seekTo,
     isLooping,
     toggleLoop,
+    toggleLoopAndPlay,
   } = useAudioPlayer(audioBuffer, startSelection, endSelection);
 
   useEffect(() => {
@@ -147,6 +155,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     stop,
     seekTo,
     toggleLoop,
+    toggleLoopAndPlay,
   };
 
   return (

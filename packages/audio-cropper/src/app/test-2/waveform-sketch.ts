@@ -17,6 +17,7 @@ type WaveformProps = P5CanvasInstance<any> & {
   onSeekClick?: (seekTime: number) => void;
   onSelectionChange?: (start: number | null, end: number | null) => void;
   seekTo?: (time: number) => void;
+  toggleLoop?: () => void; // Add toggleLoop function
 };
 
 export const WaveformSketch = (p5: WaveformProps) => {
@@ -32,6 +33,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
     | ((start: number | null, end: number | null) => void)
     | undefined;
   let seekTo: ((time: number) => void) | undefined;
+  let toggleLoop: (() => void) | undefined; // Add toggleLoop function
   let isSelecting = false;
   let isDraggingPlayhead = false;
   let isDraggingStart = false;
@@ -42,6 +44,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let mouseReleasedInRegion = false;
   let dragStartX = 0;
   let mouseDownInsideCanvas = false;
+  let mousePressedX = 0;
+  let mousePressedY = 0;
   const minDragDistance = 5; // Minimum distance to start a selection
 
   p5.updateWithProps = (props: WaveformProps) => {
@@ -58,6 +62,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (props.onSeekClick) onSeekClick = props.onSeekClick;
     if (props.onSelectionChange) onSelectionChange = props.onSelectionChange;
     if (props.seekTo) seekTo = props.seekTo;
+    if (props.toggleLoop) toggleLoop = props.toggleLoop; // Assign toggleLoop function
   };
 
   p5.setup = () => {
@@ -158,6 +163,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY <= p5.height
     ) {
       mouseDownInsideCanvas = true;
+      mousePressedX = p5.mouseX;
+      mousePressedY = p5.mouseY;
       const handleSize = 10;
       const startX =
         ((Math.min(startSelection ?? 0, endSelection ?? 0) - visibleStartTime) /
@@ -304,38 +311,45 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (pendingSelectionReset) {
       pendingSelectionReset = false;
     }
-  };
 
-  p5.mouseClicked = () => {
-    if (
-      !isSelecting &&
-      !isDraggingPlayhead &&
-      !isDraggingStart &&
-      !isDraggingEnd &&
-      !isDraggingSelection &&
-      !pendingSelectionReset &&
-      onSeekClick &&
-      audioBuffer &&
-      p5.mouseX >= 0 &&
-      p5.mouseX <= p5.width &&
-      p5.mouseY >= 0 &&
-      p5.mouseY <= p5.height &&
-      !mouseReleasedInRegion &&
-      mouseDownInsideCanvas
-    ) {
-      const seekTime = Math.max(
-        0,
-        Math.min(
-          duration,
-          visibleStartTime +
-            (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
-        )
-      );
-      onSeekClick(seekTime);
-      if (seekTo) {
-        seekTo(seekTime);
+    if (mouseDownInsideCanvas) {
+      const distanceX = Math.abs(p5.mouseX - mousePressedX);
+      const distanceY = Math.abs(p5.mouseY - mousePressedY);
+      const isClick =
+        distanceX < minDragDistance && distanceY < minDragDistance;
+
+      if (isClick) {
+        if (toggleLoop) {
+          const startX =
+            ((Math.min(startSelection ?? 0, endSelection ?? 0) -
+              visibleStartTime) /
+              (visibleEndTime - visibleStartTime)) *
+            p5.width;
+          const endX =
+            ((Math.max(startSelection ?? 0, endSelection ?? 0) -
+              visibleStartTime) /
+              (visibleEndTime - visibleStartTime)) *
+            p5.width;
+
+          if (p5.mouseX > startX && p5.mouseX < endX) {
+            toggleLoop();
+          }
+        }
+      } else if (!mouseReleasedInRegion && onSeekClick) {
+        const seekTime = Math.max(
+          0,
+          Math.min(
+            duration,
+            visibleStartTime +
+              (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
+          )
+        );
+        onSeekClick(seekTime);
+        if (seekTo) {
+          seekTo(seekTime);
+        }
       }
     }
-    mouseReleasedInRegion = false;
+    mouseDownInsideCanvas = false;
   };
 };
