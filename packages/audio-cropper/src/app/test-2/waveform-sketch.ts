@@ -35,7 +35,10 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let isDraggingPlayhead = false;
   let isDraggingStart = false;
   let isDraggingEnd = false;
+  let isDraggingSelection = false;
   let pendingSelectionReset = false;
+  let dragOffset = 0;
+  let selectionWidth = 0;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -165,8 +168,16 @@ export const WaveformSketch = (p5: WaveformProps) => {
         endSelection !== null
           ? (endSelection / audioBuffer.duration) * p5.width
           : null;
+      const progressX = getCurrentProgress() * p5.width;
+
+      // Check if the playhead is being clicked
+      if (Math.abs(p5.mouseX - progressX) < handleSize) {
+        isDraggingPlayhead = true;
+        return;
+      }
 
       if (startSelection !== null && endSelection !== null) {
+        selectionWidth = endSelection - startSelection;
         if (
           startSelectionX !== null &&
           Math.abs(p5.mouseX - startSelectionX) < handleSize
@@ -178,18 +189,16 @@ export const WaveformSketch = (p5: WaveformProps) => {
         ) {
           isDraggingEnd = true;
         } else if (
-          Math.abs(clickTime - currentTime) / audioBuffer.duration <
-          0.01
+          startSelectionX !== null &&
+          endSelectionX !== null &&
+          p5.mouseX > startSelectionX &&
+          p5.mouseX < endSelectionX
         ) {
-          isDraggingPlayhead = true;
+          isDraggingSelection = true;
+          dragOffset = p5.mouseX - startSelectionX;
         } else {
           pendingSelectionReset = isSelectionWaveform;
         }
-      } else if (
-        Math.abs(clickTime - currentTime) / audioBuffer.duration <
-        0.01
-      ) {
-        isDraggingPlayhead = true;
       } else {
         pendingSelectionReset = isSelectionWaveform;
       }
@@ -236,20 +245,43 @@ export const WaveformSketch = (p5: WaveformProps) => {
         0,
         Math.min(
           (p5.mouseX / p5.width) * audioBuffer.duration,
-          audioBuffer.duration
+          endSelection !== null ? endSelection : audioBuffer.duration
         )
       );
       startSelection = startTime;
       onSelectionChange(startSelection, endSelection);
     } else if (isDraggingEnd && onSelectionChange && audioBuffer) {
       const endTime = Math.max(
-        0,
+        startSelection !== null ? startSelection : 0,
         Math.min(
           (p5.mouseX / p5.width) * audioBuffer.duration,
           audioBuffer.duration
         )
       );
       endSelection = endTime;
+      onSelectionChange(startSelection, endSelection);
+    } else if (
+      isDraggingSelection &&
+      onSelectionChange &&
+      audioBuffer &&
+      startSelection !== null &&
+      endSelection !== null
+    ) {
+      const startX = Math.max(0, p5.mouseX - dragOffset);
+      const endX = startX + (selectionWidth / audioBuffer.duration) * p5.width;
+      const newStartTime = Math.max(
+        0,
+        Math.min(
+          (startX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration - selectionWidth
+        )
+      );
+      const newEndTime = Math.max(
+        newStartTime,
+        Math.min((endX / p5.width) * audioBuffer.duration, audioBuffer.duration)
+      );
+      startSelection = newStartTime;
+      endSelection = newEndTime;
       onSelectionChange(startSelection, endSelection);
     }
   };
@@ -267,6 +299,9 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (isDraggingEnd) {
       isDraggingEnd = false;
     }
+    if (isDraggingSelection) {
+      isDraggingSelection = false;
+    }
     if (pendingSelectionReset) {
       pendingSelectionReset = false;
     }
@@ -278,6 +313,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
       !isDraggingPlayhead &&
       !isDraggingStart &&
       !isDraggingEnd &&
+      !isDraggingSelection &&
       !pendingSelectionReset &&
       onSeekClick &&
       audioBuffer &&
