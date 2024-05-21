@@ -42,7 +42,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let selectionWidth = 0;
   let mouseReleasedInRegion = false;
   let dragStartX = 0;
-  const minDragDistance = 10; // Minimum distance to start a selection
+  const minDragDistance = 5; // Minimum distance to start a selection
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
