@@ -16,6 +16,7 @@ const Page = () => {
     endSelection,
     visibleStartTime,
     visibleEndTime,
+    isLooping,
     audioContextRef,
     setAudioBuffer,
     setDuration,
@@ -31,6 +32,8 @@ const Page = () => {
     redo,
     handleCrop,
     handleTrim,
+    toggleLoop,
+    stopLoop,
   } = useAudioContext();
 
   useEffect(() => {
@@ -111,6 +114,21 @@ const Page = () => {
           {isPlaying ? 'Pause' : 'Play'}
         </button>
       </div>
+      {startSelection !== null && endSelection !== null && (
+        <div className='flex gap-2 border-b'>
+          <button
+            onClick={() => {
+              setStartSelection(null);
+              setEndSelection(null);
+            }}
+          >
+            Clear selection
+          </button>
+          <button onClick={toggleLoop}>
+            {isLooping ? 'Stop Loop' : 'Loop selection'}
+          </button>
+        </div>
+      )}
       <div className='flex gap-2 border-b'>
         <button onClick={handleCropClick}>Crop</button>
         <button onClick={handleTrimClick}>Trim</button>

@@ -17,6 +17,7 @@ export type AudioContextValue = {
   endSelection: number | null;
   visibleStartTime: number;
   visibleEndTime: number;
+  isLooping: boolean;
   audioContextRef: React.MutableRefObject<AudioContext | null>;
   sourceRef: React.MutableRefObject<AudioBufferSourceNode | null>;
   setAudioBuffer: (buffer: AudioBuffer | null) => void;
@@ -29,6 +30,8 @@ export type AudioContextValue = {
   currentTime: number;
   setCurrentTime: (currentTime: number) => void;
   rewindAudio: () => void;
+  toggleLoop: () => void;
+  stopLoop: () => void;
   undo: () => void;
   redo: () => void;
   handleCrop: (start: number, end: number) => void;
@@ -58,6 +61,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [visibleStartTime, setVisibleStartTime] = useState(0);
   const [visibleEndTime, setVisibleEndTime] = useState(0);
+  const [isLooping, setIsLooping] = useState(false);
   const [undoStack, setUndoStack] = useState<AudioBuffer[]>([]);
   const [redoStack, setRedoStack] = useState<AudioBuffer[]>([]);
 
@@ -67,64 +71,86 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [audioBuffer]);
 
-  useEffect(() => {
-    console.log('current time:', currentTime);
-  }, [currentTime]);
-
   const pushToUndoStack = (buffer: AudioBuffer) => {
     setUndoStack((prevStack) => [buffer, ...prevStack]);
+  };
+
+  const stopCurrentSource = () => {
+    if (sourceRef.current) {
+      sourceRef.current.stop();
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+  };
+
+  const playAudio = (startTime: number, loop = false) => {
+    if (!audioBuffer || !audioContextRef.current) return;
+
+    stopCurrentSource();
+
+    const source = audioContextRef.current.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContextRef.current.destination);
+
+    if (loop && startSelection !== null && endSelection !== null) {
+      source.loop = true;
+      source.loopStart = startSelection;
+      source.loopEnd = endSelection;
+      source.start(0, startSelection);
+    } else {
+      source.start(0, startTime);
+    }
+
+    sourceRef.current = source;
+
+    source.onended = () => {
+      sourceRef.current = null;
+      setIsPlaying(false);
+      if (isLooping) {
+        setCurrentTime(startSelection || 0);
+        playAudio(startSelection || 0, true);
+      }
+    };
+
+    const audioCtxStartTime = audioContextRef.current.currentTime - startTime;
+    const updateCurrentTime = () => {
+      if (sourceRef.current && audioContextRef.current) {
+        const audioTime =
+          audioContextRef.current.currentTime - audioCtxStartTime;
+        if (isLooping && startSelection !== null && endSelection !== null) {
+          if (audioTime >= endSelection) {
+            setCurrentTime(startSelection);
+          } else {
+            setCurrentTime(audioTime);
+          }
+        } else {
+          setCurrentTime(audioTime);
+        }
+        requestAnimationFrame(updateCurrentTime);
+      }
+    };
+
+    setIsPlaying(true);
+    requestAnimationFrame(() => {
+      updateCurrentTime();
+    });
   };
 
   const togglePlayPause = () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
     if (isPlaying) {
-      if (sourceRef.current) {
-        sourceRef.current.stop();
-        sourceRef.current.disconnect();
-        sourceRef.current = null;
-      }
+      stopCurrentSource();
       setIsPlaying(false);
     } else {
-      console.log('current time:', currentTime);
-      console.log('duration:', duration);
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-      source.start(0, currentTime);
-      sourceRef.current = source;
-
-      source.onended = () => {
-        sourceRef.current = null;
-        setIsPlaying(false);
-      };
-
-      const startTime = audioContextRef.current.currentTime - currentTime;
-      const updateCurrentTime = () => {
-        console.log('updating current time');
-        console.log('isPlaying:', isPlaying);
-        if (sourceRef.current && audioContextRef.current) {
-          setCurrentTime(audioContextRef.current.currentTime - startTime);
-          requestAnimationFrame(updateCurrentTime);
-        }
-      };
-
-      setIsPlaying(true);
-      requestAnimationFrame(() => {
-        updateCurrentTime();
-      });
+      playAudio(currentTime, isLooping);
     }
   };
 
   const rewindAudio = () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
-    if (sourceRef.current) {
-      sourceRef.current.stop();
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
-
+    stopCurrentSource();
     setCurrentTime(0);
     setIsPlaying(false);
   };
@@ -155,6 +181,23 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     setEndSelection(null);
   };
 
+  const toggleLoop = () => {
+    if (!isLooping && startSelection !== null && endSelection !== null) {
+      setIsLooping(true);
+      playAudio(startSelection, true);
+    } else {
+      setIsLooping(false);
+      stopCurrentSource();
+      setIsPlaying(false);
+    }
+  };
+
+  const stopLoop = () => {
+    setIsLooping(false);
+    stopCurrentSource();
+    setIsPlaying(false);
+  };
+
   const undo = () => {
     if (undoStack.length > 0) {
       const previousBuffer = undoStack[0];
@@ -183,6 +226,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     endSelection,
     visibleStartTime,
     visibleEndTime,
+    isLooping,
     audioContextRef,
     sourceRef,
     setAudioBuffer,
@@ -195,6 +239,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     currentTime,
     setCurrentTime,
     rewindAudio,
+    toggleLoop,
+    stopLoop,
     undo,
     redo,
     handleCrop,
