@@ -41,6 +41,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let dragOffset = 0;
   let mouseReleasedInRegion = false;
   let dragStartX = 0;
+  let mouseDownInsideCanvas = false;
   const minDragDistance = 5; // Minimum distance to start a selection
 
   p5.updateWithProps = (props: WaveformProps) => {
@@ -156,6 +157,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY >= 0 &&
       p5.mouseY <= p5.height
     ) {
+      mouseDownInsideCanvas = true;
       const handleSize = 10;
       const startX =
         ((Math.min(startSelection ?? 0, endSelection ?? 0) - visibleStartTime) /
@@ -188,6 +190,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
       } else {
         pendingSelectionReset = true;
       }
+    } else {
+      mouseDownInsideCanvas = false;
     }
   };
 
@@ -316,7 +320,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseX <= p5.width &&
       p5.mouseY >= 0 &&
       p5.mouseY <= p5.height &&
-      !mouseReleasedInRegion
+      !mouseReleasedInRegion &&
+      mouseDownInsideCanvas
     ) {
       const seekTime = Math.max(
         0,
