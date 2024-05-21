@@ -25,6 +25,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
     | undefined;
   let setCurrentTime: ((time: number) => void) | undefined;
   let isSelecting = false;
+  let isDraggingPlayhead = false;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -119,18 +120,24 @@ export const WaveformSketch = (p5: WaveformProps) => {
 
   p5.mousePressed = () => {
     if (
-      onSelectionChange &&
       audioBuffer &&
       p5.mouseX >= 0 &&
       p5.mouseX <= p5.width &&
       p5.mouseY >= 0 &&
       p5.mouseY <= p5.height
     ) {
-      const startTime = (p5.mouseX / p5.width) * audioBuffer.duration;
-      startSelection = startTime;
-      endSelection = startTime;
-      isSelecting = true;
-      onSelectionChange(startSelection, endSelection);
+      const clickTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+
+      if (Math.abs(clickTime - currentTime) / audioBuffer.duration < 0.01) {
+        // If the click is near the current playhead, start dragging the playhead
+        isDraggingPlayhead = true;
+      } else if (onSelectionChange) {
+        // Start selecting a region
+        startSelection = clickTime;
+        endSelection = clickTime;
+        isSelecting = true;
+        onSelectionChange(startSelection, endSelection);
+      }
     }
   };
 
@@ -139,6 +146,9 @@ export const WaveformSketch = (p5: WaveformProps) => {
       const currentTime = (p5.mouseX / p5.width) * audioBuffer.duration;
       endSelection = currentTime;
       onSelectionChange(startSelection, endSelection);
+    } else if (isDraggingPlayhead && setCurrentTime && audioBuffer) {
+      const seekTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      setCurrentTime(seekTime);
     }
   };
 
@@ -146,11 +156,15 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (isSelecting) {
       isSelecting = false;
     }
+    if (isDraggingPlayhead) {
+      isDraggingPlayhead = false;
+    }
   };
 
   p5.mouseClicked = () => {
     if (
       !isSelecting &&
+      !isDraggingPlayhead &&
       onSeekClick &&
       audioBuffer &&
       p5.mouseX >= 0 &&
