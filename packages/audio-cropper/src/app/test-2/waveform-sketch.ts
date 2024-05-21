@@ -157,35 +157,31 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY <= p5.height
     ) {
       const handleSize = 10;
+      const startX =
+        ((Math.min(startSelection ?? 0, endSelection ?? 0) - visibleStartTime) /
+          (visibleEndTime - visibleStartTime)) *
+        p5.width;
+      const endX =
+        ((Math.max(startSelection ?? 0, endSelection ?? 0) - visibleStartTime) /
+          (visibleEndTime - visibleStartTime)) *
+        p5.width;
+      const progressX = getCurrentProgress() * p5.width;
+
+      dragStartX = p5.mouseX;
+
+      if (Math.abs(p5.mouseX - progressX) < handleSize) {
+        isDraggingPlayhead = true;
+        return;
+      }
+
       if (startSelection !== null && endSelection !== null) {
-        const startX =
-          ((Math.min(startSelection, endSelection) - visibleStartTime) /
-            (visibleEndTime - visibleStartTime)) *
-          p5.width;
-        const endX =
-          ((Math.max(startSelection, endSelection) - visibleStartTime) /
-            (visibleEndTime - visibleStartTime)) *
-          p5.width;
-        const progressX = getCurrentProgress() * p5.width;
-
-        dragStartX = p5.mouseX;
-
-        if (Math.abs(p5.mouseX - progressX) < handleSize) {
-          isDraggingPlayhead = true;
-          return;
-        }
-
-        if (startSelection !== null && endSelection !== null) {
-          if (Math.abs(p5.mouseX - startX) < handleSize) {
-            isDraggingStart = true;
-          } else if (Math.abs(p5.mouseX - endX) < handleSize) {
-            isDraggingEnd = true;
-          } else if (p5.mouseX > startX && p5.mouseX < endX) {
-            isDraggingSelection = true;
-            dragOffset = p5.mouseX - startX;
-          } else {
-            pendingSelectionReset = true;
-          }
+        if (Math.abs(p5.mouseX - startX) < handleSize) {
+          isDraggingStart = true;
+        } else if (Math.abs(p5.mouseX - endX) < handleSize) {
+          isDraggingEnd = true;
+        } else if (p5.mouseX > startX && p5.mouseX < endX) {
+          isDraggingSelection = true;
+          dragOffset = p5.mouseX - startX;
         } else {
           pendingSelectionReset = true;
         }
