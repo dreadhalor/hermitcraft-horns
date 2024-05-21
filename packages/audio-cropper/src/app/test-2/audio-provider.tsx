@@ -53,6 +53,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const animationFrameId = useRef<number | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -103,30 +104,20 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
     sourceRef.current = source;
 
-    source.onended = () => {
-      sourceRef.current = null;
-      setIsPlaying(false);
-      if (isLooping) {
-        setCurrentTime(startSelection || 0);
-        playAudio(startSelection || 0, true);
-      }
-    };
+    const startTimestamp = audioContextRef.current.currentTime;
+    const loopStartTime = startSelection || 0;
 
-    const audioCtxStartTime = audioContextRef.current.currentTime - startTime;
     const updateCurrentTime = () => {
       if (sourceRef.current && audioContextRef.current) {
-        const audioTime =
-          audioContextRef.current.currentTime - audioCtxStartTime;
+        const elapsed = audioContextRef.current.currentTime - startTimestamp;
         if (isLooping && startSelection !== null && endSelection !== null) {
-          if (audioTime >= endSelection) {
-            setCurrentTime(startSelection);
-          } else {
-            setCurrentTime(audioTime);
-          }
+          const loopDuration = endSelection - loopStartTime;
+          const newTime = loopStartTime + (elapsed % loopDuration);
+          setCurrentTime(newTime);
         } else {
-          setCurrentTime(audioTime);
+          setCurrentTime(startTime + elapsed);
         }
-        requestAnimationFrame(updateCurrentTime);
+        animationFrameId.current = requestAnimationFrame(updateCurrentTime);
       }
     };
 
@@ -182,14 +173,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const toggleLoop = () => {
-    if (!isLooping && startSelection !== null && endSelection !== null) {
-      setIsLooping(true);
-      playAudio(startSelection, true);
-    } else {
-      setIsLooping(false);
-      stopCurrentSource();
-      setIsPlaying(false);
-    }
+    setIsLooping((prev) => !prev);
   };
 
   const stopLoop = () => {
