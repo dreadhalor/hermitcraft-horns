@@ -118,7 +118,7 @@ const Page = () => {
         <button onClick={redo}>Redo</button>
       </div>
       <div>Current Time: {currentTime.toFixed(2)}</div>
-      <div id='waveform'>
+      <div id='waveform' className='mb-2'>
         <ReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
@@ -138,6 +138,8 @@ const Page = () => {
           sketch={MinimapSketch as any}
           audioBuffer={audioBuffer}
           currentTime={currentTime}
+          startSelection={startSelection}
+          endSelection={endSelection}
           visibleStartTime={visibleStartTime}
           visibleEndTime={visibleEndTime}
           onBoundsChange={handleBoundsChange}

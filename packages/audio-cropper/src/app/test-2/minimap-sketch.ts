@@ -5,6 +5,7 @@ import {
   waveColor,
   viewWindowColor,
   viewWindowHandleColor,
+  selectionHandleColor,
 } from './constants';
 import { AudioContextValue } from './audio-provider';
 
@@ -13,6 +14,8 @@ type MinimapProps = P5CanvasInstance<AudioContextValue> & {
   currentTime: number;
   visibleStartTime: number;
   visibleEndTime: number;
+  startSelection: number | null;
+  endSelection: number | null;
   onBoundsChange?: (start: number, end: number) => void;
 };
 
@@ -21,6 +24,8 @@ export const MinimapSketch = (p5: MinimapProps) => {
   let currentTime: number = 0;
   let visibleStartTime: number = 0;
   let visibleEndTime: number = 0;
+  let startSelection: number | null = null;
+  let endSelection: number | null = null;
   let onBoundsChange: ((start: number, end: number) => void) | undefined;
   let isDraggingWindow = false;
   let isDraggingStartHandle = false;
@@ -35,11 +40,14 @@ export const MinimapSketch = (p5: MinimapProps) => {
       visibleStartTime = props.visibleStartTime;
     if (props.visibleEndTime !== undefined)
       visibleEndTime = props.visibleEndTime;
+    if (props.startSelection !== undefined)
+      startSelection = props.startSelection;
+    if (props.endSelection !== undefined) endSelection = props.endSelection;
     if (props.onBoundsChange) onBoundsChange = props.onBoundsChange;
   };
 
   p5.setup = () => {
-    p5.createCanvas(500, 100);
+    p5.createCanvas(500, 50);
   };
 
   p5.draw = () => {
@@ -86,15 +94,46 @@ export const MinimapSketch = (p5: MinimapProps) => {
 
     // Draw visible window
     p.fill(viewWindowColor);
-    p.noStroke();
+    p.stroke(viewWindowHandleColor);
     const startX = (visibleStartTime / buffer.duration) * width;
     const endX = (visibleEndTime / buffer.duration) * width;
     windowWidth = endX - startX;
     p.rect(startX, 0, windowWidth, height);
 
-    // Draw selection handles
+    const heightInset = 5;
+    // Draw selection region
+    if (startSelection !== null && endSelection !== null) {
+      p.fill(selectionColor);
+      p.noStroke();
+      const selectionStartX = (startSelection / buffer.duration) * width;
+      const selectionEndX = (endSelection / buffer.duration) * width;
+      p.rect(
+        selectionStartX,
+        heightInset,
+        selectionEndX - selectionStartX,
+        height - heightInset * 2
+      );
+
+      // Draw selection handles
+      p.fill(selectionHandleColor);
+      const handleSize = 4;
+      p.rect(
+        selectionStartX - handleSize / 2,
+        heightInset,
+        handleSize,
+        height - heightInset * 2
+      );
+      p.rect(
+        selectionEndX - handleSize / 2,
+        heightInset,
+        handleSize,
+        height - heightInset * 2
+      );
+    }
+
     p.fill(viewWindowHandleColor);
     const handleSize = 4;
+    // Draw window handles
     p.rect(startX - handleSize / 2, 0, handleSize, height);
     p.rect(endX - handleSize / 2, 0, handleSize, height);
   };
