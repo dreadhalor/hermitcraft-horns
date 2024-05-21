@@ -1,5 +1,10 @@
 import { P5CanvasInstance } from '@p5-wrapper/react';
-import { progressColor, selectionColor, waveColor } from './constants';
+import {
+  progressColor,
+  selectionColor,
+  selectionHandleColor,
+  waveColor,
+} from './constants';
 import { AudioContextValue } from './audio-provider';
 
 type WaveformProps = P5CanvasInstance<AudioContextValue> & {
@@ -8,6 +13,7 @@ type WaveformProps = P5CanvasInstance<AudioContextValue> & {
   duration: number;
   startSelection: number | null;
   endSelection: number | null;
+  isSelectionWaveform: boolean;
   onSeekClick?: (seekTime: number) => void;
   onSelectionChange?: (start: number | null, end: number | null) => void;
   setCurrentTime?: (time: number) => void;
@@ -19,6 +25,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let duration: number = 0;
   let startSelection: number | null = null;
   let endSelection: number | null = null;
+  let isSelectionWaveform: boolean = false;
   let onSeekClick: ((seekTime: number) => void) | undefined;
   let onSelectionChange:
     | ((start: number | null, end: number | null) => void)
@@ -26,6 +33,9 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let setCurrentTime: ((time: number) => void) | undefined;
   let isSelecting = false;
   let isDraggingPlayhead = false;
+  let isDraggingStart = false;
+  let isDraggingEnd = false;
+  let pendingSelectionReset = false;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -34,6 +44,8 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (props.startSelection !== undefined)
       startSelection = props.startSelection;
     if (props.endSelection !== undefined) endSelection = props.endSelection;
+    if (props.isSelectionWaveform !== undefined)
+      isSelectionWaveform = props.isSelectionWaveform;
     if (props.onSeekClick) onSeekClick = props.onSeekClick;
     if (props.onSelectionChange) onSelectionChange = props.onSelectionChange;
     if (props.setCurrentTime) setCurrentTime = props.setCurrentTime;
@@ -108,6 +120,23 @@ export const WaveformSketch = (p5: WaveformProps) => {
         ((endSelection - startSelection) / buffer.duration) * width,
         height
       );
+
+      // Draw selection handles
+      p.fill(selectionHandleColor);
+      p.noStroke();
+      const handleSize = 4;
+      p.rect(
+        (startSelection / buffer.duration) * width - handleSize / 2,
+        0,
+        handleSize,
+        height
+      );
+      p.rect(
+        (endSelection / buffer.duration) * width - handleSize / 2,
+        0,
+        handleSize,
+        height
+      );
     }
   };
 
@@ -127,28 +156,101 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY <= p5.height
     ) {
       const clickTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      const handleSize = 10;
+      const startSelectionX =
+        startSelection !== null
+          ? (startSelection / audioBuffer.duration) * p5.width
+          : null;
+      const endSelectionX =
+        endSelection !== null
+          ? (endSelection / audioBuffer.duration) * p5.width
+          : null;
 
-      if (Math.abs(clickTime - currentTime) / audioBuffer.duration < 0.01) {
-        // If the click is near the current playhead, start dragging the playhead
+      if (startSelection !== null && endSelection !== null) {
+        if (
+          startSelectionX !== null &&
+          Math.abs(p5.mouseX - startSelectionX) < handleSize
+        ) {
+          isDraggingStart = true;
+        } else if (
+          endSelectionX !== null &&
+          Math.abs(p5.mouseX - endSelectionX) < handleSize
+        ) {
+          isDraggingEnd = true;
+        } else if (
+          Math.abs(clickTime - currentTime) / audioBuffer.duration <
+          0.01
+        ) {
+          isDraggingPlayhead = true;
+        } else {
+          pendingSelectionReset = isSelectionWaveform;
+        }
+      } else if (
+        Math.abs(clickTime - currentTime) / audioBuffer.duration <
+        0.01
+      ) {
         isDraggingPlayhead = true;
-      } else if (onSelectionChange) {
-        // Start selecting a region
-        startSelection = clickTime;
-        endSelection = clickTime;
-        isSelecting = true;
-        onSelectionChange(startSelection, endSelection);
+      } else {
+        pendingSelectionReset = isSelectionWaveform;
       }
     }
   };
 
   p5.mouseDragged = () => {
-    if (isSelecting && onSelectionChange && audioBuffer) {
-      const currentTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+    if (pendingSelectionReset && audioBuffer) {
+      const startTime = Math.max(
+        0,
+        Math.min(
+          (p5.mouseX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration
+        )
+      );
+      startSelection = startTime;
+      endSelection = startTime;
+      isSelecting = true;
+      pendingSelectionReset = false;
+      if (onSelectionChange) {
+        onSelectionChange(startSelection, endSelection);
+      }
+    } else if (isSelecting && onSelectionChange && audioBuffer) {
+      const currentTime = Math.max(
+        0,
+        Math.min(
+          (p5.mouseX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration
+        )
+      );
       endSelection = currentTime;
       onSelectionChange(startSelection, endSelection);
     } else if (isDraggingPlayhead && setCurrentTime && audioBuffer) {
-      const seekTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      const seekTime = Math.max(
+        0,
+        Math.min(
+          (p5.mouseX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration
+        )
+      );
       setCurrentTime(seekTime);
+    } else if (isDraggingStart && onSelectionChange && audioBuffer) {
+      const startTime = Math.max(
+        0,
+        Math.min(
+          (p5.mouseX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration
+        )
+      );
+      startSelection = startTime;
+      onSelectionChange(startSelection, endSelection);
+    } else if (isDraggingEnd && onSelectionChange && audioBuffer) {
+      const endTime = Math.max(
+        0,
+        Math.min(
+          (p5.mouseX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration
+        )
+      );
+      endSelection = endTime;
+      onSelectionChange(startSelection, endSelection);
     }
   };
 
@@ -159,12 +261,24 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (isDraggingPlayhead) {
       isDraggingPlayhead = false;
     }
+    if (isDraggingStart) {
+      isDraggingStart = false;
+    }
+    if (isDraggingEnd) {
+      isDraggingEnd = false;
+    }
+    if (pendingSelectionReset) {
+      pendingSelectionReset = false;
+    }
   };
 
   p5.mouseClicked = () => {
     if (
       !isSelecting &&
       !isDraggingPlayhead &&
+      !isDraggingStart &&
+      !isDraggingEnd &&
+      !pendingSelectionReset &&
       onSeekClick &&
       audioBuffer &&
       p5.mouseX >= 0 &&
@@ -172,7 +286,13 @@ export const WaveformSketch = (p5: WaveformProps) => {
       p5.mouseY >= 0 &&
       p5.mouseY <= p5.height
     ) {
-      const seekTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      const seekTime = Math.max(
+        0,
+        Math.min(
+          (p5.mouseX / p5.width) * audioBuffer.duration,
+          audioBuffer.duration
+        )
+      );
       onSeekClick(seekTime);
       if (setCurrentTime) {
         setCurrentTime(seekTime);

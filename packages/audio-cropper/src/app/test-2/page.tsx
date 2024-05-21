@@ -101,6 +101,7 @@ const Page = () => {
           endSelection={endSelection}
           onSeekClick={handleSeekClick}
           setCurrentTime={setCurrentTime}
+          isSelectionWaveform={false}
         />
       </div>
       <div id='selection-waveform'>
@@ -112,6 +113,7 @@ const Page = () => {
           startSelection={startSelection}
           endSelection={endSelection}
           onSelectionChange={handleSelectionChange}
+          isSelectionWaveform={true}
         />
       </div>
       <button onClick={handleCropClick}>Crop</button>
