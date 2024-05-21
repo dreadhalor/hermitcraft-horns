@@ -33,8 +33,10 @@ export const useAudioPlayer = (
   const play = () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
-    const startTime =
-      isLooping && startSelection !== null ? startSelection : currentTime;
+    const loopStart = Math.min(startSelection ?? 0, endSelection ?? 0);
+    const loopEnd = Math.max(startSelection ?? 0, endSelection ?? 0);
+
+    const startTime = isLooping ? loopStart : currentTime;
 
     stopCurrentSource();
 
@@ -42,24 +44,23 @@ export const useAudioPlayer = (
     source.buffer = audioBuffer;
     source.connect(audioContextRef.current.destination);
 
-    if (isLooping && startSelection !== null && endSelection !== null) {
+    if (isLooping) {
       source.loop = true;
-      source.loopStart = startSelection;
-      source.loopEnd = endSelection;
+      source.loopStart = loopStart;
+      source.loopEnd = loopEnd;
     }
 
     source.start(0, startTime);
     sourceRef.current = source;
 
     const startTimestamp = audioContextRef.current.currentTime;
-    const loopStartTime = startSelection || 0;
 
     const updateCurrentTime = () => {
       if (sourceRef.current && audioContextRef.current) {
         const elapsed = audioContextRef.current.currentTime - startTimestamp;
-        if (isLooping && startSelection !== null && endSelection !== null) {
-          const loopDuration = endSelection - loopStartTime;
-          const newTime = loopStartTime + (elapsed % loopDuration);
+        if (isLooping) {
+          const loopDuration = loopEnd - loopStart;
+          const newTime = loopStart + (elapsed % loopDuration);
           setCurrentTime(newTime);
         } else {
           setCurrentTime(startTime + elapsed);
