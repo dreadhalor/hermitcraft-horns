@@ -319,20 +319,33 @@ export const WaveformSketch = (p5: WaveformProps) => {
         distanceX < minDragDistance && distanceY < minDragDistance;
 
       if (isClick) {
-        if (toggleLoop) {
-          const startX =
-            ((Math.min(startSelection ?? 0, endSelection ?? 0) -
-              visibleStartTime) /
-              (visibleEndTime - visibleStartTime)) *
-            p5.width;
-          const endX =
-            ((Math.max(startSelection ?? 0, endSelection ?? 0) -
-              visibleStartTime) /
-              (visibleEndTime - visibleStartTime)) *
-            p5.width;
+        const startX =
+          ((Math.min(startSelection ?? 0, endSelection ?? 0) -
+            visibleStartTime) /
+            (visibleEndTime - visibleStartTime)) *
+          p5.width;
+        const endX =
+          ((Math.max(startSelection ?? 0, endSelection ?? 0) -
+            visibleStartTime) /
+            (visibleEndTime - visibleStartTime)) *
+          p5.width;
 
-          if (p5.mouseX > startX && p5.mouseX < endX) {
+        if (p5.mouseX > startX && p5.mouseX < endX) {
+          if (toggleLoop) {
             toggleLoop();
+          }
+        } else if (onSeekClick) {
+          const seekTime = Math.max(
+            0,
+            Math.min(
+              duration,
+              visibleStartTime +
+                (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
+            )
+          );
+          onSeekClick(seekTime);
+          if (seekTo) {
+            seekTo(seekTime);
           }
         }
       } else if (!mouseReleasedInRegion && onSeekClick) {
