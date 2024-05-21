@@ -4,6 +4,8 @@ import {
   selectionColor,
   waveColor,
   selectionHandleColor,
+  viewWindowColor,
+  viewWindowHandleColor,
 } from './constants';
 import { AudioContextValue } from './audio-provider';
 
@@ -11,7 +13,7 @@ type MinimapProps = P5CanvasInstance<AudioContextValue> & {
   audioBuffer: AudioBuffer | null;
   visibleStartTime: number;
   visibleEndTime: number;
-  onBoundsChange: (start: number, end: number) => void;
+  onBoundsChange?: (start: number, end: number) => void;
 };
 
 export const MinimapSketch = (p5: MinimapProps) => {
@@ -19,11 +21,11 @@ export const MinimapSketch = (p5: MinimapProps) => {
   let visibleStartTime: number = 0;
   let visibleEndTime: number = 0;
   let onBoundsChange: ((start: number, end: number) => void) | undefined;
-  let isDraggingStart = false;
-  let isDraggingEnd = false;
-  let isDraggingSelection = false;
+  let isDraggingWindow = false;
+  let isDraggingStartHandle = false;
+  let isDraggingEndHandle = false;
   let dragOffset = 0;
-  let selectionWidth = 0;
+  let windowWidth = 0;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -40,11 +42,11 @@ export const MinimapSketch = (p5: MinimapProps) => {
 
   p5.draw = () => {
     if (audioBuffer) {
-      drawWaveform(p5, audioBuffer);
+      drawMinimap(p5, audioBuffer);
     }
   };
 
-  const drawWaveform = (p: MinimapProps, buffer: AudioBuffer) => {
+  const drawMinimap = (p: MinimapProps, buffer: AudioBuffer) => {
     const width = p.width;
     const height = p.height;
     const data = buffer.getChannelData(0);
@@ -71,16 +73,16 @@ export const MinimapSketch = (p5: MinimapProps) => {
       p.line(i, (1 + min) * amp, i, (1 + max) * amp);
     }
 
-    // Draw visible region
+    // Draw visible window
+    p.fill(viewWindowColor);
+    p.noStroke();
     const startX = (visibleStartTime / buffer.duration) * width;
     const endX = (visibleEndTime / buffer.duration) * width;
-
-    p.fill(selectionColor);
-    p.noStroke();
-    p.rect(startX, 0, endX - startX, height);
+    windowWidth = endX - startX;
+    p.rect(startX, 0, windowWidth, height);
 
     // Draw selection handles
-    p.fill(selectionHandleColor);
+    p.fill(viewWindowHandleColor);
     const handleSize = 4;
     p.rect(startX - handleSize / 2, 0, handleSize, height);
     p.rect(endX - handleSize / 2, 0, handleSize, height);
@@ -98,40 +100,45 @@ export const MinimapSketch = (p5: MinimapProps) => {
       const startX = (visibleStartTime / audioBuffer.duration) * p5.width;
       const endX = (visibleEndTime / audioBuffer.duration) * p5.width;
 
-      selectionWidth = visibleEndTime - visibleStartTime;
-
       if (Math.abs(p5.mouseX - startX) < handleSize) {
-        isDraggingStart = true;
+        isDraggingStartHandle = true;
       } else if (Math.abs(p5.mouseX - endX) < handleSize) {
-        isDraggingEnd = true;
+        isDraggingEndHandle = true;
       } else if (p5.mouseX > startX && p5.mouseX < endX) {
-        isDraggingSelection = true;
+        isDraggingWindow = true;
         dragOffset = p5.mouseX - startX;
       }
     }
   };
 
   p5.mouseDragged = () => {
-    if (isDraggingStart && onBoundsChange && audioBuffer) {
-      const startX = Math.max(0, Math.min(p5.mouseX, p5.width));
-      const startTime = (startX / p5.width) * audioBuffer.duration;
-      onBoundsChange(startTime, visibleEndTime);
-    } else if (isDraggingEnd && onBoundsChange && audioBuffer) {
-      const endX = Math.max(0, Math.min(p5.mouseX, p5.width));
-      const endTime = (endX / p5.width) * audioBuffer.duration;
-      onBoundsChange(visibleStartTime, endTime);
-    } else if (isDraggingSelection && onBoundsChange && audioBuffer) {
-      const startX = Math.max(0, p5.mouseX - dragOffset);
-      const endX = startX + (selectionWidth / audioBuffer.duration) * p5.width;
-      const startTime = (startX / p5.width) * audioBuffer.duration;
-      const endTime = (endX / p5.width) * audioBuffer.duration;
-      onBoundsChange(startTime, endTime);
+    if (isDraggingWindow && audioBuffer && onBoundsChange) {
+      let newStartX = p5.mouseX - dragOffset;
+      newStartX = Math.max(0, Math.min(newStartX, p5.width - windowWidth));
+      const newStartTime = (newStartX / p5.width) * audioBuffer.duration;
+      const newEndTime =
+        newStartTime +
+        ((visibleEndTime - visibleStartTime) / audioBuffer.duration) *
+          audioBuffer.duration;
+      onBoundsChange(newStartTime, newEndTime);
+    } else if (isDraggingStartHandle && audioBuffer && onBoundsChange) {
+      const newStartX = Math.max(0, Math.min(p5.mouseX, p5.width));
+      const newStartTime = (newStartX / p5.width) * audioBuffer.duration;
+      if (newStartTime < visibleEndTime) {
+        onBoundsChange(newStartTime, visibleEndTime);
+      }
+    } else if (isDraggingEndHandle && audioBuffer && onBoundsChange) {
+      const newEndX = Math.max(0, Math.min(p5.mouseX, p5.width));
+      const newEndTime = (newEndX / p5.width) * audioBuffer.duration;
+      if (newEndTime > visibleStartTime) {
+        onBoundsChange(visibleStartTime, newEndTime);
+      }
     }
   };
 
   p5.mouseReleased = () => {
-    isDraggingStart = false;
-    isDraggingEnd = false;
-    isDraggingSelection = false;
+    isDraggingWindow = false;
+    isDraggingStartHandle = false;
+    isDraggingEndHandle = false;
   };
 };
