@@ -9,6 +9,7 @@ type WaveformProps = P5CanvasInstance<AudioContextValue> & {
   startSelection: number | null;
   endSelection: number | null;
   onSeekClick?: (seekTime: number) => void;
+  onSelectionChange?: (start: number | null, end: number | null) => void;
   setCurrentTime?: (time: number) => void;
 };
 
@@ -19,7 +20,11 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let startSelection: number | null = null;
   let endSelection: number | null = null;
   let onSeekClick: ((seekTime: number) => void) | undefined;
+  let onSelectionChange:
+    | ((start: number | null, end: number | null) => void)
+    | undefined;
   let setCurrentTime: ((time: number) => void) | undefined;
+  let isSelecting = false;
 
   p5.updateWithProps = (props: any) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -29,6 +34,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
       startSelection = props.startSelection;
     if (props.endSelection !== undefined) endSelection = props.endSelection;
     if (props.onSeekClick) onSeekClick = props.onSeekClick;
+    if (props.onSelectionChange) onSelectionChange = props.onSelectionChange;
     if (props.setCurrentTime) setCurrentTime = props.setCurrentTime;
   };
 
@@ -111,8 +117,40 @@ export const WaveformSketch = (p5: WaveformProps) => {
     return 0;
   };
 
+  p5.mousePressed = () => {
+    if (
+      onSelectionChange &&
+      audioBuffer &&
+      p5.mouseX >= 0 &&
+      p5.mouseX <= p5.width &&
+      p5.mouseY >= 0 &&
+      p5.mouseY <= p5.height
+    ) {
+      const startTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      startSelection = startTime;
+      endSelection = startTime;
+      isSelecting = true;
+      onSelectionChange(startSelection, endSelection);
+    }
+  };
+
+  p5.mouseDragged = () => {
+    if (isSelecting && onSelectionChange && audioBuffer) {
+      const currentTime = (p5.mouseX / p5.width) * audioBuffer.duration;
+      endSelection = currentTime;
+      onSelectionChange(startSelection, endSelection);
+    }
+  };
+
+  p5.mouseReleased = () => {
+    if (isSelecting) {
+      isSelecting = false;
+    }
+  };
+
   p5.mouseClicked = () => {
     if (
+      !isSelecting &&
       onSeekClick &&
       audioBuffer &&
       p5.mouseX >= 0 &&

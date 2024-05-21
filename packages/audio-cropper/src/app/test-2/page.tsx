@@ -53,15 +53,19 @@ const Page = () => {
     setCurrentTime(seekTime);
   };
 
+  const clampSeekTime = (time: number) => {
+    return Math.min(Math.max(time, 0), duration);
+  };
+
   const handleSelectionChange = (start: number | null, end: number | null) => {
+    const clampedStart = start === null ? null : clampSeekTime(start);
+    const clampedEnd = end === null ? null : clampSeekTime(end);
     if (start === null || end === null) {
       setStartSelection(null);
       setEndSelection(null);
     } else {
-      const realStart = Math.min(start, end);
-      const realEnd = Math.max(start, end);
-      setStartSelection(realStart);
-      setEndSelection(realEnd);
+      setStartSelection(clampedStart);
+      setEndSelection(clampedEnd);
     }
   };
 
@@ -71,10 +75,12 @@ const Page = () => {
 
     const cropped = cropAudioBuffer(
       audioBuffer,
-      startSelection,
-      endSelection,
+      Math.min(startSelection, endSelection),
+      Math.max(startSelection, endSelection),
       duration
     );
+    setStartSelection(null);
+    setEndSelection(null);
     setAudioBuffer(cropped);
     setDuration(cropped.duration);
   };
