@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { ReactP5Wrapper } from '@p5-wrapper/react';
-import { cropAudioBuffer, downloadAudio, trimAudioBuffer } from './audio-utils';
+import { downloadAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
@@ -11,57 +11,44 @@ const Page = () => {
   const {
     audioBuffer,
     duration,
-    isPlaying,
     startSelection,
     endSelection,
     visibleStartTime,
     visibleEndTime,
     isLooping,
-    audioContextRef,
     setAudioBuffer,
     setDuration,
     setStartSelection,
     setEndSelection,
     setVisibleStartTime,
     setVisibleEndTime,
-    togglePlayPause,
-    rewindAudio,
-    currentTime,
-    setCurrentTime,
     undo,
     redo,
     handleCrop,
     handleTrim,
+    // Re-exported from useAudioPlayer
+    isPlaying,
+    currentTime,
+    play,
+    pause,
+    stop,
+    seekTo,
     toggleLoop,
-    stopLoop,
   } = useAudioContext();
-
-  useEffect(() => {
-    audioContextRef.current = new AudioContext();
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, [audioContextRef]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const audioContext = new AudioContext();
-    const fileReader = new FileReader();
-
-    fileReader.onload = async () => {
-      const arrayBuffer = fileReader.result as ArrayBuffer;
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      setAudioBuffer(audioBuffer);
-      setDuration(audioBuffer.duration);
-    };
-
-    fileReader.readAsArrayBuffer(file);
+    const arrayBuffer = await file.arrayBuffer();
+    const decodedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    setAudioBuffer(decodedAudioBuffer);
+    setDuration(decodedAudioBuffer.duration);
   };
 
   const handleSeekClick = (seekTime: number) => {
-    setCurrentTime(seekTime);
+    seekTo(seekTime);
   };
 
   const clampSeekTime = (time: number) => {
@@ -71,19 +58,13 @@ const Page = () => {
   const handleSelectionChange = (start: number | null, end: number | null) => {
     const clampedStart = start === null ? null : clampSeekTime(start);
     const clampedEnd = end === null ? null : clampSeekTime(end);
-    if (start === null || end === null) {
-      setStartSelection(null);
-      setEndSelection(null);
-    } else {
-      setStartSelection(clampedStart);
-      setEndSelection(clampedEnd);
-    }
+    setStartSelection(clampedStart);
+    setEndSelection(clampedEnd);
   };
 
   const handleCropClick = () => {
     if (!audioBuffer || startSelection === null || endSelection === null)
       return;
-
     handleCrop(
       Math.min(startSelection, endSelection),
       Math.max(startSelection, endSelection)
@@ -93,7 +74,6 @@ const Page = () => {
   const handleTrimClick = () => {
     if (!audioBuffer || startSelection === null || endSelection === null)
       return;
-
     handleTrim(
       Math.min(startSelection, endSelection),
       Math.max(startSelection, endSelection)
@@ -109,8 +89,8 @@ const Page = () => {
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
       <div className='flex gap-2 border-b'>
-        <button onClick={rewindAudio}>Rewind</button>
-        <button onClick={togglePlayPause}>
+        <button onClick={stop}>Rewind</button>
+        <button onClick={isPlaying ? pause : play}>
           {isPlaying ? 'Pause' : 'Play'}
         </button>
       </div>
@@ -148,7 +128,7 @@ const Page = () => {
           visibleEndTime={visibleEndTime}
           onSeekClick={handleSeekClick}
           onSelectionChange={handleSelectionChange}
-          setCurrentTime={setCurrentTime}
+          seekTo={seekTo}
         />
       </div>
       <div id='minimap'>
