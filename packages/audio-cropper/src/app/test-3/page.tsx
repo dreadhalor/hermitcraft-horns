@@ -1,5 +1,4 @@
 'use client';
-
 import { useSandboxAudioPlayer } from './use-sandbox-audio-player';
 
 const Page = () => {
@@ -10,8 +9,7 @@ const Page = () => {
     endTime,
     setEndTime,
     isPlaying,
-    loopEnabled,
-    setLoopEnabled,
+    loopType,
     loadAudioBuffer,
     playAudio,
     pauseAudio,
@@ -26,7 +24,6 @@ const Page = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const arrayBuffer = await file.arrayBuffer();
     loadAudioBuffer(arrayBuffer);
   };
@@ -45,14 +42,6 @@ const Page = () => {
     }
   };
 
-  const handleLoopToggle = () => {
-    if (loopEnabled) {
-      disableLoops();
-    } else {
-      setLoopEnabled(true);
-    }
-  };
-
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     if (!isNaN(time) && time >= 0 && time <= (audioBuffer?.duration || 0)) {
@@ -65,6 +54,22 @@ const Page = () => {
       pauseAudio();
     } else {
       playAudio();
+    }
+  };
+
+  const handleLoopSectionClick = () => {
+    if (loopType === 'section') {
+      disableLoops();
+    } else {
+      loopAndPlaySection();
+    }
+  };
+
+  const handleLoopTrackClick = () => {
+    if (loopType === 'track') {
+      disableLoops();
+    } else {
+      loopAndPlayTrack();
     }
   };
 
@@ -117,11 +122,18 @@ const Page = () => {
           {isPlaying ? 'Pause' : 'Play'}
         </button>
         <button onClick={stopAudio}>Stop</button>
-        <button onClick={handleLoopToggle}>
-          {loopEnabled ? 'Disable Loop' : 'Loop Selection'}
+        <button
+          onClick={handleLoopSectionClick}
+          className={loopType === 'section' ? 'bg-blue-500' : ''}
+        >
+          Loop Section
         </button>
-        <button onClick={loopAndPlaySection}>Loop and Play Section</button>
-        <button onClick={loopAndPlayTrack}>Loop and Play Track</button>
+        <button
+          onClick={handleLoopTrackClick}
+          className={loopType === 'track' ? 'bg-blue-500' : ''}
+        >
+          Loop Track
+        </button>
       </div>
       <div>Current Time: {getCurrentTime().toFixed(2)}</div>
     </div>
