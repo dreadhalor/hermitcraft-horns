@@ -14,10 +14,12 @@ const Page = () => {
     setLoopEnabled,
     loadAudioBuffer,
     playAudio,
+    pauseAudio,
     stopAudio,
     getCurrentTime,
     loopAndPlaySection,
     loopAndPlayTrack,
+    seekTo,
   } = useSandboxAudioPlayer();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +46,21 @@ const Page = () => {
 
   const handleLoopToggle = () => {
     setLoopEnabled((prev) => !prev);
+  };
+
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (!isNaN(time) && time >= 0 && time <= (audioBuffer?.duration || 0)) {
+      seekTo(time);
+    }
+  };
+
+  const handlePlayPauseAudio = () => {
+    if (isPlaying) {
+      pauseAudio();
+    } else {
+      playAudio();
+    }
   };
 
   return (
@@ -81,7 +98,7 @@ const Page = () => {
           <input
             type='range'
             value={getCurrentTime()}
-            // onChange={handleSeekChange}
+            onChange={handleSeekChange}
             min='0'
             max={audioBuffer?.duration || 0}
             step='0.01'
@@ -91,7 +108,9 @@ const Page = () => {
         <div>{getCurrentTime().toFixed(2)}</div>
       </div>
       <div className='flex gap-2'>
-        <button onClick={playAudio}>{isPlaying ? 'Pause' : 'Play'}</button>
+        <button onClick={handlePlayPauseAudio}>
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
         <button onClick={stopAudio}>Stop</button>
         <button onClick={handleLoopToggle}>
           {loopEnabled ? 'Disable Loop' : 'Loop Selection'}

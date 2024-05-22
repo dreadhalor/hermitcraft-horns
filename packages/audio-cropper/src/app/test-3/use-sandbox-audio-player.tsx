@@ -6,7 +6,8 @@ export const useSandboxAudioPlayer = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
   const [endTime, setEndTime] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const isPlayingRef = useRef<boolean>(false);
+  const [exportedIsPlaying, setExportedIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [loopType, setLoopType] = useState<'none' | 'section' | 'track'>(
     'none'
@@ -17,6 +18,11 @@ export const useSandboxAudioPlayer = () => {
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const pausedTimeRef = useRef<number | null>(null);
+
+  const setIsPlaying = (isPlaying: boolean) => {
+    isPlayingRef.current = isPlaying;
+    setExportedIsPlaying(isPlaying);
+  };
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
@@ -39,34 +45,28 @@ export const useSandboxAudioPlayer = () => {
   const playAudio = () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
-    if (isPlaying) {
-      pauseAudio();
-      return;
-    }
+    if (isPlayingRef.current) return;
 
     const source = audioContextRef.current.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(audioContextRef.current.destination);
 
-    const loopStart = startTime;
-    const loopEnd = endTime;
     let playStartTime =
-      pausedTimeRef.current !== null
-        ? pausedTimeRef.current
-        : loopEnabled
-        ? startTime
-        : currentTime >= audioBuffer.duration
-        ? 0
-        : currentTime;
+      pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
 
-    if (loopEnabled && playStartTime > loopEnd) {
-      playStartTime = loopStart;
-    }
-
-    if (loopEnabled) {
+    if (loopType === 'section') {
+      const loopStart = startTime;
+      const loopEnd = endTime;
+      if (playStartTime < loopStart || playStartTime > loopEnd) {
+        playStartTime = loopStart;
+      }
       source.loop = true;
       source.loopStart = loopStart;
       source.loopEnd = loopEnd;
+    } else if (loopType === 'track') {
+      source.loop = true;
+      source.loopStart = 0;
+      source.loopEnd = audioBuffer.duration;
     }
 
     source.start(0, playStartTime);
@@ -79,9 +79,9 @@ export const useSandboxAudioPlayer = () => {
     pausedTimeRef.current = null;
 
     source.onended = () => {
-      if (!loopEnabled) {
+      if (loopType === 'none') {
         setIsPlaying(false);
-        setCurrentTime(audioBuffer.duration); // Reset current time to 0 when the track ends
+        setCurrentTime(audioBuffer.duration);
         sourceRef.current = null;
       }
     };
@@ -89,21 +89,18 @@ export const useSandboxAudioPlayer = () => {
     const updateCurrentTime = () => {
       if (sourceRef.current && audioContextRef.current) {
         const elapsed = audioContextRef.current.currentTime - startTimestamp;
-        if (loopEnabled) {
+        let newTime = playStartTime + elapsed;
+
+        if (loopType === 'section') {
+          const loopStart = startTime;
+          const loopEnd = endTime;
           const loopDuration = loopEnd - loopStart;
-          const newTime =
-            loopStart + ((elapsed + playStartTime - loopStart) % loopDuration);
-          setCurrentTime(newTime);
-        } else {
-          const newTime = playStartTime + elapsed;
-          if (newTime >= audioBuffer.duration) {
-            setCurrentTime(audioBuffer.duration);
-            setIsPlaying(false);
-            pausedTimeRef.current = audioBuffer.duration;
-            return;
-          }
-          setCurrentTime(newTime);
+          newTime = loopStart + ((newTime - loopStart) % loopDuration);
+        } else if (loopType === 'track') {
+          newTime = newTime % audioBuffer.duration;
         }
+
+        setCurrentTime(newTime);
         animationFrameId.current = requestAnimationFrame(updateCurrentTime);
       }
     };
@@ -117,7 +114,15 @@ export const useSandboxAudioPlayer = () => {
       sourceRef.current.disconnect();
       sourceRef.current = null;
     }
+    console.log(
+      'isPlayingRef.current before (pauseAudio)',
+      isPlayingRef.current
+    );
     setIsPlaying(false);
+    console.log(
+      'isPlayingRef.current after (pauseAudio)',
+      isPlayingRef.current
+    );
     pausedTimeRef.current = currentTime;
     if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
@@ -133,7 +138,7 @@ export const useSandboxAudioPlayer = () => {
     }
     setIsPlaying(false);
     setCurrentTime(0);
-    setTrackEnded(false); // Reset trackEnded when the track is stopped
+    setTrackEnded(false);
     pausedTimeRef.current = null;
     if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
@@ -143,9 +148,9 @@ export const useSandboxAudioPlayer = () => {
 
   const getCurrentTime = () => {
     if (trackEnded) {
-      return audioBuffer?.duration || 0; // Display full duration if the track has ended
+      return audioBuffer?.duration || 0;
     }
-    return pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime; // Display paused time if paused
+    return pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
   };
 
   const loopAndPlaySection = () => {
@@ -157,7 +162,7 @@ export const useSandboxAudioPlayer = () => {
       pauseAudio();
     }
 
-    if (!isPlaying && loopType !== 'section') {
+    if (!isPlayingRef.current && loopType !== 'section') {
       setLoopType('section');
       setLoopEnabled(true);
       setCurrentTime(startTime);
@@ -178,7 +183,7 @@ export const useSandboxAudioPlayer = () => {
       const startTimestamp = audioContextRef.current!.currentTime;
       setCurrentTime(startTime);
       setIsPlaying(true);
-      setTrackEnded(false); // Reset trackEnded when playing starts
+      setTrackEnded(false);
       pausedTimeRef.current = null;
 
       const updateCurrentTime = () => {
@@ -192,9 +197,9 @@ export const useSandboxAudioPlayer = () => {
       };
 
       animationFrameId.current = requestAnimationFrame(updateCurrentTime);
-    } else if (!isPlaying && loopType === 'section') {
+    } else if (!isPlayingRef.current && loopType === 'section') {
       playAudio();
-    } else if (isPlaying && loopType !== 'section') {
+    } else if (isPlayingRef.current && loopType !== 'section') {
       pauseAudio();
       setTimeout(() => {
         setLoopType('section');
@@ -217,7 +222,7 @@ export const useSandboxAudioPlayer = () => {
         const startTimestamp = audioContextRef.current!.currentTime;
         setCurrentTime(startTime);
         setIsPlaying(true);
-        setTrackEnded(false); // Reset trackEnded when playing starts
+        setTrackEnded(false);
         pausedTimeRef.current = null;
 
         const updateCurrentTime = () => {
@@ -248,7 +253,7 @@ export const useSandboxAudioPlayer = () => {
       pauseAudio();
     }
 
-    if (!isPlaying && loopType !== 'track') {
+    if (!isPlayingRef.current && loopType !== 'track') {
       setLoopType('track');
       setLoopEnabled(true);
       setCurrentTime(trackStartTime);
@@ -269,7 +274,7 @@ export const useSandboxAudioPlayer = () => {
       const startTimestamp = audioContextRef.current!.currentTime;
       setCurrentTime(trackStartTime);
       setIsPlaying(true);
-      setTrackEnded(false); // Reset trackEnded when playing starts
+      setTrackEnded(false);
       pausedTimeRef.current = null;
 
       const updateCurrentTime = () => {
@@ -283,7 +288,7 @@ export const useSandboxAudioPlayer = () => {
       };
 
       animationFrameId.current = requestAnimationFrame(updateCurrentTime);
-    } else if (isPlaying && loopType !== 'track') {
+    } else if (isPlayingRef.current && loopType !== 'track') {
       pauseAudio();
       setTimeout(() => {
         setLoopType('track');
@@ -306,7 +311,7 @@ export const useSandboxAudioPlayer = () => {
         const startTimestamp = audioContextRef.current!.currentTime;
         setCurrentTime(trackStartTime);
         setIsPlaying(true);
-        setTrackEnded(false); // Reset trackEnded when playing starts
+        setTrackEnded(false);
         pausedTimeRef.current = null;
 
         const updateCurrentTime = () => {
@@ -325,13 +330,31 @@ export const useSandboxAudioPlayer = () => {
     }
   };
 
+  const seekTo = (time: number) => {
+    if (time < 0 || (audioBuffer && time > audioBuffer.duration)) {
+      console.warn('Invalid seek time');
+      return;
+    }
+    if (isPlayingRef.current) {
+      pauseAudio();
+      setCurrentTime(time);
+      pausedTimeRef.current = time;
+      setTimeout(() => {
+        playAudio();
+      }, 20);
+    } else {
+      setCurrentTime(time);
+      pausedTimeRef.current = time;
+    }
+  };
+
   return {
     audioBuffer,
     startTime,
     setStartTime,
     endTime,
     setEndTime,
-    isPlaying,
+    isPlaying: exportedIsPlaying,
     currentTime,
     loopType,
     loopEnabled,
@@ -343,5 +366,6 @@ export const useSandboxAudioPlayer = () => {
     getCurrentTime,
     loopAndPlaySection,
     loopAndPlayTrack,
+    seekTo,
   };
 };
