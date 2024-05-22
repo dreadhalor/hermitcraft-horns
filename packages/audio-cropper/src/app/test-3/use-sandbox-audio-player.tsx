@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 
 export const useSandboxAudioPlayer = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-  const [startTime, setStartTime] = useState<number>(0);
-  const [endTime, setEndTime] = useState<number>(0);
+  const [selectionStart, setSelectionStart] = useState<number>(0);
+  const [selectionEnd, setSelectionEnd] = useState<number>(0);
   const isPlayingRef = useRef<boolean>(false);
   const [exportedIsPlaying, setExportedIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -39,7 +39,7 @@ export const useSandboxAudioPlayer = () => {
       arrayBuffer
     );
     setAudioBuffer(audioBuffer);
-    setEndTime(audioBuffer.duration);
+    setSelectionEnd(audioBuffer.duration);
   };
 
   const playAudio = () => {
@@ -60,8 +60,8 @@ export const useSandboxAudioPlayer = () => {
         playStartTime = 0; // Start from the beginning if at the end of the track
       }
     } else if (loopType === 'section') {
-      const loopStart = startTime;
-      const loopEnd = endTime;
+      const loopStart = selectionStart;
+      const loopEnd = selectionEnd;
       playStartTime =
         pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
       if (playStartTime < loopStart || playStartTime > loopEnd) {
@@ -101,8 +101,8 @@ export const useSandboxAudioPlayer = () => {
         let newTime = playStartTime + elapsed;
 
         if (loopType === 'section') {
-          const loopStart = startTime;
-          const loopEnd = endTime;
+          const loopStart = selectionStart;
+          const loopEnd = selectionEnd;
           const loopDuration = loopEnd - loopStart;
           newTime = loopStart + ((newTime - loopStart) % loopDuration);
         } else if (loopType === 'track') {
@@ -146,9 +146,10 @@ export const useSandboxAudioPlayer = () => {
       sourceRef.current = null;
     }
     setIsPlaying(false);
-    setCurrentTime(0);
+    const seekTime = loopType === 'section' ? selectionStart : 0;
+    setCurrentTime(seekTime);
     setTrackEnded(false);
-    pausedTimeRef.current = 0;
+    pausedTimeRef.current = seekTime;
     if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
       animationFrameId.current = null;
@@ -174,8 +175,8 @@ export const useSandboxAudioPlayer = () => {
     if (!isPlayingRef.current && loopType !== 'section') {
       setLoopType('section');
       setLoopEnabled(true);
-      setCurrentTime(startTime);
-      pausedTimeRef.current = startTime;
+      setCurrentTime(selectionStart);
+      pausedTimeRef.current = selectionStart;
       sourceRef.current?.stop();
       sourceRef.current?.disconnect();
       sourceRef.current = null;
@@ -184,13 +185,13 @@ export const useSandboxAudioPlayer = () => {
       source.buffer = audioBuffer;
       source.connect(audioContextRef.current!.destination);
       source.loop = true;
-      source.loopStart = startTime;
-      source.loopEnd = endTime;
-      source.start(0, startTime);
+      source.loopStart = selectionStart;
+      source.loopEnd = selectionEnd;
+      source.start(0, selectionStart);
       sourceRef.current = source;
 
       const startTimestamp = audioContextRef.current!.currentTime;
-      setCurrentTime(startTime);
+      setCurrentTime(selectionStart);
       setIsPlaying(true);
       setTrackEnded(false);
       pausedTimeRef.current = null;
@@ -198,8 +199,8 @@ export const useSandboxAudioPlayer = () => {
       const updateCurrentTime = () => {
         if (sourceRef.current && audioContextRef.current) {
           const elapsed = audioContextRef.current.currentTime - startTimestamp;
-          const loopDuration = endTime - startTime;
-          const newTime = startTime + (elapsed % loopDuration);
+          const loopDuration = selectionEnd - selectionStart;
+          const newTime = selectionStart + (elapsed % loopDuration);
           setCurrentTime(newTime);
           animationFrameId.current = requestAnimationFrame(updateCurrentTime);
         }
@@ -213,8 +214,8 @@ export const useSandboxAudioPlayer = () => {
       setTimeout(() => {
         setLoopType('section');
         setLoopEnabled(true);
-        setCurrentTime(startTime);
-        pausedTimeRef.current = startTime;
+        setCurrentTime(selectionStart);
+        pausedTimeRef.current = selectionStart;
         sourceRef.current?.stop();
         sourceRef.current?.disconnect();
         sourceRef.current = null;
@@ -223,13 +224,13 @@ export const useSandboxAudioPlayer = () => {
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current!.destination);
         source.loop = true;
-        source.loopStart = startTime;
-        source.loopEnd = endTime;
-        source.start(0, startTime);
+        source.loopStart = selectionStart;
+        source.loopEnd = selectionEnd;
+        source.start(0, selectionStart);
         sourceRef.current = source;
 
         const startTimestamp = audioContextRef.current!.currentTime;
-        setCurrentTime(startTime);
+        setCurrentTime(selectionStart);
         setIsPlaying(true);
         setTrackEnded(false);
         pausedTimeRef.current = null;
@@ -238,8 +239,8 @@ export const useSandboxAudioPlayer = () => {
           if (sourceRef.current && audioContextRef.current) {
             const elapsed =
               audioContextRef.current.currentTime - startTimestamp;
-            const loopDuration = endTime - startTime;
-            const newTime = startTime + (elapsed % loopDuration);
+            const loopDuration = selectionEnd - selectionStart;
+            const newTime = selectionStart + (elapsed % loopDuration);
             setCurrentTime(newTime);
             animationFrameId.current = requestAnimationFrame(updateCurrentTime);
           }
@@ -448,10 +449,10 @@ export const useSandboxAudioPlayer = () => {
 
   return {
     audioBuffer,
-    startTime,
-    setStartTime,
-    endTime,
-    setEndTime,
+    selectionStart,
+    setSelectionStart,
+    selectionEnd,
+    setSelectionEnd,
     isPlaying: exportedIsPlaying,
     currentTime,
     loopType,

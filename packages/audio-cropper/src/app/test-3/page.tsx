@@ -4,10 +4,10 @@ import { useSandboxAudioPlayer } from './use-sandbox-audio-player';
 const Page = () => {
   const {
     audioBuffer,
-    startTime,
-    setStartTime,
-    endTime,
-    setEndTime,
+    selectionStart,
+    setSelectionStart,
+    selectionEnd,
+    setSelectionEnd,
     isPlaying,
     loopType,
     loadAudioBuffer,
@@ -29,14 +29,14 @@ const Page = () => {
   const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     if (!isNaN(time) && time >= 0 && time <= (audioBuffer?.duration || 0)) {
-      setStartTime(time);
+      setSelectionStart(time);
     }
   };
 
   const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     if (!isNaN(time) && time >= 0 && time <= (audioBuffer?.duration || 0)) {
-      setEndTime(time);
+      setSelectionEnd(time);
     }
   };
 
@@ -56,7 +56,7 @@ const Page = () => {
           <input
             className='text-black'
             type='number'
-            value={startTime}
+            value={selectionStart}
             onChange={handleStartTimeChange}
             min='0'
             max={audioBuffer?.duration || 0}
@@ -68,7 +68,7 @@ const Page = () => {
           <input
             className='text-black'
             type='number'
-            value={endTime}
+            value={selectionEnd}
             onChange={handleEndTimeChange}
             min='0'
             max={audioBuffer?.duration || 0}
