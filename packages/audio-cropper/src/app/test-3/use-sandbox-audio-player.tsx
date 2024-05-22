@@ -148,7 +148,7 @@ export const useSandboxAudioPlayer = () => {
     setIsPlaying(false);
     setCurrentTime(0);
     setTrackEnded(false);
-    pausedTimeRef.current = null;
+    pausedTimeRef.current = 0;
     if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
       animationFrameId.current = null;
@@ -422,6 +422,30 @@ export const useSandboxAudioPlayer = () => {
     }
   };
 
+  const playPause = () => {
+    if (isPlayingRef.current) {
+      pauseAudio();
+    } else {
+      playAudio();
+    }
+  };
+
+  const toggleLoopSection = () => {
+    if (loopType === 'section') {
+      disableLoops();
+    } else {
+      loopAndPlaySection();
+    }
+  };
+
+  const toggleLoopTrack = () => {
+    if (loopType === 'track') {
+      disableLoops();
+    } else {
+      loopAndPlayTrack();
+    }
+  };
+
   return {
     audioBuffer,
     startTime,
@@ -442,5 +466,8 @@ export const useSandboxAudioPlayer = () => {
     loopAndPlayTrack,
     seekTo,
     disableLoops,
+    playPause,
+    toggleLoopSection,
+    toggleLoopTrack,
   };
 };
