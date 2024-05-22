@@ -156,6 +156,55 @@ const Page = () => {
     setLoopEnabled((prev) => !prev);
   };
 
+  const loopAndPlaySection = () => {
+    if (!audioBuffer || !audioContextRef.current) return;
+
+    if (!isPlaying && !loopEnabled) {
+      setLoopEnabled(true);
+      setCurrentTime(startTime);
+      pausedTimeRef.current = startTime;
+      sourceRef.current?.stop();
+      sourceRef.current?.disconnect();
+      sourceRef.current = null;
+
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+      source.loop = true;
+      source.loopStart = startTime;
+      source.loopEnd = endTime;
+      source.start(0, startTime);
+      sourceRef.current = source;
+
+      const startTimestamp = audioContextRef.current.currentTime;
+      setCurrentTime(startTime);
+      setIsPlaying(true);
+      pausedTimeRef.current = null;
+
+      const updateCurrentTime = () => {
+        if (sourceRef.current && audioContextRef.current) {
+          const elapsed = audioContextRef.current.currentTime - startTimestamp;
+          const loopDuration = endTime - startTime;
+          const newTime = startTime + (elapsed % loopDuration);
+          setCurrentTime(newTime);
+          animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+        }
+      };
+
+      animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+    } else if (!isPlaying && loopEnabled) {
+      playAudio();
+    } else if (isPlaying && !loopEnabled) {
+      setLoopEnabled(true);
+      pauseAudio();
+      setCurrentTime(startTime);
+      pausedTimeRef.current = startTime;
+      setTimeout(() => {
+        playAudio();
+      }, 0);
+    }
+  };
+
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
@@ -191,6 +240,7 @@ const Page = () => {
         <button onClick={handleLoopToggle}>
           {loopEnabled ? 'Disable Loop' : 'Loop Selection'}
         </button>
+        <button onClick={loopAndPlaySection}>Loop and Play Section</button>
       </div>
       <div>Current Time: {getCurrentTime().toFixed(2)}</div>
     </div>
