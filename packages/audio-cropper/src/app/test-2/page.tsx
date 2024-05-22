@@ -86,40 +86,119 @@ const Page = () => {
     setVisibleEndTime(end);
   };
 
+  const buttonClass = 'p-2 rounded-md transition-colors duration-200';
+  const enabledClass = 'text-white';
+  const disabledClass = 'text-gray-400 bg-gray-200 cursor-not-allowed';
+  const rewindClass = 'bg-blue-500 hover:bg-blue-600';
+  const playClass = 'bg-green-500 hover:bg-green-600';
+  const pauseClass = 'bg-red-500 hover:bg-red-600';
+  const loopClass = 'bg-yellow-500 hover:bg-yellow-600';
+  const loopPlayClass = 'bg-purple-500 hover:bg-purple-600';
+  const undoRedoClass = 'bg-orange-500 hover:bg-orange-600';
+
   return (
-    <div className='w-full h-full flex flex-col items-center justify-center'>
-      <input type='file' accept='audio/*' onChange={handleFileUpload} />
-      <div className='flex gap-2 border-b'>
-        <button onClick={stop}>Rewind</button>
-        <button id='play-butön' onClick={isPlaying ? pause : play}>
+    <div className='w-full h-full flex flex-col items-center p-6 space-y-6 bg-[hsl(224,100%,73%)]'>
+      <input
+        type='file'
+        accept='audio/*'
+        onChange={handleFileUpload}
+        className='p-2 border rounded'
+      />
+      <div className='flex gap-2'>
+        <button
+          onClick={stop}
+          className={`${buttonClass} ${rewindClass} ${enabledClass}`}
+        >
+          Rewind
+        </button>
+        <button
+          id='play-butön'
+          onClick={isPlaying ? pause : play}
+          className={`${buttonClass} ${
+            isPlaying ? pauseClass : playClass
+          } ${enabledClass}`}
+        >
           {isPlaying ? 'Pause' : 'Play'}
         </button>
       </div>
-      {startSelection !== null && endSelection !== null && (
-        <div className='flex gap-2 border-b'>
-          <button
-            onClick={() => {
-              setStartSelection(null);
-              setEndSelection(null);
-            }}
-          >
-            Clear selection
-          </button>
-          <button onClick={toggleLoop}>
-            {isLooping ? 'Stop Loop' : 'Loop selection'}
-          </button>
-          <button onClick={toggleLoopAndPlay}>Loop & Play</button>
-          {/* New button */}
-        </div>
-      )}
-      <div className='flex gap-2 border-b'>
-        <button onClick={handleCropClick}>Crop</button>
-        <button onClick={handleTrimClick}>Trim</button>
-        <button onClick={undo}>Undo</button>
-        <button onClick={redo}>Redo</button>
+      <div className='flex gap-2'>
+        <button
+          onClick={() => {
+            setStartSelection(null);
+            setEndSelection(null);
+          }}
+          className={`${buttonClass} ${
+            startSelection !== null && endSelection !== null
+              ? rewindClass
+              : disabledClass
+          }`}
+          disabled={startSelection === null || endSelection === null}
+        >
+          Clear selection
+        </button>
+        <button
+          onClick={toggleLoop}
+          className={`${buttonClass} ${
+            startSelection !== null && endSelection !== null
+              ? loopClass
+              : disabledClass
+          }`}
+          disabled={startSelection === null || endSelection === null}
+        >
+          {isLooping ? 'Stop Loop' : 'Loop selection'}
+        </button>
+        <button
+          onClick={toggleLoopAndPlay}
+          className={`${buttonClass} ${
+            startSelection !== null && endSelection !== null
+              ? loopPlayClass
+              : disabledClass
+          }`}
+          disabled={startSelection === null || endSelection === null}
+        >
+          Loop & Play
+        </button>
       </div>
-      <div>Current Time: {currentTime.toFixed(2)}</div>
-      <div id='waveform' className='mb-2'>
+      <div className='flex gap-2'>
+        <button
+          onClick={handleCropClick}
+          className={`${buttonClass} ${
+            startSelection !== null && endSelection !== null
+              ? rewindClass
+              : disabledClass
+          }`}
+          disabled={startSelection === null || endSelection === null}
+        >
+          Crop
+        </button>
+        <button
+          onClick={handleTrimClick}
+          className={`${buttonClass} ${
+            startSelection !== null && endSelection !== null
+              ? playClass
+              : disabledClass
+          }`}
+          disabled={startSelection === null || endSelection === null}
+        >
+          Trim
+        </button>
+        <button
+          onClick={undo}
+          className={`${buttonClass} ${undoRedoClass} ${enabledClass}`}
+        >
+          Undo
+        </button>
+        <button
+          onClick={redo}
+          className={`${buttonClass} ${undoRedoClass} ${enabledClass}`}
+        >
+          Redo
+        </button>
+      </div>
+      <div className='text-lg font-semibold'>
+        Current Time: {currentTime.toFixed(2)}
+      </div>
+      <div id='waveform' className='w-full bg-white rounded-md shadow mb-4 p-4'>
         <ReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
@@ -135,7 +214,7 @@ const Page = () => {
           toggleLoop={toggleLoopAndPlay}
         />
       </div>
-      <div id='minimap'>
+      <div id='minimap' className='w-full bg-white rounded-md shadow p-4'>
         <ReactP5Wrapper
           sketch={MinimapSketch as any}
           audioBuffer={audioBuffer}
@@ -147,7 +226,15 @@ const Page = () => {
           onBoundsChange={handleBoundsChange}
         />
       </div>
-      <button onClick={() => downloadAudio(audioBuffer)}>Download</button>
+      <button
+        onClick={() => downloadAudio(audioBuffer)}
+        className={`${buttonClass} ${
+          audioBuffer ? rewindClass : disabledClass
+        }`}
+        disabled={!audioBuffer}
+      >
+        Download
+      </button>
     </div>
   );
 };
