@@ -8,6 +8,9 @@ const Page = () => {
   const [endTime, setEndTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [loopType, setLoopType] = useState<'none' | 'section' | 'track'>(
+    'none'
+  );
   const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -159,7 +162,14 @@ const Page = () => {
   const loopAndPlaySection = async () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
-    if (!isPlaying && !loopEnabled) {
+    if (loopType === 'track') {
+      setLoopType('none');
+      setLoopEnabled(false);
+      pauseAudio();
+    }
+
+    if (!isPlaying && loopType !== 'section') {
+      setLoopType('section');
       setLoopEnabled(true);
       setCurrentTime(startTime);
       pausedTimeRef.current = startTime;
@@ -192,11 +202,12 @@ const Page = () => {
       };
 
       animationFrameId.current = requestAnimationFrame(updateCurrentTime);
-    } else if (!isPlaying && loopEnabled) {
+    } else if (!isPlaying && loopType === 'section') {
       playAudio();
-    } else if (isPlaying && !loopEnabled) {
+    } else if (isPlaying && loopType !== 'section') {
       pauseAudio();
       setTimeout(() => {
+        setLoopType('section');
         setLoopEnabled(true);
         setCurrentTime(startTime);
         pausedTimeRef.current = startTime;
@@ -240,7 +251,14 @@ const Page = () => {
     const trackStartTime = 0;
     const trackEndTime = audioBuffer.duration;
 
-    if (!isPlaying) {
+    if (loopType === 'section') {
+      setLoopType('none');
+      setLoopEnabled(false);
+      pauseAudio();
+    }
+
+    if (!isPlaying && loopType !== 'track') {
+      setLoopType('track');
       setLoopEnabled(true);
       setCurrentTime(trackStartTime);
       pausedTimeRef.current = trackStartTime;
@@ -273,9 +291,10 @@ const Page = () => {
       };
 
       animationFrameId.current = requestAnimationFrame(updateCurrentTime);
-    } else if (isPlaying && !loopEnabled) {
+    } else if (isPlaying && loopType !== 'track') {
       pauseAudio();
       setTimeout(() => {
+        setLoopType('track');
         setLoopEnabled(true);
         setCurrentTime(trackStartTime);
         pausedTimeRef.current = trackStartTime;
