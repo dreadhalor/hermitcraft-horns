@@ -20,6 +20,7 @@ const Page = () => {
     loopAndPlaySection,
     loopAndPlayTrack,
     seekTo,
+    disableLoops,
   } = useSandboxAudioPlayer();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +46,11 @@ const Page = () => {
   };
 
   const handleLoopToggle = () => {
-    setLoopEnabled((prev) => !prev);
+    if (loopEnabled) {
+      disableLoops();
+    } else {
+      setLoopEnabled(true);
+    }
   };
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {

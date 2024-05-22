@@ -330,6 +330,71 @@ export const useSandboxAudioPlayer = () => {
     }
   };
 
+  const disableLoops = () => {
+    if (!isPlayingRef.current && !loopEnabled) {
+      // If not playing and loops are not enabled, do nothing
+      return;
+    }
+
+    if (!isPlayingRef.current && loopEnabled) {
+      // If not playing and loops are enabled, disable loops and keep the playhead position
+      setLoopType('none');
+      setLoopEnabled(false);
+      return;
+    }
+
+    if (isPlayingRef.current && !loopEnabled) {
+      // If playing and loops are not enabled, do nothing
+      return;
+    }
+
+    if (isPlayingRef.current && loopEnabled) {
+      // If playing and loops are enabled, disable loops and resume playback without looping
+      setLoopType('none');
+      setLoopEnabled(false);
+
+      // Pause the current playback
+      pauseAudio();
+
+      // Resume playback without looping
+      setTimeout(() => {
+        const source = audioContextRef.current!.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current!.destination);
+        source.loop = false;
+        source.start(0, currentTime);
+        sourceRef.current = source;
+
+        const startTimestamp = audioContextRef.current!.currentTime;
+        setIsPlaying(true);
+        pausedTimeRef.current = null;
+
+        const updateCurrentTime = () => {
+          if (sourceRef.current && audioContextRef.current) {
+            const elapsed =
+              audioContextRef.current.currentTime - startTimestamp;
+            const newTime = currentTime + elapsed;
+
+            if (newTime >= audioBuffer!.duration) {
+              // If reached the end of the track, stop playback
+              setCurrentTime(audioBuffer!.duration);
+              setIsPlaying(false);
+              sourceRef.current!.stop();
+              sourceRef.current!.disconnect();
+              sourceRef.current = null;
+              return;
+            }
+
+            setCurrentTime(newTime);
+            animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+          }
+        };
+
+        animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+      }, 20);
+    }
+  };
+
   const seekTo = (time: number) => {
     if (time < 0 || (audioBuffer && time > audioBuffer.duration)) {
       console.warn('Invalid seek time');
@@ -367,5 +432,6 @@ export const useSandboxAudioPlayer = () => {
     loopAndPlaySection,
     loopAndPlayTrack,
     seekTo,
+    disableLoops,
   };
 };
