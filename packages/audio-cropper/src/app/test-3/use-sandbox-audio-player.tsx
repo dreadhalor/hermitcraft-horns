@@ -51,12 +51,19 @@ export const useSandboxAudioPlayer = () => {
     source.buffer = audioBuffer;
     source.connect(audioContextRef.current.destination);
 
-    let playStartTime =
-      pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
+    let playStartTime = 0;
 
-    if (loopType === 'section') {
+    if (loopType === 'none') {
+      playStartTime =
+        pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
+      if (playStartTime >= audioBuffer.duration) {
+        playStartTime = 0; // Start from the beginning if at the end of the track
+      }
+    } else if (loopType === 'section') {
       const loopStart = startTime;
       const loopEnd = endTime;
+      playStartTime =
+        pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
       if (playStartTime < loopStart || playStartTime > loopEnd) {
         playStartTime = loopStart;
       }
@@ -64,6 +71,8 @@ export const useSandboxAudioPlayer = () => {
       source.loopStart = loopStart;
       source.loopEnd = loopEnd;
     } else if (loopType === 'track') {
+      playStartTime =
+        pausedTimeRef.current !== null ? pausedTimeRef.current : currentTime;
       source.loop = true;
       source.loopStart = 0;
       source.loopEnd = audioBuffer.duration;
