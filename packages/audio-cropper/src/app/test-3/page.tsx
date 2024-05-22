@@ -75,6 +75,21 @@ const Page = () => {
           />
         </label>
       </div>
+      <div className='flex flex-col items-center'>
+        <label>
+          Seek To:
+          <input
+            type='range'
+            value={getCurrentTime()}
+            // onChange={handleSeekChange}
+            min='0'
+            max={audioBuffer?.duration || 0}
+            step='0.01'
+            className='w-full'
+          />
+        </label>
+        <div>{getCurrentTime().toFixed(2)}</div>
+      </div>
       <div className='flex gap-2'>
         <button onClick={playAudio}>{isPlaying ? 'Pause' : 'Play'}</button>
         <button onClick={stopAudio}>Stop</button>
