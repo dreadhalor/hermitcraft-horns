@@ -7,9 +7,8 @@ import {
   viewWindowHandleColor,
   selectionHandleColor,
 } from './constants';
-import { AudioContextValue } from './audio-provider';
 
-type MinimapProps = P5CanvasInstance<AudioContextValue> & {
+type MinimapProps = P5CanvasInstance<any> & {
   audioBuffer: AudioBuffer | null;
   currentTime: number;
   visibleStartTime: number;
@@ -17,6 +16,7 @@ type MinimapProps = P5CanvasInstance<AudioContextValue> & {
   startSelection: number | null;
   endSelection: number | null;
   onBoundsChange?: (start: number, end: number) => void;
+  availableWidth: number;
 };
 
 export const MinimapSketch = (p5: MinimapProps) => {
@@ -32,8 +32,9 @@ export const MinimapSketch = (p5: MinimapProps) => {
   let isDraggingEndHandle = false;
   let dragOffset = 0;
   let windowWidth = 0;
+  let availableWidth = 0;
 
-  p5.updateWithProps = (props: any) => {
+  p5.updateWithProps = (props: MinimapProps) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
     if (props.currentTime !== undefined) currentTime = props.currentTime;
     if (props.visibleStartTime !== undefined)
@@ -44,13 +45,17 @@ export const MinimapSketch = (p5: MinimapProps) => {
       startSelection = props.startSelection;
     if (props.endSelection !== undefined) endSelection = props.endSelection;
     if (props.onBoundsChange) onBoundsChange = props.onBoundsChange;
+    if (props.availableWidth) availableWidth = props.availableWidth;
   };
 
   p5.setup = () => {
-    p5.createCanvas(500, 50);
+    p5.createCanvas(availableWidth, 50);
   };
 
   p5.draw = () => {
+    if (p5.width !== availableWidth) {
+      p5.resizeCanvas(availableWidth, 50);
+    }
     if (audioBuffer) {
       drawMinimap(p5, audioBuffer);
     }

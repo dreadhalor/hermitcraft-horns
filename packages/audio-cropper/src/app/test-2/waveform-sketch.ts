@@ -18,6 +18,7 @@ type WaveformProps = P5CanvasInstance<any> & {
   onSelectionChange?: (start: number | null, end: number | null) => void;
   seekTo?: (time: number) => void;
   toggleLoop?: () => void; // Add toggleLoop function
+  availableWidth: number;
 };
 
 export const WaveformSketch = (p5: WaveformProps) => {
@@ -47,6 +48,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let mousePressedX = 0;
   let mousePressedY = 0;
   const minDragDistance = 5; // Minimum distance to start a selection
+  let availableWidth = 0;
 
   p5.updateWithProps = (props: WaveformProps) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -63,13 +65,17 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (props.onSelectionChange) onSelectionChange = props.onSelectionChange;
     if (props.seekTo) seekTo = props.seekTo;
     if (props.toggleLoop) toggleLoop = props.toggleLoop; // Assign toggleLoop function
+    if (props.availableWidth) availableWidth = props.availableWidth;
   };
 
   p5.setup = () => {
-    p5.createCanvas(500, 200);
+    p5.createCanvas(availableWidth, 200);
   };
 
   p5.draw = () => {
+    if (p5.width !== availableWidth) {
+      p5.resizeCanvas(availableWidth, 200);
+    }
     if (audioBuffer) {
       drawWaveform(p5, audioBuffer);
     }

@@ -1,11 +1,18 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useRef } from 'react';
 import { ReactP5Wrapper } from '@p5-wrapper/react';
 import { downloadAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
+import { FaCropSimple } from 'react-icons/fa6';
+import { MdLoop } from 'react-icons/md';
+import { IoMdCut } from 'react-icons/io';
+import { FaRedoAlt, FaUndoAlt } from 'react-icons/fa';
+import { RiRewindStartFill } from 'react-icons/ri';
+import LoopSelection from '@/assets/loop-selection.svg';
+import Image from 'next/image';
 
 const Page = () => {
   const {
@@ -36,6 +43,8 @@ const Page = () => {
     toggleLoop,
     toggleLoopAndPlay,
   } = useAudioContext();
+
+  const sketchWidthRef = useRef<HTMLDivElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,7 +106,7 @@ const Page = () => {
   const undoRedoClass = 'bg-orange-500 hover:bg-orange-600';
 
   return (
-    <div className='w-full h-full flex flex-col items-center p-6 space-y-6 bg-[hsl(224,100%,73%)]'>
+    <div className='w-full min-h-full flex flex-col items-center p-6 space-y-6 bg-[hsl(224,100%,73%)]'>
       <input
         type='file'
         accept='audio/*'
@@ -109,7 +118,7 @@ const Page = () => {
           onClick={stop}
           className={`${buttonClass} ${rewindClass} ${enabledClass}`}
         >
-          Rewind
+          <RiRewindStartFill />
         </button>
         <button
           id='play-butön'
@@ -137,7 +146,7 @@ const Page = () => {
           Clear selection
         </button>
         <button
-          onClick={toggleLoop}
+          onClick={toggleLoopAndPlay}
           className={`${buttonClass} ${
             startSelection !== null && endSelection !== null
               ? loopClass
@@ -145,9 +154,19 @@ const Page = () => {
           }`}
           disabled={startSelection === null || endSelection === null}
         >
-          {isLooping ? 'Stop Loop' : 'Loop selection'}
+          {/* {isLooping ? 'Stop Loop' : 'Loop selection'} */}
+          <Image src={LoopSelection} alt='Loop Selection' className='w-6 h-6' />
         </button>
         <button
+          className={`${buttonClass} ${
+            startSelection !== null && endSelection !== null
+              ? loopPlayClass
+              : disabledClass
+          }`}
+        >
+          <MdLoop />
+        </button>
+        {/* <button
           onClick={toggleLoopAndPlay}
           className={`${buttonClass} ${
             startSelection !== null && endSelection !== null
@@ -157,7 +176,7 @@ const Page = () => {
           disabled={startSelection === null || endSelection === null}
         >
           Loop & Play
-        </button>
+        </button> */}
       </div>
       <div className='flex gap-2'>
         <button
@@ -166,9 +185,10 @@ const Page = () => {
             startSelection !== null && endSelection !== null
               ? rewindClass
               : disabledClass
-          }`}
+          } flex items-center gap-2`}
           disabled={startSelection === null || endSelection === null}
         >
+          <FaCropSimple />
           Crop
         </button>
         <button
@@ -177,28 +197,32 @@ const Page = () => {
             startSelection !== null && endSelection !== null
               ? playClass
               : disabledClass
-          }`}
+          } flex items-center gap-2`}
           disabled={startSelection === null || endSelection === null}
         >
+          <IoMdCut />
           Trim
         </button>
         <button
           onClick={undo}
           className={`${buttonClass} ${undoRedoClass} ${enabledClass}`}
         >
-          Undo
+          <FaUndoAlt />
         </button>
         <button
           onClick={redo}
           className={`${buttonClass} ${undoRedoClass} ${enabledClass}`}
         >
-          Redo
+          <FaRedoAlt />
         </button>
       </div>
       <div className='text-lg font-semibold'>
         Current Time: {currentTime.toFixed(2)}
       </div>
-      <div id='waveform' className='w-full bg-white rounded-md shadow mb-4 p-4'>
+      <div
+        id='waveform'
+        className='w-full bg-[#4665BA] rounded-md shadow mb-4 p-4 min-h-0'
+      >
         <ReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
@@ -212,19 +236,27 @@ const Page = () => {
           onSelectionChange={handleSelectionChange}
           seekTo={seekTo}
           toggleLoop={toggleLoopAndPlay}
+          availableWidth={sketchWidthRef.current?.clientWidth ?? 0}
         />
       </div>
-      <div id='minimap' className='w-full bg-white rounded-md shadow p-4'>
-        <ReactP5Wrapper
-          sketch={MinimapSketch as any}
-          audioBuffer={audioBuffer}
-          currentTime={currentTime}
-          startSelection={startSelection}
-          endSelection={endSelection}
-          visibleStartTime={visibleStartTime}
-          visibleEndTime={visibleEndTime}
-          onBoundsChange={handleBoundsChange}
-        />
+      <div
+        id='minimap'
+        className='w-full relative bg-[#4665BA] rounded-md shadow p-4 min-h-0'
+      >
+        <div className='relative w-full h-full'>
+          <div ref={sketchWidthRef} className='absolute inset-0' />
+          <ReactP5Wrapper
+            sketch={MinimapSketch as any}
+            audioBuffer={audioBuffer}
+            currentTime={currentTime}
+            startSelection={startSelection}
+            endSelection={endSelection}
+            visibleStartTime={visibleStartTime}
+            visibleEndTime={visibleEndTime}
+            onBoundsChange={handleBoundsChange}
+            availableWidth={sketchWidthRef.current?.clientWidth ?? 0}
+          />
+        </div>
       </div>
       <button
         onClick={() => downloadAudio(audioBuffer)}
