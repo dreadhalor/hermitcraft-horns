@@ -50,12 +50,16 @@ const Page = () => {
 
     const loopStart = startTime;
     const loopEnd = endTime;
-    const playStartTime =
+    let playStartTime =
       pausedTimeRef.current !== null
         ? pausedTimeRef.current
         : loopEnabled
         ? startTime
         : currentTime;
+
+    if (loopEnabled && playStartTime > loopEnd) {
+      playStartTime = loopStart;
+    }
 
     if (loopEnabled) {
       source.loop = true;
@@ -75,7 +79,7 @@ const Page = () => {
     source.onended = () => {
       if (!loopEnabled) {
         setIsPlaying(false);
-        setCurrentTime(0);
+        setCurrentTime(currentTime);
       }
     };
 
@@ -83,9 +87,9 @@ const Page = () => {
       if (sourceRef.current && audioContextRef.current) {
         const elapsed = audioContextRef.current.currentTime - startTimestamp;
         if (loopEnabled) {
-          const loopDuration = endTime - startTime;
+          const loopDuration = loopEnd - loopStart;
           const newTime =
-            startTime + ((elapsed + playStartTime - startTime) % loopDuration);
+            loopStart + ((elapsed + playStartTime - loopStart) % loopDuration);
           setCurrentTime(newTime);
         } else {
           setCurrentTime(playStartTime + elapsed);
@@ -123,6 +127,14 @@ const Page = () => {
     if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
       animationFrameId.current = null;
+    }
+  };
+
+  const getCurrentTime = () => {
+    if (isPlaying) {
+      return currentTime;
+    } else {
+      return pausedTimeRef.current || 0;
     }
   };
 
@@ -180,7 +192,7 @@ const Page = () => {
           {loopEnabled ? 'Disable Loop' : 'Loop Selection'}
         </button>
       </div>
-      <div>Current Time: {currentTime.toFixed(2)}</div>
+      <div>Current Time: {getCurrentTime().toFixed(2)}</div>
     </div>
   );
 };
