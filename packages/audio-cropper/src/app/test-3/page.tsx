@@ -156,7 +156,7 @@ const Page = () => {
     setLoopEnabled((prev) => !prev);
   };
 
-  const loopAndPlaySection = () => {
+  const loopAndPlaySection = async () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
     if (!isPlaying && !loopEnabled) {
@@ -167,16 +167,16 @@ const Page = () => {
       sourceRef.current?.disconnect();
       sourceRef.current = null;
 
-      const source = audioContextRef.current.createBufferSource();
+      const source = audioContextRef.current!.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
+      source.connect(audioContextRef.current!.destination);
       source.loop = true;
       source.loopStart = startTime;
       source.loopEnd = endTime;
       source.start(0, startTime);
       sourceRef.current = source;
 
-      const startTimestamp = audioContextRef.current.currentTime;
+      const startTimestamp = audioContextRef.current!.currentTime;
       setCurrentTime(startTime);
       setIsPlaying(true);
       pausedTimeRef.current = null;
@@ -195,13 +195,42 @@ const Page = () => {
     } else if (!isPlaying && loopEnabled) {
       playAudio();
     } else if (isPlaying && !loopEnabled) {
-      setLoopEnabled(true);
       pauseAudio();
-      setCurrentTime(startTime);
-      pausedTimeRef.current = startTime;
       setTimeout(() => {
-        playAudio();
-      }, 0);
+        setLoopEnabled(true);
+        setCurrentTime(startTime);
+        pausedTimeRef.current = startTime;
+        sourceRef.current?.stop();
+        sourceRef.current?.disconnect();
+        sourceRef.current = null;
+
+        const source = audioContextRef.current!.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current!.destination);
+        source.loop = true;
+        source.loopStart = startTime;
+        source.loopEnd = endTime;
+        source.start(0, startTime);
+        sourceRef.current = source;
+
+        const startTimestamp = audioContextRef.current!.currentTime;
+        setCurrentTime(startTime);
+        setIsPlaying(true);
+        pausedTimeRef.current = null;
+
+        const updateCurrentTime = () => {
+          if (sourceRef.current && audioContextRef.current) {
+            const elapsed =
+              audioContextRef.current.currentTime - startTimestamp;
+            const loopDuration = endTime - startTime;
+            const newTime = startTime + (elapsed % loopDuration);
+            setCurrentTime(newTime);
+            animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+          }
+        };
+
+        animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+      }, 20);
     }
   };
 
