@@ -234,6 +234,85 @@ const Page = () => {
     }
   };
 
+  const loopAndPlayTrack = async () => {
+    if (!audioBuffer || !audioContextRef.current) return;
+
+    const trackStartTime = 0;
+    const trackEndTime = audioBuffer.duration;
+
+    if (!isPlaying) {
+      setLoopEnabled(true);
+      setCurrentTime(trackStartTime);
+      pausedTimeRef.current = trackStartTime;
+      sourceRef.current?.stop();
+      sourceRef.current?.disconnect();
+      sourceRef.current = null;
+
+      const source = audioContextRef.current!.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current!.destination);
+      source.loop = true;
+      source.loopStart = trackStartTime;
+      source.loopEnd = trackEndTime;
+      source.start(0, trackStartTime);
+      sourceRef.current = source;
+
+      const startTimestamp = audioContextRef.current!.currentTime;
+      setCurrentTime(trackStartTime);
+      setIsPlaying(true);
+      pausedTimeRef.current = null;
+
+      const updateCurrentTime = () => {
+        if (sourceRef.current && audioContextRef.current) {
+          const elapsed = audioContextRef.current.currentTime - startTimestamp;
+          const loopDuration = trackEndTime - trackStartTime;
+          const newTime = trackStartTime + (elapsed % loopDuration);
+          setCurrentTime(newTime);
+          animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+        }
+      };
+
+      animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+    } else if (isPlaying && !loopEnabled) {
+      pauseAudio();
+      setTimeout(() => {
+        setLoopEnabled(true);
+        setCurrentTime(trackStartTime);
+        pausedTimeRef.current = trackStartTime;
+        sourceRef.current?.stop();
+        sourceRef.current?.disconnect();
+        sourceRef.current = null;
+
+        const source = audioContextRef.current!.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current!.destination);
+        source.loop = true;
+        source.loopStart = trackStartTime;
+        source.loopEnd = trackEndTime;
+        source.start(0, trackStartTime);
+        sourceRef.current = source;
+
+        const startTimestamp = audioContextRef.current!.currentTime;
+        setCurrentTime(trackStartTime);
+        setIsPlaying(true);
+        pausedTimeRef.current = null;
+
+        const updateCurrentTime = () => {
+          if (sourceRef.current && audioContextRef.current) {
+            const elapsed =
+              audioContextRef.current.currentTime - startTimestamp;
+            const loopDuration = trackEndTime - trackStartTime;
+            const newTime = trackStartTime + (elapsed % loopDuration);
+            setCurrentTime(newTime);
+            animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+          }
+        };
+
+        animationFrameId.current = requestAnimationFrame(updateCurrentTime);
+      }, 20);
+    }
+  };
+
   return (
     <div className='w-full h-full flex flex-col items-center justify-center'>
       <input type='file' accept='audio/*' onChange={handleFileUpload} />
@@ -270,6 +349,7 @@ const Page = () => {
           {loopEnabled ? 'Disable Loop' : 'Loop Selection'}
         </button>
         <button onClick={loopAndPlaySection}>Loop and Play Section</button>
+        <button onClick={loopAndPlayTrack}>Loop and Play Track</button>
       </div>
       <div>Current Time: {getCurrentTime().toFixed(2)}</div>
     </div>
