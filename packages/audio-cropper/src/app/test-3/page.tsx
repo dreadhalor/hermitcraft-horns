@@ -12,6 +12,7 @@ const Page = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const animationFrameId = useRef<number | null>(null);
+  const pausedTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
@@ -39,20 +40,29 @@ const Page = () => {
     if (!audioBuffer || !audioContextRef.current) return;
 
     if (isPlaying) {
-      stopAudio();
+      pauseAudio();
+      return;
     }
 
     const source = audioContextRef.current.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(audioContextRef.current.destination);
 
+    const loopStart = startTime;
+    const loopEnd = endTime;
+    const playStartTime =
+      pausedTimeRef.current !== null
+        ? pausedTimeRef.current
+        : loopEnabled
+        ? startTime
+        : currentTime;
+
     if (loopEnabled) {
       source.loop = true;
-      source.loopStart = startTime;
-      source.loopEnd = endTime;
+      source.loopStart = loopStart;
+      source.loopEnd = loopEnd;
     }
 
-    const playStartTime = loopEnabled ? startTime : currentTime;
     source.start(0, playStartTime);
     sourceRef.current = source;
 
@@ -60,6 +70,7 @@ const Page = () => {
     setCurrentTime(playStartTime);
 
     setIsPlaying(true);
+    pausedTimeRef.current = null;
 
     source.onended = () => {
       if (!loopEnabled) {
@@ -86,6 +97,20 @@ const Page = () => {
     animationFrameId.current = requestAnimationFrame(updateCurrentTime);
   };
 
+  const pauseAudio = () => {
+    if (sourceRef.current) {
+      sourceRef.current.stop();
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+    setIsPlaying(false);
+    pausedTimeRef.current = currentTime;
+    if (animationFrameId.current !== null) {
+      cancelAnimationFrame(animationFrameId.current);
+      animationFrameId.current = null;
+    }
+  };
+
   const stopAudio = () => {
     if (sourceRef.current) {
       sourceRef.current.stop();
@@ -94,6 +119,7 @@ const Page = () => {
     }
     setIsPlaying(false);
     setCurrentTime(0);
+    pausedTimeRef.current = null;
     if (animationFrameId.current !== null) {
       cancelAnimationFrame(animationFrameId.current);
       animationFrameId.current = null;
