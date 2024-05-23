@@ -36,7 +36,6 @@ export const useSandboxAudioPlayer = () => {
 
   const loadAudioBuffer = (audioBuffer: AudioBuffer) => {
     setAudioBuffer(audioBuffer);
-    setSelectionEnd(audioBuffer.duration);
   };
 
   const playAudio = () => {
