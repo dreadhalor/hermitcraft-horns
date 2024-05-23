@@ -27,6 +27,7 @@
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@repo/ytdl": "workspace:*",
+    "@repo/audio-editor": "workspace:*",
     "@tanstack/react-query": "^4.36.1",
     "@trpc/client": "10.45.2",
     "@trpc/next": "10.45.2",

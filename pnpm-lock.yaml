@@ -68,6 +68,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.19)(@types/react@18.2.61)(react-dom@18.2.0)(react@18.2.0)
+      '@repo/audio-editor':
+        specifier: workspace:*
+        version: link:../../packages/audio-editor
       '@repo/ytdl':
         specifier: workspace:*
         version: link:../ytdl
@@ -272,7 +275,7 @@ importers:
         specifier: ^2.1.24
         version: 2.1.24
 
-  packages/audio-cropper:
+  packages/audio-editor:
     dependencies:
       '@breezystack/lamejs':
         specifier: ^1.2.7
