@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import { Range, getTrackBackground } from 'react-range';
 import { useSandboxAudioPlayer } from './use-sandbox-audio-player';
 import { Slider } from '@/components/ui/slider';
 
