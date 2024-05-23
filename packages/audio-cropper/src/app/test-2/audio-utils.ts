@@ -123,12 +123,13 @@ export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
   }
 
   const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
-  const url = URL.createObjectURL(mp3Blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'cropped_audio.mp3';
-  a.click();
-  URL.revokeObjectURL(url);
+  console.log(mp3Blob);
+  // const url = URL.createObjectURL(mp3Blob);
+  // const a = document.createElement('a');
+  // a.href = url;
+  // a.download = 'cropped_audio.mp3';
+  // a.click();
+  // URL.revokeObjectURL(url);
 };
 
 export const cropAudioBuffer = (

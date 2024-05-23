@@ -57,6 +57,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   const [undoStack, setUndoStack] = useState<AudioBuffer[]>([]);
   const [redoStack, setRedoStack] = useState<AudioBuffer[]>([]);
 
+  console.log('audio provider');
+
   const {
     selectionStart,
     setSelectionStart,
