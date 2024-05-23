@@ -8,7 +8,7 @@ import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
 import { FaCropSimple } from 'react-icons/fa6';
 import { IoIosRedo, IoMdCut } from 'react-icons/io';
-import { FaPlay, FaPause, FaRedoAlt, FaUndoAlt } from 'react-icons/fa';
+import { FaPlay, FaPause } from 'react-icons/fa';
 import { RiRewindStartFill } from 'react-icons/ri';
 import LoopSelection from '@/assets/loop-selection.svg';
 import ClearSelection from '@/assets/clear-selection.svg';

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { cropAudioBuffer, trimAudioBuffer } from './audio-utils';
-import { useSandboxAudioPlayer } from '../test-3/use-sandbox-audio-player';
+import { useAudioPlayer } from './use-audio-player';
 
 export type AudioContextValue = {
   audioBuffer: AudioBuffer | null;
@@ -75,7 +75,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     getCurrentTime,
     clearSelection,
     pauseAudio,
-  } = useSandboxAudioPlayer();
+  } = useAudioPlayer();
 
   useEffect(() => {
     if (audioBuffer) {
