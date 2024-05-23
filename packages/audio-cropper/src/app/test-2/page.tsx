@@ -11,6 +11,7 @@ import { IoIosRedo, IoMdCut } from 'react-icons/io';
 import { FaPlay, FaPause, FaRedoAlt, FaUndoAlt } from 'react-icons/fa';
 import { RiRewindStartFill } from 'react-icons/ri';
 import LoopSelection from '@/assets/loop-selection.svg';
+import ClearSelection from '@/assets/clear-selection.svg';
 import Image from 'next/image';
 import { MdLoop } from 'react-icons/md';
 import { cn } from '@/lib/utils';
@@ -112,7 +113,7 @@ const Page = () => {
   return (
     <div
       className={cn(
-        'w-full min-h-full flex flex-col items-center p-6 space-y-6 bg-[hsl(224,100%,73%)]'
+        'w-full min-h-full flex flex-col items-center p-6 justify-between bg-[hsl(224,100%,73%)]'
       )}
     >
       <input
@@ -121,87 +122,93 @@ const Page = () => {
         onChange={handleFileUpload}
         className='p-2 border rounded'
       />
-      <div className='flex gap-2'>
-        <button
-          onClick={stopAudio}
-          className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
-        >
-          <RiRewindStartFill />
-        </button>
-        <button
-          onClick={playPause}
-          className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
-        >
-          {isPlaying ? <FaPause /> : <FaPlay />}
-        </button>
-      </div>
-      <div className='flex gap-2'>
-        <button
-          onClick={clearSelection}
-          className={cn(buttonClass, !hasSelection && disabledClass)}
-          disabled={selectionStart === null || selectionEnd === null}
-        >
-          Clear selection
-        </button>
-        <button
-          onClick={toggleLoopSection}
-          className={cn(
-            buttonClass,
-            loopType === 'section' && toggledOnClass,
-            !hasSelection && disabledClass
-          )}
-          disabled={selectionStart === null || selectionEnd === null}
-        >
-          <Image src={LoopSelection} alt='Loop Selection' className='w-6 h-6' />
-        </button>
-        <button
-          onClick={toggleLoopTrack}
-          className={cn(
-            buttonClass,
-            loopType === 'track' && toggledOnClass,
-            hasTrack ? enabledClass : disabledClass
-          )}
-        >
-          <MdLoop />
-        </button>
-      </div>
-      <div className='flex gap-2'>
-        <button
-          onClick={handleCropClick}
-          className={cn(
-            buttonClass,
-            hasSelection ? enabledClass : disabledClass,
-            'flex items-center gap-2'
-          )}
-          disabled={!hasSelection}
-        >
-          <FaCropSimple />
-          Crop
-        </button>
-        <button
-          onClick={handleTrimClick}
-          className={cn(
-            buttonClass,
-            hasSelection ? enabledClass : disabledClass,
-            'flex items-center gap-2'
-          )}
-          disabled={!hasSelection}
-        >
-          <IoMdCut />
-          Trim
-        </button>
-        <button
-          onClick={undo}
-          className={cn(buttonClass, canUndo ? enabledClass : disabledClass)}
-        >
-          <IoIosUndo />
-        </button>
-        <button
-          onClick={redo}
-          className={cn(buttonClass, canRedo ? enabledClass : disabledClass)}
-        >
-          <IoIosRedo />
-        </button>
+      <div className='flex flex-col items-center gap-2'>
+        <div className='flex gap-2'>
+          <button
+            onClick={stopAudio}
+            className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
+          >
+            <RiRewindStartFill />
+          </button>
+          <button
+            onClick={playPause}
+            className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
+          >
+            {isPlaying ? <FaPause /> : <FaPlay />}
+          </button>{' '}
+          <button
+            onClick={toggleLoopTrack}
+            className={cn(
+              buttonClass,
+              loopType === 'track' && toggledOnClass,
+              hasTrack ? enabledClass : disabledClass
+            )}
+          >
+            <MdLoop />
+          </button>
+          <button
+            onClick={toggleLoopSection}
+            className={cn(
+              buttonClass,
+              loopType === 'section' && toggledOnClass,
+              !hasSelection && disabledClass
+            )}
+            disabled={selectionStart === null || selectionEnd === null}
+          >
+            <Image
+              src={LoopSelection}
+              alt='Loop Selection'
+              className='w-6 h-6'
+            />
+          </button>
+        </div>
+        <div className='flex gap-2'>
+          <button
+            onClick={clearSelection}
+            className={cn(buttonClass, !hasSelection && disabledClass)}
+            disabled={selectionStart === null || selectionEnd === null}
+          >
+            <Image
+              src={ClearSelection}
+              alt='Clear Selection'
+              className='w-6 h-6'
+            />
+          </button>
+          <button
+            onClick={handleCropClick}
+            className={cn(
+              buttonClass,
+              hasSelection ? enabledClass : disabledClass,
+              'flex items-center gap-2'
+            )}
+            disabled={!hasSelection}
+          >
+            <FaCropSimple />
+          </button>
+          <button
+            onClick={handleTrimClick}
+            className={cn(
+              buttonClass,
+              hasSelection ? enabledClass : disabledClass,
+              'flex items-center gap-2'
+            )}
+            disabled={!hasSelection}
+          >
+            <IoMdCut />
+          </button>
+          <button
+            onClick={undo}
+            className={cn(buttonClass, canUndo ? enabledClass : disabledClass)}
+          >
+            <IoIosUndo />
+          </button>
+          <button
+            onClick={redo}
+            className={cn(buttonClass, canRedo ? enabledClass : disabledClass)}
+          >
+            <IoIosRedo />
+          </button>
+        </div>
       </div>
       <div className='text-lg font-semibold'>
         Current Time: {getCurrentTime().toFixed(2)}
