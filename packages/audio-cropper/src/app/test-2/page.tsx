@@ -7,41 +7,42 @@ import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
 import { FaCropSimple } from 'react-icons/fa6';
-import { MdLoop } from 'react-icons/md';
-import { IoMdCut } from 'react-icons/io';
-import { FaRedoAlt, FaUndoAlt } from 'react-icons/fa';
+import { IoIosRedo, IoMdCut } from 'react-icons/io';
+import { FaPlay, FaPause, FaRedoAlt, FaUndoAlt } from 'react-icons/fa';
 import { RiRewindStartFill } from 'react-icons/ri';
 import LoopSelection from '@/assets/loop-selection.svg';
 import Image from 'next/image';
+import { MdLoop } from 'react-icons/md';
+import { cn } from '@/lib/utils';
+import { IoIosUndo } from 'react-icons/io';
 
 const Page = () => {
   const {
     audioBuffer,
     duration,
-    startSelection,
-    endSelection,
+    selectionStart,
+    selectionEnd,
     visibleStartTime,
     visibleEndTime,
-    isLooping,
     setAudioBuffer,
     setDuration,
-    setStartSelection,
-    setEndSelection,
+    setSelectionStart,
+    setSelectionEnd,
     setVisibleStartTime,
     setVisibleEndTime,
     undo,
     redo,
     handleCrop,
     handleTrim,
-    // Re-exported from useAudioPlayer
+    // Re-exported from useSandboxAudioPlayer
     isPlaying,
-    currentTime,
-    play,
-    pause,
-    stop,
+    playPause,
+    stopAudio,
     seekTo,
-    toggleLoop,
-    toggleLoopAndPlay,
+    toggleLoopSection,
+    toggleLoopTrack,
+    getCurrentTime,
+    loopType,
   } = useAudioContext();
 
   const sketchWidthRef = useRef<HTMLDivElement>(null);
@@ -68,25 +69,25 @@ const Page = () => {
   const handleSelectionChange = (start: number | null, end: number | null) => {
     const clampedStart = start === null ? null : clampSeekTime(start);
     const clampedEnd = end === null ? null : clampSeekTime(end);
-    setStartSelection(clampedStart);
-    setEndSelection(clampedEnd);
+    setSelectionStart(clampedStart);
+    setSelectionEnd(clampedEnd);
   };
 
   const handleCropClick = () => {
-    if (!audioBuffer || startSelection === null || endSelection === null)
+    if (!audioBuffer || selectionStart === null || selectionEnd === null)
       return;
     handleCrop(
-      Math.min(startSelection, endSelection),
-      Math.max(startSelection, endSelection)
+      Math.min(selectionStart, selectionEnd),
+      Math.max(selectionStart, selectionEnd)
     );
   };
 
   const handleTrimClick = () => {
-    if (!audioBuffer || startSelection === null || endSelection === null)
+    if (!audioBuffer || selectionStart === null || selectionEnd === null)
       return;
     handleTrim(
-      Math.min(startSelection, endSelection),
-      Math.max(startSelection, endSelection)
+      Math.min(selectionStart, selectionEnd),
+      Math.max(selectionStart, selectionEnd)
     );
   };
 
@@ -95,18 +96,23 @@ const Page = () => {
     setVisibleEndTime(end);
   };
 
-  const buttonClass = 'p-2 rounded-md transition-colors duration-200';
+  const hasTrack = audioBuffer !== null;
+  const hasSelection = selectionStart !== null && selectionEnd !== null;
+
+  const buttonClass =
+    'p-2 rounded-md bg-blue-500 hover:bg-blue-600 transition-colors duration-200';
   const enabledClass = 'text-white';
-  const disabledClass = 'text-gray-400 bg-gray-200 cursor-not-allowed';
-  const rewindClass = 'bg-blue-500 hover:bg-blue-600';
-  const playClass = 'bg-green-500 hover:bg-green-600';
-  const pauseClass = 'bg-red-500 hover:bg-red-600';
-  const loopClass = 'bg-yellow-500 hover:bg-yellow-600';
-  const loopPlayClass = 'bg-purple-500 hover:bg-purple-600';
+  const disabledClass =
+    'text-gray-400 bg-gray-200 hover:bg-gray-200 cursor-not-allowed';
+  const toggledOnClass = 'bg-blue-700 hover:bg-blue-700';
   const undoRedoClass = 'bg-orange-500 hover:bg-orange-600';
 
   return (
-    <div className='w-full min-h-full flex flex-col items-center p-6 space-y-6 bg-[hsl(224,100%,73%)]'>
+    <div
+      className={cn(
+        'w-full min-h-full flex flex-col items-center p-6 space-y-6 bg-[hsl(224,100%,73%)]'
+      )}
+    >
       <input
         type='file'
         accept='audio/*'
@@ -115,109 +121,91 @@ const Page = () => {
       />
       <div className='flex gap-2'>
         <button
-          onClick={stop}
-          className={`${buttonClass} ${rewindClass} ${enabledClass}`}
+          onClick={stopAudio}
+          className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
         >
           <RiRewindStartFill />
         </button>
         <button
-          id='play-butön'
-          onClick={isPlaying ? pause : play}
-          className={`${buttonClass} ${
-            isPlaying ? pauseClass : playClass
-          } ${enabledClass}`}
+          onClick={playPause}
+          className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
         >
-          {isPlaying ? 'Pause' : 'Play'}
+          {isPlaying ? <FaPause /> : <FaPlay />}
         </button>
       </div>
       <div className='flex gap-2'>
         <button
           onClick={() => {
-            setStartSelection(null);
-            setEndSelection(null);
+            setSelectionStart(null);
+            setSelectionEnd(null);
           }}
-          className={`${buttonClass} ${
-            startSelection !== null && endSelection !== null
-              ? rewindClass
-              : disabledClass
-          }`}
-          disabled={startSelection === null || endSelection === null}
+          className={cn(buttonClass, !hasSelection && disabledClass)}
+          disabled={selectionStart === null || selectionEnd === null}
         >
           Clear selection
         </button>
         <button
-          onClick={toggleLoopAndPlay}
-          className={`${buttonClass} ${
-            startSelection !== null && endSelection !== null
-              ? loopClass
-              : disabledClass
-          }`}
-          disabled={startSelection === null || endSelection === null}
+          onClick={toggleLoopSection}
+          className={cn(
+            buttonClass,
+            loopType === 'section' && toggledOnClass,
+            !hasSelection && disabledClass
+          )}
+          disabled={selectionStart === null || selectionEnd === null}
         >
-          {/* {isLooping ? 'Stop Loop' : 'Loop selection'} */}
           <Image src={LoopSelection} alt='Loop Selection' className='w-6 h-6' />
         </button>
         <button
-          className={`${buttonClass} ${
-            startSelection !== null && endSelection !== null
-              ? loopPlayClass
-              : disabledClass
-          }`}
+          onClick={toggleLoopTrack}
+          className={cn(
+            buttonClass,
+            loopType === 'track' && toggledOnClass,
+            hasTrack ? enabledClass : disabledClass
+          )}
         >
           <MdLoop />
         </button>
-        {/* <button
-          onClick={toggleLoopAndPlay}
-          className={`${buttonClass} ${
-            startSelection !== null && endSelection !== null
-              ? loopPlayClass
-              : disabledClass
-          }`}
-          disabled={startSelection === null || endSelection === null}
-        >
-          Loop & Play
-        </button> */}
       </div>
       <div className='flex gap-2'>
         <button
           onClick={handleCropClick}
-          className={`${buttonClass} ${
-            startSelection !== null && endSelection !== null
-              ? rewindClass
-              : disabledClass
-          } flex items-center gap-2`}
-          disabled={startSelection === null || endSelection === null}
+          className={cn(
+            buttonClass,
+            hasSelection ? enabledClass : disabledClass,
+            'flex items-center gap-2'
+          )}
+          disabled={!hasSelection}
         >
           <FaCropSimple />
           Crop
         </button>
         <button
           onClick={handleTrimClick}
-          className={`${buttonClass} ${
-            startSelection !== null && endSelection !== null
-              ? playClass
-              : disabledClass
-          } flex items-center gap-2`}
-          disabled={startSelection === null || endSelection === null}
+          className={cn(
+            buttonClass,
+            hasSelection ? enabledClass : disabledClass,
+            'flex items-center gap-2'
+          )}
+          disabled={!hasSelection}
         >
           <IoMdCut />
           Trim
         </button>
         <button
           onClick={undo}
-          className={`${buttonClass} ${undoRedoClass} ${enabledClass}`}
+          className={cn(buttonClass, undoRedoClass, enabledClass)}
         >
-          <FaUndoAlt />
+          <IoIosUndo />
         </button>
         <button
           onClick={redo}
-          className={`${buttonClass} ${undoRedoClass} ${enabledClass}`}
+          className={cn(buttonClass, undoRedoClass, enabledClass)}
         >
-          <FaRedoAlt />
+          <IoIosRedo />
         </button>
       </div>
       <div className='text-lg font-semibold'>
-        Current Time: {currentTime.toFixed(2)}
+        Current Time: {getCurrentTime().toFixed(2)}
       </div>
       <div
         id='waveform'
@@ -226,16 +214,16 @@ const Page = () => {
         <ReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
-          currentTime={currentTime}
+          currentTime={getCurrentTime()}
           duration={duration}
-          startSelection={startSelection}
-          endSelection={endSelection}
+          startSelection={selectionStart}
+          endSelection={selectionEnd}
           visibleStartTime={visibleStartTime}
           visibleEndTime={visibleEndTime}
-          onSeekClick={handleSeekClick}
-          onSelectionChange={handleSelectionChange}
+          onSeekClick={seekTo}
           seekTo={seekTo}
-          toggleLoop={toggleLoopAndPlay}
+          onSelectionChange={handleSelectionChange}
+          toggleLoop={toggleLoopSection}
           availableWidth={sketchWidthRef.current?.clientWidth ?? 0}
         />
       </div>
@@ -248,9 +236,9 @@ const Page = () => {
           <ReactP5Wrapper
             sketch={MinimapSketch as any}
             audioBuffer={audioBuffer}
-            currentTime={currentTime}
-            startSelection={startSelection}
-            endSelection={endSelection}
+            currentTime={getCurrentTime()}
+            startSelection={selectionStart}
+            endSelection={selectionEnd}
             visibleStartTime={visibleStartTime}
             visibleEndTime={visibleEndTime}
             onBoundsChange={handleBoundsChange}
@@ -260,9 +248,7 @@ const Page = () => {
       </div>
       <button
         onClick={() => downloadAudio(audioBuffer)}
-        className={`${buttonClass} ${
-          audioBuffer ? rewindClass : disabledClass
-        }`}
+        className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
         disabled={!audioBuffer}
       >
         Download

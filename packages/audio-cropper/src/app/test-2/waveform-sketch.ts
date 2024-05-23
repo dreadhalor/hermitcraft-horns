@@ -351,6 +351,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
           );
           onSeekClick(seekTime);
           if (seekTo) {
+            console.log('seekTo', seekTime);
             seekTo(seekTime);
           }
         }
