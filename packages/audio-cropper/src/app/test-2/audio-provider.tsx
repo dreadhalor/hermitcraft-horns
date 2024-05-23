@@ -14,7 +14,9 @@ export type AudioContextValue = {
   setVisibleStartTime: (visibleStartTime: number) => void;
   setVisibleEndTime: (visibleEndTime: number) => void;
   undo: () => void;
+  canUndo: boolean;
   redo: () => void;
+  canRedo: boolean;
   handleCrop: (start: number, end: number) => void;
   handleTrim: (start: number, end: number) => void;
   // Re-exported from useSandboxAudioPlayer
@@ -32,6 +34,7 @@ export type AudioContextValue = {
   toggleLoopSection: () => void;
   toggleLoopTrack: () => void;
   getCurrentTime: () => number;
+  clearSelection: () => void;
 };
 
 const AudioContext = createContext<AudioContextValue | undefined>(undefined);
@@ -70,6 +73,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     toggleLoopSection,
     toggleLoopTrack,
     getCurrentTime,
+    clearSelection,
+    pauseAudio,
   } = useSandboxAudioPlayer();
 
   useEffect(() => {
@@ -92,8 +97,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     const cropped = cropAudioBuffer(audioBuffer, start, end, duration);
     setAudioBuffer(cropped);
     setDuration(cropped.duration);
-    setSelectionStart(null);
-    setSelectionEnd(null);
+    pauseAudio();
+    clearSelection();
     setVisibleStartTime(0);
     setVisibleEndTime(cropped.duration);
   };
@@ -107,8 +112,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     const trimmed = trimAudioBuffer(audioBuffer, start, end, duration);
     setAudioBuffer(trimmed);
     setDuration(trimmed.duration);
-    setSelectionStart(null);
-    setSelectionEnd(null);
+    pauseAudio();
+    clearSelection();
     setVisibleStartTime(0);
     setVisibleEndTime(trimmed.duration);
   };
@@ -133,6 +138,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
+
   const value: AudioContextValue = {
     audioBuffer,
     duration,
@@ -143,7 +151,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     setVisibleStartTime,
     setVisibleEndTime,
     undo,
+    canUndo,
     redo,
+    canRedo,
     handleCrop,
     handleTrim,
     // Re-exported from useSandboxAudioPlayer
@@ -161,6 +171,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     toggleLoopSection,
     toggleLoopTrack,
     getCurrentTime,
+    clearSelection,
   };
 
   return (

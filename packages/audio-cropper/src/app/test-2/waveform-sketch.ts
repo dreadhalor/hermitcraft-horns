@@ -4,6 +4,7 @@ import {
   selectionColor,
   waveColor,
   selectionHandleColor,
+  loopingSelectionColor,
 } from './constants';
 
 type WaveformProps = P5CanvasInstance<any> & {
@@ -19,6 +20,7 @@ type WaveformProps = P5CanvasInstance<any> & {
   seekTo?: (time: number) => void;
   toggleLoop?: () => void; // Add toggleLoop function
   availableWidth: number;
+  isLooping: boolean;
 };
 
 export const WaveformSketch = (p5: WaveformProps) => {
@@ -49,6 +51,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
   let mousePressedY = 0;
   const minDragDistance = 5; // Minimum distance to start a selection
   let availableWidth = 0;
+  let isLooping = false;
 
   p5.updateWithProps = (props: WaveformProps) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -66,6 +69,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
     if (props.seekTo) seekTo = props.seekTo;
     if (props.toggleLoop) toggleLoop = props.toggleLoop; // Assign toggleLoop function
     if (props.availableWidth) availableWidth = props.availableWidth;
+    if (props.isLooping !== undefined) isLooping = props.isLooping;
   };
 
   p5.setup = () => {
@@ -139,7 +143,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
           (visibleEndTime - visibleStartTime)) *
         width;
 
-      p.fill(selectionColor);
+      p.fill(isLooping ? loopingSelectionColor : selectionColor);
       p.noStroke();
       p.rect(startX, 0, endX - startX, height);
 
@@ -219,12 +223,12 @@ export const WaveformSketch = (p5: WaveformProps) => {
               (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
           )
         );
-        startSelection = startTime;
-        endSelection = startTime;
+        const desiredStartSelection = startTime;
+        const desiredEndSelection = startTime;
         isSelecting = true;
         pendingSelectionReset = false;
         if (onSelectionChange) {
-          onSelectionChange(startSelection, endSelection);
+          onSelectionChange(desiredStartSelection, desiredEndSelection);
         }
       }
     } else if (isSelecting && onSelectionChange && audioBuffer) {
@@ -257,8 +261,12 @@ export const WaveformSketch = (p5: WaveformProps) => {
             (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
-      startSelection = startTime;
-      onSelectionChange(startSelection, endSelection);
+      const desiredStartSelection = startTime;
+      onSelectionChange(desiredStartSelection, endSelection);
+      if (endSelection !== null && desiredStartSelection > endSelection) {
+        isDraggingStart = false;
+        isDraggingEnd = true;
+      }
     } else if (isDraggingEnd && onSelectionChange && audioBuffer) {
       const endTime = Math.max(
         0,
@@ -268,8 +276,12 @@ export const WaveformSketch = (p5: WaveformProps) => {
             (p5.mouseX / p5.width) * (visibleEndTime - visibleStartTime)
         )
       );
-      endSelection = endTime;
-      onSelectionChange(startSelection, endSelection);
+      const desiredEndSelection = endTime;
+      onSelectionChange(startSelection, desiredEndSelection);
+      if (startSelection !== null && startSelection > desiredEndSelection) {
+        isDraggingEnd = false;
+        isDraggingStart = true;
+      }
     } else if (
       isDraggingSelection &&
       onSelectionChange &&
@@ -290,9 +302,9 @@ export const WaveformSketch = (p5: WaveformProps) => {
       const newEndX = newStartX + sectionDuration;
       const newStartTime = newStartX;
       const newEndTime = newEndX;
-      startSelection = newStartTime;
-      endSelection = newEndTime;
-      onSelectionChange(startSelection, endSelection);
+      const desiredStartSelection = newStartTime;
+      const desiredEndSelection = newEndTime;
+      onSelectionChange(desiredStartSelection, desiredEndSelection);
     }
   };
 
@@ -351,7 +363,6 @@ export const WaveformSketch = (p5: WaveformProps) => {
           );
           onSeekClick(seekTime);
           if (seekTo) {
-            console.log('seekTo', seekTime);
             seekTo(seekTime);
           }
         }

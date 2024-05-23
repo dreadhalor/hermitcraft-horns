@@ -31,7 +31,9 @@ const Page = () => {
     setVisibleStartTime,
     setVisibleEndTime,
     undo,
+    canUndo,
     redo,
+    canRedo,
     handleCrop,
     handleTrim,
     // Re-exported from useSandboxAudioPlayer
@@ -43,6 +45,7 @@ const Page = () => {
     toggleLoopTrack,
     getCurrentTime,
     loopType,
+    clearSelection,
   } = useAudioContext();
 
   const sketchWidthRef = useRef<HTMLDivElement>(null);
@@ -63,10 +66,14 @@ const Page = () => {
   };
 
   const handleSelectionChange = (start: number | null, end: number | null) => {
+    if (loopType === 'section') return;
     const clampedStart = start === null ? null : clampSeekTime(start);
     const clampedEnd = end === null ? null : clampSeekTime(end);
-    setSelectionStart(clampedStart);
-    setSelectionEnd(clampedEnd);
+    const hasValues = clampedStart !== null && clampedEnd !== null;
+    const sortedStart = hasValues ? Math.min(clampedStart, clampedEnd) : null;
+    const sortedEnd = hasValues ? Math.max(clampedStart, clampedEnd) : null;
+    setSelectionStart(sortedStart);
+    setSelectionEnd(sortedEnd);
   };
 
   const handleCropClick = () => {
@@ -101,7 +108,6 @@ const Page = () => {
   const disabledClass =
     'text-gray-400 bg-gray-200 hover:bg-gray-200 cursor-not-allowed';
   const toggledOnClass = 'bg-blue-700 hover:bg-blue-700';
-  const undoRedoClass = 'bg-orange-500 hover:bg-orange-600';
 
   return (
     <div
@@ -131,10 +137,7 @@ const Page = () => {
       </div>
       <div className='flex gap-2'>
         <button
-          onClick={() => {
-            setSelectionStart(null);
-            setSelectionEnd(null);
-          }}
+          onClick={clearSelection}
           className={cn(buttonClass, !hasSelection && disabledClass)}
           disabled={selectionStart === null || selectionEnd === null}
         >
@@ -189,13 +192,13 @@ const Page = () => {
         </button>
         <button
           onClick={undo}
-          className={cn(buttonClass, undoRedoClass, enabledClass)}
+          className={cn(buttonClass, canUndo ? enabledClass : disabledClass)}
         >
           <IoIosUndo />
         </button>
         <button
           onClick={redo}
-          className={cn(buttonClass, undoRedoClass, enabledClass)}
+          className={cn(buttonClass, canRedo ? enabledClass : disabledClass)}
         >
           <IoIosRedo />
         </button>
@@ -221,6 +224,7 @@ const Page = () => {
           onSelectionChange={handleSelectionChange}
           toggleLoop={toggleLoopSection}
           availableWidth={sketchWidthRef.current?.clientWidth ?? 0}
+          isLooping={loopType === 'section'}
         />
       </div>
       <div

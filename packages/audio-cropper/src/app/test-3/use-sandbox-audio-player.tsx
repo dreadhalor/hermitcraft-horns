@@ -24,6 +24,16 @@ export const useSandboxAudioPlayer = () => {
     setExportedIsPlaying(isPlaying);
   };
 
+  const adjustSelectionStart = (newStart: number | null) => {
+    if (loopType === 'section') return;
+    setSelectionStart(newStart);
+  };
+
+  const adjustSelectionEnd = (newEnd: number | null) => {
+    if (loopType === 'section') return;
+    setSelectionEnd(newEnd);
+  };
+
   useEffect(() => {
     audioContextRef.current = new AudioContext();
     return () => {
@@ -453,12 +463,18 @@ export const useSandboxAudioPlayer = () => {
     }
   };
 
+  const clearSelection = () => {
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    disableLoops();
+  };
+
   return {
     audioBuffer,
     selectionStart,
-    setSelectionStart,
+    setSelectionStart: adjustSelectionStart,
     selectionEnd,
-    setSelectionEnd,
+    setSelectionEnd: adjustSelectionEnd,
     isPlaying: exportedIsPlaying,
     currentTime,
     loopType,
@@ -476,5 +492,6 @@ export const useSandboxAudioPlayer = () => {
     playPause,
     toggleLoopSection,
     toggleLoopTrack,
+    clearSelection,
   };
 };
