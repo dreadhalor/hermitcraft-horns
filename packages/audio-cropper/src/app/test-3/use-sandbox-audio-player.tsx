@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export const useSandboxAudioPlayer = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -34,9 +34,12 @@ export const useSandboxAudioPlayer = () => {
     };
   }, []);
 
-  const loadAudioBuffer = (audioBuffer: AudioBuffer) => {
-    setAudioBuffer(audioBuffer);
-  };
+  const loadAudioBuffer = useCallback(
+    (audioBuffer: AudioBuffer) => {
+      setAudioBuffer(audioBuffer);
+    },
+    [setAudioBuffer]
+  );
 
   const playAudio = () => {
     if (!audioBuffer || !audioContextRef.current) return;

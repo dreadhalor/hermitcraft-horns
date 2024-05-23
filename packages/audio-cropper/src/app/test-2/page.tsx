@@ -58,10 +58,6 @@ const Page = () => {
     setDuration(decodedAudioBuffer.duration);
   };
 
-  const handleSeekClick = (seekTime: number) => {
-    seekTo(seekTime);
-  };
-
   const clampSeekTime = (time: number) => {
     return Math.min(Math.max(time, 0), duration);
   };

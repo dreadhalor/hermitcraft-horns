@@ -92,8 +92,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     const cropped = cropAudioBuffer(audioBuffer, start, end, duration);
     setAudioBuffer(cropped);
     setDuration(cropped.duration);
-    setSelectionStart(0);
-    setSelectionEnd(cropped.duration);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setVisibleStartTime(0);
+    setVisibleEndTime(cropped.duration);
   };
 
   const handleTrim = (start: number, end: number) => {
@@ -105,8 +107,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     const trimmed = trimAudioBuffer(audioBuffer, start, end, duration);
     setAudioBuffer(trimmed);
     setDuration(trimmed.duration);
-    setSelectionStart(0);
-    setSelectionEnd(trimmed.duration);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setVisibleStartTime(0);
+    setVisibleEndTime(trimmed.duration);
   };
 
   const undo = () => {
