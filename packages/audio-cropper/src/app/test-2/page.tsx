@@ -104,7 +104,7 @@ const Page = () => {
   const hasSelection = selectionStart !== null && selectionEnd !== null;
 
   const buttonClass =
-    'p-2 rounded-md bg-blue-500 hover:bg-blue-600 transition-colors duration-200';
+    'flex items-center justify-center p-0 rounded-md w-[32px] h-[32px] bg-blue-500 hover:bg-blue-600 transition-colors duration-200';
   const enabledClass = 'text-white';
   const disabledClass =
     'text-gray-400 bg-gray-200 hover:bg-gray-200 cursor-not-allowed';
@@ -122,26 +122,38 @@ const Page = () => {
         onChange={handleFileUpload}
         className='p-2 border rounded'
       />
-      <div className='flex flex-col items-center gap-2'>
-        <div className='flex gap-2'>
+
+      <div className='flex flex-wrap items-center justify-center gap-4'>
+        <div className='flex'>
           <button
             onClick={stopAudio}
-            className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
+            className={cn(
+              buttonClass,
+              hasTrack ? enabledClass : disabledClass,
+              'rounded-l-md rounded-r-none'
+            )}
           >
             <RiRewindStartFill />
           </button>
           <button
             onClick={playPause}
-            className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
+            className={cn(
+              buttonClass,
+              hasTrack ? enabledClass : disabledClass,
+              'rounded-l-none rounded-r-md'
+            )}
           >
             {isPlaying ? <FaPause /> : <FaPlay />}
-          </button>{' '}
+          </button>
+        </div>
+        <div className='flex'>
           <button
             onClick={toggleLoopTrack}
             className={cn(
               buttonClass,
               loopType === 'track' && toggledOnClass,
-              hasTrack ? enabledClass : disabledClass
+              hasTrack ? enabledClass : disabledClass,
+              'rounded-l-md rounded-r-none'
             )}
           >
             <MdLoop />
@@ -151,7 +163,8 @@ const Page = () => {
             className={cn(
               buttonClass,
               loopType === 'section' && toggledOnClass,
-              !hasSelection && disabledClass
+              !hasSelection && disabledClass,
+              'rounded-none'
             )}
             disabled={selectionStart === null || selectionEnd === null}
           >
@@ -161,11 +174,13 @@ const Page = () => {
               className='w-6 h-6'
             />
           </button>
-        </div>
-        <div className='flex gap-2'>
           <button
             onClick={clearSelection}
-            className={cn(buttonClass, !hasSelection && disabledClass)}
+            className={cn(
+              buttonClass,
+              !hasSelection && disabledClass,
+              'rounded-l-none rounded-r-md'
+            )}
             disabled={selectionStart === null || selectionEnd === null}
           >
             <Image
@@ -174,12 +189,14 @@ const Page = () => {
               className='w-6 h-6'
             />
           </button>
+        </div>
+        <div className='flex'>
           <button
             onClick={handleCropClick}
             className={cn(
               buttonClass,
               hasSelection ? enabledClass : disabledClass,
-              'flex items-center gap-2'
+              'flex items-center gap-2 rounded-l-md rounded-r-none'
             )}
             disabled={!hasSelection}
           >
@@ -190,7 +207,7 @@ const Page = () => {
             className={cn(
               buttonClass,
               hasSelection ? enabledClass : disabledClass,
-              'flex items-center gap-2'
+              'flex items-center gap-2 rounded-none'
             )}
             disabled={!hasSelection}
           >
@@ -198,13 +215,21 @@ const Page = () => {
           </button>
           <button
             onClick={undo}
-            className={cn(buttonClass, canUndo ? enabledClass : disabledClass)}
+            className={cn(
+              buttonClass,
+              canUndo ? enabledClass : disabledClass,
+              'rounded-none'
+            )}
           >
             <IoIosUndo />
           </button>
           <button
             onClick={redo}
-            className={cn(buttonClass, canRedo ? enabledClass : disabledClass)}
+            className={cn(
+              buttonClass,
+              canRedo ? enabledClass : disabledClass,
+              'rounded-l-none rounded-r-md'
+            )}
           >
             <IoIosRedo />
           </button>
@@ -255,7 +280,11 @@ const Page = () => {
       </div>
       <button
         onClick={() => downloadAudio(audioBuffer)}
-        className={cn(buttonClass, hasTrack ? enabledClass : disabledClass)}
+        className={cn(
+          buttonClass,
+          hasTrack ? enabledClass : disabledClass,
+          'w-auto px-2'
+        )}
         disabled={!audioBuffer}
       >
         Download
