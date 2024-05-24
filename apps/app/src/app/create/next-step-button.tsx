@@ -14,8 +14,16 @@ interface Props {
 }
 
 export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
-  const { clipStart, clipEnd, videoUrl, playerRef, hermit, setFile } =
-    useClipBuilder();
+  const {
+    clipStart,
+    clipEnd,
+    videoUrl,
+    playerRef,
+    hermit,
+    setFile,
+    tagline,
+    season,
+  } = useClipBuilder();
   const { file, generateClip, isLoading: isGenerating } = useGenerateClip();
   const { publishDraft, isLoading: isPublishing } = usePublishDraft();
   const { user } = useHHUser();
@@ -67,6 +75,8 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
           videoUrl,
           userId: user!.id,
           hermitId: hermit!.ChannelID!,
+          tagline,
+          season,
         });
         break;
     }
