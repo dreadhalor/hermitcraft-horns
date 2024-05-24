@@ -43,6 +43,8 @@ type ClipBuilderContextType = {
   season: string;
   setSeason: (value: string) => void;
   playClip: () => void;
+  file: File | null;
+  setFile: (value: File | null) => void;
 };
 
 const ClipBuilderContext = React.createContext<ClipBuilderContextType>(
@@ -82,6 +84,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [hermit, setHermit] = useState<Hermit | null>(null);
   const [tagline, setTagline] = useState('');
   const [season, setSeason] = useState<string>('');
+
+  const [file, setFile] = useState<File | null>(null);
 
   const searchParams = useSearchParams();
   const videoId = searchParams.get('id') || '';
@@ -202,6 +206,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
           season,
           setSeason,
           playClip,
+          file,
+          setFile,
         }}
       >
         {children}
