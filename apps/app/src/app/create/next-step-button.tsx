@@ -1,11 +1,12 @@
 'use client';
 import { Button } from '@ui/button';
-import { useCreateAndSaveClip } from '@/hooks/use-create-and-save-clip';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MAX_CLIP_LENGTH } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useGenerateClip } from '@/hooks/use-generate-clip';
+import { usePublishDraft } from '@/hooks/use-publish-draft';
 
 interface Props {
   activeTab: string;
@@ -13,9 +14,10 @@ interface Props {
 }
 
 export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
-  const { clipStart, clipEnd, videoUrl, playerRef, hermit, tagline, season } =
+  const { clipStart, clipEnd, videoUrl, playerRef, hermit, setFile } =
     useClipBuilder();
-  const { createAndSaveClip, isLoading: isSaving } = useCreateAndSaveClip();
+  const { file, generateClip, isLoading: isGenerating } = useGenerateClip();
+  const { publishDraft, isLoading: isPublishing } = usePublishDraft();
   const { user } = useHHUser();
 
   const clipLength = (clipEnd - clipStart) / 1000;
@@ -42,62 +44,68 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
         console.log(
           `Exporting video from ${(clipStart / 1000).toFixed(1)}s to ${(clipEnd / 1000).toFixed(1)}s`,
         );
-        toast(
-          `Generating horn... please wait! This could take up to a minute, depending on traffic - please don't close the tab. 🐐`,
-          { duration: Infinity },
-        );
-        await createAndSaveClip({
-          videoUrl,
-          start: clipStart,
-          end: clipEnd,
-          userId: user?.id || '',
-          hermitId: hermit?.ChannelID || '',
-          tagline,
-          season,
-        });
+        await generateClip({ videoUrl, start: clipStart, end: clipEnd });
       } else {
         console.error('End time exceeds video duration');
       }
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     switch (activeTab) {
       case 'clip-builder':
         setActiveTab('metadata');
         break;
       case 'metadata':
-        setActiveTab('preview');
+        handleExport();
         break;
-      case 'preview':
+      case 'horn-confirm':
+        await publishDraft({
+          file: file!,
+          start: clipStart,
+          end: clipEnd,
+          videoUrl,
+          userId: user!.id,
+          hermitId: hermit!.ChannelID!,
+        });
         break;
     }
   };
 
+  useEffect(() => {
+    if (file) {
+      setFile(file);
+      setActiveTab('horn-confirm');
+    }
+  }, [file]);
+
+  const getButtonText = () => {
+    if (isErrored) return getErrorMessage();
+    if (isGenerating) return 'Generating...';
+    switch (activeTab) {
+      case 'clip-builder':
+        return 'Next →';
+      case 'metadata':
+        if (file) return 'Re-Generate Draft →';
+        return 'Generate Draft →';
+      case 'horn-confirm':
+        if (isPublishing) return 'Publishing...';
+        return 'Publish Horn!';
+      default:
+        return 'Next →';
+    }
+  };
+
   return (
-    <div className='mb-4 flex w-full flex-col'>
-      {activeTab !== 'preview' ? (
-        <Button
-          type='button'
-          onClick={handleNext}
-          disabled={isErrored || isSaving}
-        >
-          {isErrored ? getErrorMessage() : <>Next &rarr;</>}
-        </Button>
-      ) : (
-        <Button
-          type='button'
-          onClick={handleExport}
-          disabled={isErrored || isSaving}
-          className='font-bold'
-        >
-          {isErrored
-            ? getErrorMessage()
-            : isSaving
-              ? 'Generating...'
-              : 'Generate Horn'}
-        </Button>
-      )}
+    <div className='flex w-full items-center gap-2'>
+      <Button
+        className='flex-1'
+        type='button'
+        onClick={handleNext}
+        disabled={isErrored || isGenerating || isPublishing}
+      >
+        {getButtonText()}
+      </Button>
     </div>
   );
 };

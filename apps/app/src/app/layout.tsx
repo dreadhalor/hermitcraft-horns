@@ -34,7 +34,7 @@ export default function RootLayout({
       <html lang='en' suppressHydrationWarning className='h-full'>
         <body
           className={cn(
-            'h-full bg-background font-sans antialiased',
+            'flex min-h-full bg-background font-sans antialiased',
             fontSans.variable,
           )}
         >
@@ -43,8 +43,8 @@ export default function RootLayout({
               <TooltipProvider>
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserProvider>
-                    <div className='flex h-full justify-center'>
-                      <div className='flex h-full w-full flex-col sm:max-w-lg'>
+                    <div className='flex flex-1 justify-center'>
+                      <div className='flex w-full flex-1 flex-col sm:max-w-lg'>
                         {children}
                         <MainNav />
                       </div>
