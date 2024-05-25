@@ -90,7 +90,7 @@ export const HornFilters = ({
                 onClick={() => setTab('hermit-select')}
               >
                 <FaRegUser size={22} />
-                <span>
+                <span className='flex items-center gap-2'>
                   Hermit:{' '}
                   {selectedHermit ? (
                     <>
