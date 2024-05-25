@@ -25,21 +25,31 @@ export const users = pgTable(
   },
 );
 
-export const clips = pgTable('clips', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  user: text('user')
-    .notNull()
-    .references(() => users.id),
-  video: text('video').notNull(),
-  start: numeric('start').notNull(),
-  end: numeric('end').notNull(),
-  createdAt: timestamp('createdAt').defaultNow().notNull(),
-  clipUrl: text('clipUrl'),
-  hermit: text('hermit').references(() => hermitcraftChannels.ChannelID),
-  season: text('season'),
-  tagline: text('tagline'),
-  downloads: integer('downloads').default(0).notNull(),
-});
+export const clips = pgTable(
+  'clips',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    user: text('user')
+      .notNull()
+      .references(() => users.id),
+    video: text('video').notNull(),
+    start: numeric('start').notNull(),
+    end: numeric('end').notNull(),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    clipUrl: text('clipUrl'),
+    hermit: text('hermit').references(() => hermitcraftChannels.ChannelID),
+    season: text('season'),
+    tagline: text('tagline'),
+    downloads: integer('downloads').default(0).notNull(),
+  },
+  (clips) => {
+    return {
+      createdAtIndex: index('clips_createdAt_idx').on(clips.createdAt),
+      hermitIndex: index('clips_hermit_idx').on(clips.hermit),
+      taglineIndex: index('clips_tagline_idx').on(clips.tagline),
+    };
+  },
+);
 
 export const hermitcraftChannels = pgTable(
   'hermitcraftChannels',
