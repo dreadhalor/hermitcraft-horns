@@ -41,7 +41,7 @@ export function formatDuration(milliseconds: number): string {
 
 export const getYouTubeId = (url: string) => {
   const regex =
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|live\/)|youtu\.be\/)([^"&?\/ ]{11})/i;
   const match = url.match(regex);
   return match ? match[1] : null;
 };
