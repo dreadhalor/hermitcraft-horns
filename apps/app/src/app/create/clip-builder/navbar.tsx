@@ -24,13 +24,14 @@ export const Navbar = () => {
   };
 
   return (
-    <div className='flex flex-nowrap p-2'>
+    <div className='flex flex-nowrap items-center gap-2 p-2'>
       <button
         className='relative -mt-[2px] aspect-square h-full'
         onClick={() => router.push('/')}
       >
         <Image src={GoatHornImage} alt='goat horn image' fill />
       </button>
+      <h1 className='text-3xl font-bold'>Create</h1>
       <form onSubmit={handleSubmit} className='ml-auto flex'>
         <Input
           type='text'
