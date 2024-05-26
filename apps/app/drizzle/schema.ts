@@ -9,6 +9,7 @@ import {
   integer,
   index,
   uuid,
+  json,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
@@ -100,4 +101,10 @@ export const likes = pgTable(
 
 export const newUsernames = pgTable('newUsernames', {
   username: text('username').primaryKey(),
+});
+
+export const cachedHermitcraftVideos = pgTable('cachedHermitcraftVideos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  data: json('data').notNull(),
+  updatedAt: timestamp('updatedAt').defaultNow().notNull(),
 });

@@ -347,3 +347,62 @@ export const incrementClipDownloads = async (clipId: string) => {
     .where(eq(schema.clips.id, clipId));
   return result;
 };
+
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+export const updateHermitcraftCache = async () => {
+  try {
+    console.log('Updating cache');
+    // format date as 2024-04-26T14:10:10Z
+    const url = `https://hermitcraft.com/api/videos?type=All&start=${new Date().toISOString()}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        // I'm so sorry I crashed your server Hypno, I promise I'll never do it again :(
+        // & I'm also sorry for lying about the user-agent now, but good job on upping your security
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch video data');
+    }
+    const data = await response.json();
+
+    // make sure the update is atomic
+    await db.transaction(async (trx) => {
+      await trx.delete(schema.cachedHermitcraftVideos); // Clear old cache
+      await trx.insert(schema.cachedHermitcraftVideos).values({
+        data,
+        updatedAt: new Date(),
+      });
+    });
+
+    return data;
+  } catch (error) {
+    console.error('Error updating cache:', error);
+    return []; // gracefully fail
+  }
+};
+
+export const getCachedHermitcraftVideos = async () => {
+  const cachedResult = await db
+    .select()
+    .from(schema.cachedHermitcraftVideos)
+    .orderBy(sql`${schema.cachedHermitcraftVideos.updatedAt} DESC`)
+    .limit(1);
+
+  if (cachedResult.length > 0) {
+    const now = new Date();
+    const lastUpdate = new Date(cachedResult[0].updatedAt);
+    const age = now.getTime() - lastUpdate.getTime();
+
+    if (age < CACHE_DURATION) {
+      // seeeeee we're returning cached data, plz don't be mad at me Hypno
+      return cachedResult[0].data;
+    }
+  }
+
+  // but if cache is old or empty, we'll update it
+  return await updateHermitcraftCache();
+};
