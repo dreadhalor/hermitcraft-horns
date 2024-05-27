@@ -6,7 +6,6 @@ import React, { useEffect } from 'react';
 import { MAX_CLIP_LENGTH, kebabIt } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useGenerateClip } from '@/hooks/use-generate-clip';
-import { usePublishDraft } from '@/hooks/use-publish-draft';
 import { useAudioContext } from '@repo/audio-editor';
 
 export const NextStepButton = () => {
@@ -54,7 +53,12 @@ export const NextStepButton = () => {
           `Exporting video from ${(clipStart / 1000).toFixed(1)}s to ${(clipEnd / 1000).toFixed(1)}s`,
         );
         setShowAudioEditor(false);
-        await generateClip({ videoUrl, start: clipStart, end: clipEnd });
+        await generateClip({
+          videoUrl,
+          start: clipStart,
+          end: clipEnd,
+          tagline,
+        });
       } else {
         console.error('End time exceeds video duration');
       }
@@ -85,17 +89,16 @@ export const NextStepButton = () => {
         const finalFile = new File([result], `${kebabIt(tagline)}.mp3`, {
           type: 'audio/mp3',
         });
-        console.log('Final file', finalFile);
-        // await publishDraft({
-        //   file: finalFile,
-        //   start: clipStart,
-        //   end: clipEnd,
-        //   videoUrl,
-        //   userId: user!.id,
-        //   hermitId: hermit!.ChannelID!,
-        //   tagline,
-        //   season,
-        // });
+        await publishDraft({
+          file: finalFile,
+          start: clipStart,
+          end: clipEnd,
+          videoUrl,
+          userId: user!.id,
+          hermitId: hermit!.ChannelID!,
+          tagline,
+          season,
+        });
         break;
     }
   };

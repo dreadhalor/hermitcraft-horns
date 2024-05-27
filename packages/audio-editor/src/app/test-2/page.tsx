@@ -2,7 +2,6 @@
 
 import React, { useRef } from 'react';
 import { NextReactP5Wrapper } from '@p5-wrapper/next';
-import { exportAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
@@ -37,7 +36,7 @@ const Page = () => {
     canRedo,
     handleCrop,
     handleTrim,
-    // Re-exported from useSandboxAudioPlayer
+    // Re-exported from useAudioPlayer
     isPlaying,
     playPause,
     stopAudio,
@@ -278,17 +277,6 @@ const Page = () => {
           />
         </div>
       </div>
-      <button
-        onClick={() => exportAudio(audioBuffer!)}
-        className={cn(
-          buttonClass,
-          hasTrack ? enabledClass : disabledClass,
-          'w-auto px-2'
-        )}
-        disabled={!audioBuffer}
-      >
-        Download
-      </button>
     </div>
   );
 };

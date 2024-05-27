@@ -77,7 +77,7 @@ export const MinimapSketch = (p5: MinimapProps) => {
       let min = 1.0;
       let max = -1.0;
       for (let j = 0; j < step; j++) {
-        const datum = data[i * step + j];
+        const datum = data[i * step + j]!;
         if (datum < min) {
           min = datum;
         }

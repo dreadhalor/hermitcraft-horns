@@ -1,26 +1,28 @@
-// Declare global functions and types
-declare const self: Worker;
-declare function importScripts(...urls: string[]): void;
+// audio-export.ts
+var lamejs = require('lamejs');
 
-// Import the lamejs library
-importScripts(
-  'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js'
-);
+// if we ever want to use this not in a worker, we can use this
+export const exportAudioBuffer = async (
+  audioBuffer: AudioBuffer
+): Promise<Blob> => {
+  const channels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const buffers: Float32Array[] = [];
 
-// Ensure lamejs is declared
-declare const lamejs: any;
+  for (let channel = 0; channel < channels; channel++) {
+    buffers.push(audioBuffer.getChannelData(channel));
+  }
 
-self.onmessage = async function (event) {
-  const { channels, sampleRate, buffers } = event.data;
   const mp3Blob = await exportAudio(channels, sampleRate, buffers);
-  self.postMessage({ mp3Blob });
+  return mp3Blob;
 };
 
-const exportAudio = async (
+// we gotta define it like this because the web worker can't use OfflineAudioContext or AudioBuffer
+export const exportAudio = async (
   channels: number,
   sampleRate: number,
   buffers: Float32Array[]
-) => {
+): Promise<Blob> => {
   const encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
   const mp3Data: Int8Array[] = [];
   const chunkSize = 1152;

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { cropAudioBuffer, exportAudio, trimAudioBuffer } from './audio-utils';
+import { cropAudioBuffer, trimAudioBuffer } from './audio-utils';
 import { useAudioPlayer } from './use-audio-player';
 import { useCallback } from 'react';
+import { exportAudioAsync } from './audio-export/audio-export-async';
 
 export type AudioContextValue = {
   audioBuffer: AudioBuffer | null;
@@ -111,7 +112,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setExportingFile(true);
     try {
-      const blob = await exportAudio(audioBuffer);
+      const blob = await exportAudioAsync(audioBuffer);
       setExportingFile(false);
       return blob;
     } catch (error) {

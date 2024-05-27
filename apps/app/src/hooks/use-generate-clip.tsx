@@ -1,19 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useTask } from './use-task';
+import { kebabIt } from '../lib/utils';
 
 type GenerateClipParams = {
   videoUrl: string;
   start: number;
   end: number;
+  tagline?: string;
 };
 
 export const useGenerateClip = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [tagline, setTagline] = useState<string>('');
   const { enqueueTask, taskData } = useTask();
 
-  const generateClip = async ({ videoUrl, start, end }: GenerateClipParams) => {
+  const generateClip = async ({
+    videoUrl,
+    start,
+    end,
+    tagline,
+  }: GenerateClipParams) => {
+    if (tagline) setTagline(tagline);
     try {
       setIsLoading(true);
       setError(null);
@@ -32,7 +41,7 @@ export const useGenerateClip = () => {
       if (taskData && taskData.status === 'completed' && taskData.audioBuffer) {
         const file = new File(
           [new Uint8Array(taskData.audioBuffer.data)],
-          'titles-are-lame.mp3',
+          tagline ? `${kebabIt(tagline)}.mp3` : 'titles-are-lame.mp3',
           { type: 'audio/mpeg' },
         );
         setFile(file);
