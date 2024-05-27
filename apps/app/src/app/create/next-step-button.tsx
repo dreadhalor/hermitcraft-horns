@@ -3,17 +3,13 @@ import { Button } from '@ui/button';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
 import React, { useEffect } from 'react';
-import { MAX_CLIP_LENGTH } from '@/lib/utils';
+import { MAX_CLIP_LENGTH, kebabIt } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useGenerateClip } from '@/hooks/use-generate-clip';
 import { usePublishDraft } from '@/hooks/use-publish-draft';
+import { useAudioContext } from '@repo/audio-editor';
 
-interface Props {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
-
-export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
+export const NextStepButton = () => {
   const {
     clipStart,
     clipEnd,
@@ -23,9 +19,14 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
     setFile,
     tagline,
     season,
+    activeTab,
+    setActiveTab,
+    setShowAudioEditor,
+    publishDraft,
+    isPublishing,
   } = useClipBuilder();
+  const { exportFile, exportingFile } = useAudioContext();
   const { file, generateClip, isLoading: isGenerating } = useGenerateClip();
-  const { publishDraft, isLoading: isPublishing } = usePublishDraft();
   const { user } = useHHUser();
 
   const clipLength = (clipEnd - clipStart) / 1000;
@@ -52,6 +53,7 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
         console.log(
           `Exporting video from ${(clipStart / 1000).toFixed(1)}s to ${(clipEnd / 1000).toFixed(1)}s`,
         );
+        setShowAudioEditor(false);
         await generateClip({ videoUrl, start: clipStart, end: clipEnd });
       } else {
         console.error('End time exceeds video duration');
@@ -68,8 +70,23 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
         handleExport();
         break;
       case 'horn-confirm':
+        setShowAudioEditor(true);
+        setActiveTab('audio-editor');
+        break;
+      case 'audio-editor':
+        setActiveTab('final-confirm');
+        break;
+      case 'final-confirm':
+        const result = await exportFile();
+        if (!result) {
+          toast.error('Failed to export audio');
+          return;
+        }
+        const finalFile = new File([result], `${kebabIt(tagline)}.mp3`, {
+          type: 'audio/mp3',
+        });
         await publishDraft({
-          file: file!,
+          file: finalFile,
           start: clipStart,
           end: clipEnd,
           videoUrl,
@@ -99,8 +116,13 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
         if (file) return 'Re-Generate Draft →';
         return 'Generate Draft →';
       case 'horn-confirm':
+        return 'Or: Edit Audio →';
+      case 'audio-editor':
+        return 'Next →';
+      case 'final-confirm':
+        if (exportingFile) return 'Exporting...';
         if (isPublishing) return 'Publishing...';
-        return 'Publish Horn!';
+        return '🎉 Publish Horn!';
       default:
         return 'Next →';
     }
@@ -112,7 +134,7 @@ export const NextStepButton = ({ activeTab, setActiveTab }: Props) => {
         className='flex-1'
         type='button'
         onClick={handleNext}
-        disabled={isErrored || isGenerating || isPublishing}
+        disabled={isErrored || isGenerating || isPublishing || exportingFile}
       >
         {getButtonText()}
       </Button>

@@ -6,7 +6,7 @@ import { SaveClipSchema } from '@/schemas';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-type PublishDraftParams = {
+export type PublishDraftParams = {
   file: File;
   start: number;
   end: number;
@@ -42,7 +42,7 @@ export const usePublishDraft = () => {
       // Step 1: Upload the audio file
       console.log('Uploading audio file...');
       const res = await uploadFiles('audioUploader', { files: [file] });
-      const uploadedAudioUrl = res[0].url;
+      const uploadedAudioUrl = res[0]!.url;
       console.log('Audio uploaded:', uploadedAudioUrl);
 
       // Step 2: Save the metadata to the database

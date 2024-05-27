@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useSandboxAudioPlayer } from './use-sandbox-audio-player';
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@audio-editor/components/ui/slider';
 
 interface Props {
   file?: File;

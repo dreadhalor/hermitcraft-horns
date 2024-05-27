@@ -15,6 +15,13 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2022"
+    "target": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../apps/app/src/*"],
+      "@ui/*": ["../../apps/app/src/components/ui/*"],
+      "@drizzle/*": ["../../apps/app/drizzle/*"],
+      "@audio-editor/*": ["../audio-editor/src/*"]
+    }
   }
 }

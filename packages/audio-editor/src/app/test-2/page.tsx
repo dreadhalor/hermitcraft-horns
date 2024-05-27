@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { NextReactP5Wrapper } from '@p5-wrapper/next';
-import { downloadAudio } from './audio-utils';
+import { exportAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
@@ -10,11 +10,11 @@ import { FaCropSimple } from 'react-icons/fa6';
 import { IoIosRedo, IoMdCut } from 'react-icons/io';
 import { FaPlay, FaPause } from 'react-icons/fa';
 import { RiRewindStartFill } from 'react-icons/ri';
-import LoopSelection from '@/assets/loop-selection.svg';
-import ClearSelection from '@/assets/clear-selection.svg';
+import LoopSelection from '@audio-editor/assets/loop-selection.svg';
+import ClearSelection from '@audio-editor/assets/clear-selection.svg';
 import Image from 'next/image';
 import { MdLoop } from 'react-icons/md';
-import { cn } from '@/lib/utils';
+import { cn } from '@audio-editor/lib/utils';
 import { IoIosUndo } from 'react-icons/io';
 
 const Page = () => {
@@ -279,7 +279,7 @@ const Page = () => {
         </div>
       </div>
       <button
-        onClick={() => downloadAudio(audioBuffer)}
+        onClick={() => exportAudio(audioBuffer)}
         className={cn(
           buttonClass,
           hasTrack ? enabledClass : disabledClass,

@@ -112,7 +112,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
       let min = 1.0;
       let max = -1.0;
       for (let j = 0; j < step; j++) {
-        const datum = visibleData[i * step + j];
+        const datum = visibleData[i * step + j]!;
         if (datum < min) {
           min = datum;
         }

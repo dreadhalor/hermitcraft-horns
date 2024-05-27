@@ -52,10 +52,11 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
 
   const { clips, totalPages = 5 } = data ?? {};
 
-  const range = getPaginationRange({
-    currentPage: selectedPage,
-    totalPages,
-  });
+  const range =
+    getPaginationRange({
+      currentPage: selectedPage,
+      totalPages,
+    }) ?? [];
 
   useEffect(() => {
     setSelectedPage(1);
@@ -115,7 +116,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
         <PaginationContent className='px-4'>
           {range.map((page, index) => (
             <Fragment key={index}>
-              {index > 0 && page - range[index - 1] > 1 && (
+              {index > 0 && page - range[index - 1]! > 1 && (
                 <PaginationEllipsis />
               )}
               <PaginationItem className='cursor-pointer'>

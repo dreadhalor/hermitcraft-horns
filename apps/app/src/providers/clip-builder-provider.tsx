@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { Hermit } from '@drizzle/db';
+import { useAudioContext } from '@repo/audio-editor';
+import { PublishDraftParams, usePublishDraft } from '@/hooks/use-publish-draft';
 
 type ClipBuilderContextType = {
   zoomStart: number;
@@ -45,6 +47,22 @@ type ClipBuilderContextType = {
   playClip: () => void;
   file: File | null;
   setFile: (value: File | null) => void;
+  activeTab: string;
+  setActiveTab: (value: string) => void;
+  showAudioEditor: boolean;
+  setShowAudioEditor: (value: boolean) => void;
+  // re-exporting from usePublishDraft
+  publishDraft: ({
+    file,
+    start,
+    end,
+    videoUrl,
+    userId,
+    hermitId,
+    tagline,
+    season,
+  }: PublishDraftParams) => Promise<void>;
+  isPublishing: boolean;
 };
 
 const ClipBuilderContext = React.createContext<ClipBuilderContextType>(
@@ -87,6 +105,18 @@ export const ClipBuilderProvider = ({ children }: Props) => {
 
   const [file, setFile] = useState<File | null>(null);
 
+  const [activeTab, setActiveTab] = React.useState('clip-builder');
+  const changeActiveTab = (tab: string) => {
+    stopAudio();
+    setActiveTab(tab);
+  };
+
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
+
+  const { handleFileUpload, stopAudio } = useAudioContext();
+
+  const { publishDraft, isLoading: isPublishing } = usePublishDraft();
+
   const searchParams = useSearchParams();
   const videoId = searchParams.get('id') || '';
   const videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
@@ -112,6 +142,11 @@ export const ClipBuilderProvider = ({ children }: Props) => {
       setFineZoomEnd(zoomEnd);
     }
   }, [fineZoomStart, zoomStart, fineZoomEnd, zoomEnd]);
+
+  useEffect(() => {
+    if (!file) return;
+    handleFileUpload(file);
+  }, [file, handleFileUpload]);
 
   // we want to be able to play the clip through once in a function we will export & trigger with a button
   const playClip = () => {
@@ -208,6 +243,12 @@ export const ClipBuilderProvider = ({ children }: Props) => {
           playClip,
           file,
           setFile,
+          activeTab,
+          setActiveTab: changeActiveTab,
+          showAudioEditor,
+          setShowAudioEditor,
+          publishDraft,
+          isPublishing,
         }}
       >
         {children}

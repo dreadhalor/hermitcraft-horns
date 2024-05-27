@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { cropAudioBuffer, trimAudioBuffer } from './audio-utils';
+import { cropAudioBuffer, exportAudio, trimAudioBuffer } from './audio-utils';
 import { useAudioPlayer } from './use-audio-player';
+import { useCallback } from 'react';
 
 export type AudioContextValue = {
   audioBuffer: AudioBuffer | null;
@@ -35,12 +36,17 @@ export type AudioContextValue = {
   toggleLoopTrack: () => void;
   getCurrentTime: () => number;
   clearSelection: () => void;
+  handleFileUpload: (file: File | undefined) => void;
+  exportFile: () => Promise<Blob | undefined>;
+  exportingFile: boolean;
 };
 
-const AudioContext = createContext<AudioContextValue | undefined>(undefined);
+const AudioProviderContext = createContext<AudioContextValue | undefined>(
+  undefined
+);
 
 export const useAudioContext = () => {
-  const context = useContext(AudioContext);
+  const context = useContext(AudioProviderContext);
   if (!context) {
     throw new Error('useAudioContext must be used within an AudioProvider');
   }
@@ -56,6 +62,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   const [visibleEndTime, setVisibleEndTime] = useState(0);
   const [undoStack, setUndoStack] = useState<AudioBuffer[]>([]);
   const [redoStack, setRedoStack] = useState<AudioBuffer[]>([]);
+  const [exportingFile, setExportingFile] = useState(false);
 
   console.log('audio provider');
 
@@ -88,6 +95,24 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const pushToUndoStack = (buffer: AudioBuffer) => {
     setUndoStack((prevStack) => [buffer, ...prevStack]);
+  };
+
+  const handleFileUpload = useCallback(async (file: File | undefined) => {
+    const audioContext = new AudioContext();
+    if (!file) return;
+    const arrayBuffer = await file.arrayBuffer();
+    const decodedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    setAudioBuffer(decodedAudioBuffer);
+    setDuration(decodedAudioBuffer.duration);
+  }, []);
+
+  const exportFile = async () => {
+    if (!audioBuffer) return;
+
+    setExportingFile(true);
+    const blob = await exportAudio(audioBuffer);
+    setExportingFile(false);
+    return blob;
   };
 
   const handleCrop = (start: number, end: number) => {
@@ -125,8 +150,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       const previousBuffer = undoStack[0];
       setUndoStack((prevStack) => prevStack.slice(1));
       setRedoStack((prevStack) => [audioBuffer!, ...prevStack]);
-      setAudioBuffer(previousBuffer);
-      setDuration(previousBuffer.duration);
+      if (previousBuffer) {
+        setAudioBuffer(previousBuffer);
+        setDuration(previousBuffer.duration);
+      }
     }
   };
 
@@ -135,8 +162,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       const nextBuffer = redoStack[0];
       setRedoStack((prevStack) => prevStack.slice(1));
       setUndoStack((prevStack) => [audioBuffer!, ...prevStack]);
-      setAudioBuffer(nextBuffer);
-      setDuration(nextBuffer.duration);
+      if (nextBuffer) {
+        setAudioBuffer(nextBuffer);
+        setDuration(nextBuffer.duration);
+      }
     }
   };
 
@@ -174,9 +203,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     toggleLoopTrack,
     getCurrentTime,
     clearSelection,
+    handleFileUpload,
+    exportFile,
+    exportingFile,
   };
 
   return (
-    <AudioContext.Provider value={value}>{children}</AudioContext.Provider>
+    <AudioProviderContext.Provider value={value}>
+      {children}
+    </AudioProviderContext.Provider>
   );
 };

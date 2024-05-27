@@ -28,23 +28,24 @@ type Props = {
 
 export const HornTileMenu = ({ horn, disabled }: Props) => {
   const [tab, setTab] = React.useState('main');
-  const { liked, likes, downloads, user: hornUser } = horn;
-  const clipUrl = horn.clipUrl ?? '';
-  const tagline = horn.tagline ?? '';
+  const { liked, likes, downloads, user: hornUser, id } = horn!;
+  const clipUrl = horn!.clipUrl ?? '';
+  const tagline = horn!.tagline ?? '';
+
   const { user, likeClip, unlikeClip, incrementClipDownloads } = useHHUser();
   const pathname = usePathname();
   const isOwner = user?.id === hornUser?.id;
 
   const toggleLike = () => {
     if (liked) {
-      unlikeClip(user?.id ?? '', horn.id);
+      unlikeClip(user?.id ?? '', id);
     } else {
-      likeClip(user?.id ?? '', horn.id);
+      likeClip(user?.id ?? '', id);
     }
   };
 
   const handleDownload = () => {
-    incrementClipDownloads(horn.id);
+    incrementClipDownloads(id);
     fetch(clipUrl)
       .then((response) => response.blob())
       .then((blob) => {
@@ -61,7 +62,7 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/horn/${horn.id}`);
+    navigator.clipboard.writeText(`${window.location.origin}/horn/${id}`);
     toast.success('Link copied to clipboard!');
   };
 
@@ -101,7 +102,7 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
               {!pathname.startsWith('/horn') && (
                 <SheetClose asChild>
                   <Link
-                    href={`/horn/${horn.id}`}
+                    href={`/horn/${id}`}
                     className={cn(
                       buttonVariants({ variant: 'ghost' }),
                       'text-md group col-span-2 grid h-[60px] w-full grid-cols-subgrid items-center justify-start gap-3 rounded-none hover:bg-[#4665BA] hover:text-white',

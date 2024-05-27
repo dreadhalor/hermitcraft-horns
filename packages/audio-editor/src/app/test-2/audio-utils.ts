@@ -61,7 +61,7 @@ const audioBufferToWav = async (buffer: AudioBuffer) => {
     offset: number
   ) => {
     for (let i = 0; i < input.length; i++, offset += 2) {
-      const s = Math.max(-1, Math.min(1, input[i]));
+      const s = Math.max(-1, Math.min(1, input[i]!));
       output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
     }
   };
@@ -75,7 +75,7 @@ const audioBufferToWav = async (buffer: AudioBuffer) => {
   return arrayBuffer;
 };
 
-export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
+export const exportAudio = async (audioBuffer: AudioBuffer | null) => {
   if (!audioBuffer) return;
 
   const channels = audioBuffer.numberOfChannels;
@@ -92,18 +92,18 @@ export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
   const chunkSize = 1152;
 
   // Scale audio data
-  const leftBuffer = buffers[0];
+  const leftBuffer = buffers[0]!;
   const leftScaled = new Int16Array(leftBuffer.length);
   for (let i = 0; i < leftBuffer.length; i++) {
-    leftScaled[i] = leftBuffer[i] * 32767.5;
+    leftScaled[i] = leftBuffer[i]! * 32767.5;
   }
 
   const rightScaled =
-    channels > 1 ? new Int16Array(buffers[1].length) : leftScaled;
+    channels > 1 ? new Int16Array(buffers[1]!.length) : leftScaled;
   if (channels > 1) {
-    const rightBuffer = buffers[1];
+    const rightBuffer = buffers[1]!;
     for (let i = 0; i < rightBuffer.length; i++) {
-      rightScaled[i] = rightBuffer[i] * 32767.5;
+      rightScaled[i] = rightBuffer[i]! * 32767.5;
     }
   }
 
@@ -123,13 +123,7 @@ export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
   }
 
   const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
-  console.log(mp3Blob);
-  // const url = URL.createObjectURL(mp3Blob);
-  // const a = document.createElement('a');
-  // a.href = url;
-  // a.download = 'cropped_audio.mp3';
-  // a.click();
-  // URL.revokeObjectURL(url);
+  return mp3Blob;
 };
 
 export const cropAudioBuffer = (
@@ -153,7 +147,7 @@ export const cropAudioBuffer = (
     const oldData = buffer.getChannelData(channel);
     const newData = newAudioBuffer.getChannelData(channel);
     for (let i = 0; i < newLength; i++) {
-      newData[i] = oldData[i + startSample];
+      newData[i] = oldData[i + startSample]!;
     }
   }
 
@@ -209,10 +203,10 @@ export const trimAudioBuffer = (
 
     let newDataIndex = 0;
     for (let i = 0; i < startSample; i++) {
-      newData[newDataIndex++] = oldData[i];
+      newData[newDataIndex++] = oldData[i]!;
     }
     for (let i = endSample; i < buffer.length; i++) {
-      newData[newDataIndex++] = oldData[i];
+      newData[newDataIndex++] = oldData[i]!;
     }
   }
 

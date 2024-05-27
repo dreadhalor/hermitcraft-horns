@@ -27,7 +27,7 @@ export const HornTile = forwardRef<
   { togglePlayback: () => void },
   HornTileProps
 >(({ horn, className, onClick }, ref) => {
-  const { tagline, clipUrl, season, user, hermit, start, end } = horn;
+  const { tagline, clipUrl, season, user, hermit, start, end, video } = horn!;
   const { username } = user ?? {};
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
@@ -89,7 +89,7 @@ export const HornTile = forwardRef<
               className='pointer-events-auto cursor-pointer text-center hover:underline'
               onClick={() => {
                 router.push(
-                  `/create?id=${getYouTubeId(horn.video)}&start=${start}&end=${end}`,
+                  `/create?id=${getYouTubeId(video)}&start=${start}&end=${end}`,
                 );
               }}
             >

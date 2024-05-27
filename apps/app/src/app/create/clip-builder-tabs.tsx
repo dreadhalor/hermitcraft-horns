@@ -10,12 +10,13 @@ import { Hermit } from '@drizzle/db';
 import { MAX_CLIP_LENGTH } from '@/lib/utils';
 import { useHHUser } from '@/providers/user-provider';
 import { ConfirmHorn } from './confirm-horn/confirm-horn';
+import { ConfirmHornFinal } from './confirm-horn-final/confirm-horn-final';
+import { AudioEditor } from '@repo/audio-editor';
 
 interface Props {
   hermits: Hermit[];
 }
 export const ClipBuilderTabs = ({ hermits }: Props) => {
-  const [activeTab, setActiveTab] = React.useState('clip-builder');
   const {
     season,
     setSeason,
@@ -25,11 +26,15 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
     clipStart,
     clipEnd,
     file,
+    activeTab,
+    setActiveTab,
+    showAudioEditor,
+    isPublishing,
   } = useClipBuilder();
   const { user } = useHHUser();
 
   const clipLength = (clipEnd - clipStart) / 1000;
-  const disabled = clipLength > MAX_CLIP_LENGTH || !user;
+  const disabled = clipLength > MAX_CLIP_LENGTH || !user || isPublishing;
 
   useEffect(() => {
     setHermits(hermits);
@@ -54,7 +59,13 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
         />
       </TabsContent>
       <TabsContent value='horn-confirm' className='flex-1 overflow-auto'>
-        <ConfirmHorn setActiveTab={setActiveTab} />
+        <ConfirmHorn />
+      </TabsContent>
+      <TabsContent value='audio-editor' className='flex-1 overflow-auto'>
+        <AudioEditor />
+      </TabsContent>
+      <TabsContent value='final-confirm' className='flex-1 overflow-auto'>
+        <ConfirmHornFinal />
       </TabsContent>
       <div className='mx-4 mb-2 mt-4 flex gap-2'>
         <TabsList className='flex gap-2 bg-transparent'>
@@ -73,8 +84,23 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
             value='horn-confirm'
             className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
           />
+
+          {showAudioEditor && (
+            <>
+              <TabsTrigger
+                disabled={disabled}
+                value='audio-editor'
+                className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
+              />
+              <TabsTrigger
+                disabled={disabled}
+                value='final-confirm'
+                className='aspect-square h-[20px] rounded-full bg-[#4665BA]/30 p-0 disabled:bg-[#4665BA]/30 disabled:text-[#354B87] data-[state=active]:bg-[#354B87]'
+              />
+            </>
+          )}
         </TabsList>
-        <NextStepButton activeTab={activeTab} setActiveTab={setActiveTab} />
+        <NextStepButton />
       </div>
     </Tabs>
   );

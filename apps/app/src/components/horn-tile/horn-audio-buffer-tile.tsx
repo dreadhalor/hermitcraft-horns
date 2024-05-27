@@ -14,15 +14,15 @@ import { HornTileMenu } from './horn-tile-menu';
 import { HHUser } from '@/trpc';
 import { Hermit } from '@drizzle/db';
 
-type HornFileHorn = {
+type HornAudioBufferHorn = {
   tagline?: string;
   hermit: Hermit;
   season?: string;
   user: HHUser;
-  file: File | null;
+  audioBuffer: AudioBuffer | null;
 };
-type HornFileTileProps = {
-  horn: HornFileHorn;
+type HornAudioBufferTileProps = {
+  horn: HornAudioBufferHorn;
   className?: string;
   onClick?: () => void;
   ref?: React.ForwardedRef<{
@@ -30,53 +30,73 @@ type HornFileTileProps = {
   }>;
 };
 
-export const HornFileTile = forwardRef<
+export const HornAudioBufferTile = forwardRef<
   { togglePlayback: () => void },
-  HornFileTileProps
+  HornAudioBufferTileProps
 >(({ horn, className, onClick }, ref) => {
-  const [fileUrl, setFileUrl] = useState<string>();
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode | null>(
+    null,
+  );
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  const { tagline, season, user, hermit, file } = horn;
+  const { tagline, season, user, hermit, audioBuffer } = horn;
   const { username } = user ?? {};
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const profilePic = hermit?.ProfilePicture || JoeHills.src;
 
+  const updateProgress = () => {
+    if (audioBuffer && audioContextRef.current) {
+      const elapsed = audioContextRef.current.currentTime;
+      const newProgress = (elapsed / audioBuffer.duration) * 100;
+      setProgress(newProgress);
+      requestAnimationFrame(updateProgress);
+    }
+  };
+
   const handlePlayClick = () => {
-    if (audioRef.current) {
-      if (audioRef.current.paused) {
-        audioRef.current.play();
-      } else {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+    if (!audioBuffer) return;
+
+    if (isPlaying) {
+      sourceNode?.stop();
+      setIsPlaying(false);
+      setProgress(0);
+      audioContextRef.current = null; // Reset the audio context
+    } else {
+      const newAudioContext = new AudioContext();
+      const source = newAudioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(newAudioContext.destination);
+      source.start();
+      audioContextRef.current = newAudioContext;
+      setSourceNode(source);
+      setIsPlaying(true);
+
+      source.onended = () => {
+        setIsPlaying(false);
+        setSourceNode(null);
+        setProgress(0);
+        audioContextRef.current = null; // Reset the audio context
+      };
+
+      requestAnimationFrame(updateProgress);
     }
   };
 
   useEffect(() => {
-    if (file) {
-      setFileUrl(URL.createObjectURL(file));
-    }
-
     return () => {
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
+      if (sourceNode) {
+        sourceNode.stop();
       }
     };
-  }, [file]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.load();
-    }
-  }, [fileUrl]);
+  }, [sourceNode]);
 
   useImperativeHandle(
     ref,
     () => ({
       togglePlayback: handlePlayClick,
     }),
-    [audioRef],
+    [handlePlayClick],
   );
 
   return (
@@ -86,8 +106,7 @@ export const HornFileTile = forwardRef<
         className,
       )}
     >
-      <HornTileBorder audioRef={audioRef} />
-      {file && <audio ref={audioRef} src={fileUrl} />}
+      <HornTileBorder progress={progress} />
       <div
         className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
         onClick={onClick ? onClick : handlePlayClick}
@@ -114,13 +133,11 @@ export const HornFileTile = forwardRef<
 });
 
 type HornTileBorderProps = {
-  audioRef: React.RefObject<HTMLAudioElement>;
+  progress: number;
 };
 
-const HornTileBorder = ({ audioRef }: HornTileBorderProps) => {
+const HornTileBorder = ({ progress }: HornTileBorderProps) => {
   const tileRef = useRef<HTMLDivElement | null>(null);
-  const [percentage, setPercentage] = useState(0);
-  const animationFrameRef = useRef<number | null>(null);
 
   const createArcPath = (percentage: number) => {
     const tile = tileRef.current;
@@ -150,63 +167,15 @@ const HornTileBorder = ({ audioRef }: HornTileBorderProps) => {
     return d;
   };
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    const tile = tileRef.current;
-
-    const animate = () => {
-      if (audio && tile && !audio.paused) {
-        const progress = audio.currentTime / audio.duration;
-        setPercentage(progress * 100);
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    const handlePlay = () => {
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    const handlePause = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      setPercentage(0);
-    };
-
-    const handleEnded = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      setPercentage(0);
-    };
-
-    if (audio) {
-      audio.addEventListener('play', handlePlay);
-      audio.addEventListener('pause', handlePause);
-      audio.addEventListener('ended', handleEnded);
-    }
-
-    return () => {
-      if (audio) {
-        audio.removeEventListener('play', handlePlay);
-        audio.removeEventListener('pause', handlePause);
-        audio.removeEventListener('ended', handleEnded);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [audioRef]);
-
   return (
     <div
       ref={tileRef}
       className={cn(
         'pointer-events-none absolute inset-0 rounded-lg border-white',
-        percentage > 0 && 'border-2',
+        progress > 0 && 'border-2',
       )}
       style={{
-        clipPath: `path('${createArcPath(percentage)}')`,
+        clipPath: `path('${createArcPath(progress)}')`,
       }}
     />
   );
