@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { ReactP5Wrapper } from '@p5-wrapper/react';
+import { NextReactP5Wrapper } from '@p5-wrapper/next';
 import { downloadAudio } from './audio-utils';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
@@ -240,7 +240,7 @@ export const AudioEditor = ({ file }: Props) => {
         id='waveform'
         className='w-full bg-[#4665BA] rounded-md shadow mb-4 p-4 min-h-0'
       >
-        <ReactP5Wrapper
+        <NextReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
           currentTime={getCurrentTime()}
@@ -263,7 +263,7 @@ export const AudioEditor = ({ file }: Props) => {
       >
         <div className='relative w-full h-full'>
           <div ref={sketchWidthRef} className='absolute inset-0' />
-          <ReactP5Wrapper
+          <NextReactP5Wrapper
             sketch={MinimapSketch as any}
             audioBuffer={audioBuffer}
             currentTime={getCurrentTime()}
