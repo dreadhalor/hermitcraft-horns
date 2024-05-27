@@ -110,9 +110,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!audioBuffer) return;
 
     setExportingFile(true);
-    const blob = await exportAudio(audioBuffer);
-    setExportingFile(false);
-    return blob;
+    try {
+      const blob = await exportAudio(audioBuffer);
+      setExportingFile(false);
+      return blob;
+    } catch (error) {
+      console.error('Export failed', error);
+      setExportingFile(false);
+    }
   };
 
   const handleCrop = (start: number, end: number) => {

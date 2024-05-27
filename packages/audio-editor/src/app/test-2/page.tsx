@@ -279,7 +279,7 @@ const Page = () => {
         </div>
       </div>
       <button
-        onClick={() => exportAudio(audioBuffer)}
+        onClick={() => exportAudio(audioBuffer!)}
         className={cn(
           buttonClass,
           hasTrack ? enabledClass : disabledClass,

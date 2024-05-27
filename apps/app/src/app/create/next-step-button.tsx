@@ -85,16 +85,17 @@ export const NextStepButton = () => {
         const finalFile = new File([result], `${kebabIt(tagline)}.mp3`, {
           type: 'audio/mp3',
         });
-        await publishDraft({
-          file: finalFile,
-          start: clipStart,
-          end: clipEnd,
-          videoUrl,
-          userId: user!.id,
-          hermitId: hermit!.ChannelID!,
-          tagline,
-          season,
-        });
+        console.log('Final file', finalFile);
+        // await publishDraft({
+        //   file: finalFile,
+        //   start: clipStart,
+        //   end: clipEnd,
+        //   videoUrl,
+        //   userId: user!.id,
+        //   hermitId: hermit!.ChannelID!,
+        //   tagline,
+        //   season,
+        // });
         break;
     }
   };
