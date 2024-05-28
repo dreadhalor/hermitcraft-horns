@@ -75,6 +75,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
 
   p5.setup = () => {
     p5.createCanvas(availableWidth, 200);
+    p5.smooth();
   };
 
   p5.draw = () => {
@@ -100,7 +101,7 @@ export const WaveformSketch = (p5: WaveformProps) => {
     );
     const visibleData = data.slice(startSample, endSample);
     const visibleDataLength = visibleData.length;
-    const step = Math.ceil(visibleDataLength / width);
+    const step = visibleDataLength / width;
 
     p.background(0);
     p.strokeWeight(1);
@@ -112,8 +113,10 @@ export const WaveformSketch = (p5: WaveformProps) => {
     for (let i = 0; i < width; i++) {
       let min = 1.0;
       let max = -1.0;
-      for (let j = 0; j < step; j++) {
-        const datum = visibleData[i * step + j]!;
+      const start = Math.floor(i * step);
+      const end = Math.ceil((i + 1) * step);
+      for (let j = start; j < end; j++) {
+        const datum = visibleData[j] ?? 0;
         if (datum < min) {
           min = datum;
         }
