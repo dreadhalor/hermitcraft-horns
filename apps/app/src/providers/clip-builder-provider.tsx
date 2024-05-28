@@ -108,6 +108,9 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [activeTab, setActiveTab] = React.useState('clip-builder');
   const changeActiveTab = (tab: string) => {
     stopAudio();
+    if (tab === 'audio-editor' || tab === 'final-confirm') {
+      playerRef.current?.getInternalPlayer().pauseVideo();
+    }
     setActiveTab(tab);
   };
 
