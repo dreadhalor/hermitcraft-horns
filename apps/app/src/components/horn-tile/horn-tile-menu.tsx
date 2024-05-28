@@ -76,7 +76,7 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
         <Button
           disabled={disabled}
           id='clip-builder-hermit'
-          className='pointer-events-auto -mx-1 -my-0.5 grid h-auto w-auto grid-cols-[1fr_auto_auto] items-center justify-items-end bg-transparent px-1 py-0.5 text-[12px] shadow-none hover:bg-primary/80 disabled:opacity-100'
+          className='pointer-events-auto -mx-1 -my-0.5 grid h-auto w-auto grid-cols-[1fr_auto_auto] items-center justify-items-end bg-transparent px-1 py-0.5 text-[10px] shadow-none hover:bg-primary/80 disabled:opacity-100'
         >
           <span>{likes ?? '53'}</span>
           {liked ? <FaHeart /> : <FaRegHeart />}
@@ -85,7 +85,7 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
             className='row-span-2 ml-[-5px] mr-[-8px] p-0'
           />
           <span>{downloads ?? 101}</span>
-          <MdFileDownload className='-mr-0.5' size={16} />
+          <MdFileDownload className='-mr-0.5' size={14} />
         </Button>
       </SheetTrigger>
       <SheetContent
