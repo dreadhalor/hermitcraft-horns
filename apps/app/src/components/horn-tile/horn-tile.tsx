@@ -32,7 +32,6 @@ export const HornTile = forwardRef<
 >(({ horn, className, onClick }, ref) => {
   const { tagline, clipUrl, season, user, hermit, start, end, video } = horn!;
   const { username } = user ?? {};
-  const tileRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   const profilePic = hermit?.ProfilePicture || JoeHills.src;
@@ -87,7 +86,6 @@ export const HornTile = forwardRef<
 
   return (
     <div
-      ref={tileRef}
       className={cn(
         'relative aspect-square w-full cursor-pointer overflow-hidden rounded-lg bg-[#354B87] text-[12px] text-white',
         className,
