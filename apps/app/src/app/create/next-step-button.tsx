@@ -28,7 +28,7 @@ export const NextStepButton = () => {
   const { file, generateClip, isLoading: isGenerating } = useGenerateClip();
   const { user } = useHHUser();
 
-  const clipLength = (clipEnd ?? 0 - (clipStart ?? 0)) / 1000;
+  const clipLength = ((clipEnd ?? 0) - (clipStart ?? 0)) / 1000;
 
   const getErrorMessage = () => {
     if (!user) return 'Sign in to generate horn!';
@@ -49,7 +49,7 @@ export const NextStepButton = () => {
     if (playerRef.current) {
       if (!clipStart || !clipEnd) return;
       const duration = playerRef.current.getDuration() * 1000;
-      if (clipEnd ?? 0 <= duration) {
+      if ((clipEnd ?? 0) <= duration) {
         console.log(
           `Exporting video from ${(clipStart / 1000).toFixed(1)}s to ${(clipEnd / 1000).toFixed(1)}s`,
         );

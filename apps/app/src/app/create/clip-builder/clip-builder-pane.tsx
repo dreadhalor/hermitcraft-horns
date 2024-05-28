@@ -38,14 +38,14 @@ export const ClipBuilderPane = () => {
   useEffect(() => {
     if (isLooping && playerRef.current) {
       const player = playerRef.current;
-      player.seekTo(clipStart ?? 0 / 1000);
+      player.seekTo((clipStart ?? 0) / 1000);
       player.getInternalPlayer().playVideo();
 
       const intervalLength = 100;
 
       const loopInterval = setInterval(() => {
         if (player.getCurrentTime() * 1000 >= (clipEnd ?? 0) - intervalLength) {
-          player.seekTo(clipStart ?? 0 / 1000);
+          player.seekTo((clipStart ?? 0) / 1000);
           player.getInternalPlayer().playVideo();
         }
       }, intervalLength);

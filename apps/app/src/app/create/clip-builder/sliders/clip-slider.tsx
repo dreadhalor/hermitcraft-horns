@@ -24,7 +24,7 @@ export const ClipSlider = () => {
   return (
     <div className='flex flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Clip: {formatDuration(clipEnd ?? 0 - (clipStart ?? 0))} (
+        Clip: {formatDuration((clipEnd ?? 0) - (clipStart ?? 0))} (
         {formatTime(clipStart ?? 0)}
         &nbsp;&rarr;&nbsp;
         {formatTime(clipEnd ?? 0)})
