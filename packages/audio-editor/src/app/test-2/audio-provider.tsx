@@ -5,6 +5,7 @@ import { cropAudioBuffer, trimAudioBuffer } from './audio-utils';
 import { useAudioPlayer } from './use-audio-player';
 import { useCallback } from 'react';
 import { exportAudioAsync } from './audio-export/audio-export-async';
+import { unmute } from './unmute';
 
 export type AudioContextValue = {
   audioBuffer: AudioBuffer | null;
@@ -21,7 +22,7 @@ export type AudioContextValue = {
   canRedo: boolean;
   handleCrop: (start: number, end: number) => void;
   handleTrim: (start: number, end: number) => void;
-  // Re-exported from useSandboxAudioPlayer
+  // Re-exported from useAudioPlayer
   selectionStart: number | null;
   setSelectionStart: (start: number | null) => void;
   selectionEnd: number | null;
@@ -122,6 +123,7 @@ export const AudioProvider = ({
 
   const handleFileUpload = useCallback(async (file: File | undefined) => {
     const audioContext = new AudioContext();
+    unmute(audioContext);
     if (!file) return;
     const arrayBuffer = await file.arrayBuffer();
     console.log('array buffer', arrayBuffer);
@@ -216,7 +218,7 @@ export const AudioProvider = ({
     canRedo,
     handleCrop,
     handleTrim,
-    // Re-exported from useSandboxAudioPlayer
+    // Re-exported from useAudioPlayer
     selectionStart,
     setSelectionStart,
     selectionEnd,

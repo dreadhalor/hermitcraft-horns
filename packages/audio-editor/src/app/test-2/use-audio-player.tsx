@@ -14,7 +14,6 @@ export const useAudioPlayer = () => {
   );
   const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
   const [trackEnded, setTrackEnded] = useState<boolean>(false);
-  const [bufferFile, setBufferFile] = useState<File | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const animationFrameId = useRef<number | null>(null);
@@ -37,6 +36,7 @@ export const useAudioPlayer = () => {
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
+
     return () => {
       audioContextRef.current?.close();
       if (animationFrameId.current !== null) {

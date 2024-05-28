@@ -21,6 +21,7 @@
     "@wavesurfer/react": "^1.0.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "howler": "^2.2.4",
     "lamejs": "zhuker/lamejs",
     "next": "14.2.3",
     "p5": "^1.9.3",

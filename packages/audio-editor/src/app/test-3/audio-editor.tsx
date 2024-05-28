@@ -36,7 +36,7 @@ export const AudioEditor = ({ file }: Props) => {
   handleFileUpload(file);
 
   const handleRangeChange = (values: number[]) => {
-    const [start, end] = values;
+    const [start, end] = values as [number, number];
     if (!isNaN(start) && start >= 0 && start <= (audioBuffer?.duration || 0)) {
       setSelectionStart(start);
     } else {
