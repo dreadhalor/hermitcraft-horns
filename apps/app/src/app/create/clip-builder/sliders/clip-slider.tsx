@@ -24,9 +24,10 @@ export const ClipSlider = () => {
   return (
     <div className='flex flex-col'>
       <span className='mb-1 text-sm leading-4'>
-        Clip: {formatDuration(clipEnd - clipStart)} ({formatTime(clipStart)}
+        Clip: {formatDuration((clipEnd ?? 0) - (clipStart ?? 0))} (
+        {formatTime(clipStart ?? 0)}
         &nbsp;&rarr;&nbsp;
-        {formatTime(clipEnd)})
+        {formatTime(clipEnd ?? 0)})
       </span>
       <VideoPlaySlider min={zoomStart} max={zoomEnd} />
       <SliderPrimitive.Root
@@ -35,7 +36,10 @@ export const ClipSlider = () => {
         )}
         min={zoomStart}
         max={zoomEnd}
-        value={[Math.max(clipStart, zoomStart), Math.min(clipEnd, zoomEnd)]}
+        value={[
+          Math.max(clipStart ?? 0, zoomStart),
+          Math.min(clipEnd ?? zoomEnd, zoomEnd),
+        ]}
         onValueChange={(value) => {
           const [start, end] = value;
           setClipStart(start);
@@ -68,7 +72,7 @@ export const ClipSlider = () => {
               </SliderPrimitive.Thumb>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{formatTime(clipStart)}</p>
+              <p>{formatTime(clipStart ?? 0)}</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip open={rightThumbFocused && sliderActive}>
@@ -87,7 +91,7 @@ export const ClipSlider = () => {
               </SliderPrimitive.Thumb>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{formatTime(clipEnd)}</p>
+              <p>{formatTime(clipEnd ?? 0)}</p>
             </TooltipContent>
           </Tooltip>
         </SliderPrimitive.Track>

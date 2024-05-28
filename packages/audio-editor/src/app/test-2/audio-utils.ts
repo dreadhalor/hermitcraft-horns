@@ -1,4 +1,4 @@
-var lamejs = require('lamejs');
+// var lamejs = require('lamejs');
 
 export const createAudioUrl = async (
   buffer: AudioBuffer,
@@ -61,7 +61,7 @@ const audioBufferToWav = async (buffer: AudioBuffer) => {
     offset: number
   ) => {
     for (let i = 0; i < input.length; i++, offset += 2) {
-      const s = Math.max(-1, Math.min(1, input[i]));
+      const s = Math.max(-1, Math.min(1, input[i]!));
       output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
     }
   };
@@ -75,62 +75,87 @@ const audioBufferToWav = async (buffer: AudioBuffer) => {
   return arrayBuffer;
 };
 
-export const downloadAudio = (audioBuffer: AudioBuffer | null) => {
-  if (!audioBuffer) return;
+// export const exportAudio = (
+//   audioBuffer: AudioBuffer
+// ): Promise<Blob | undefined> => {
+//   const channels = audioBuffer.numberOfChannels;
+//   const sampleRate = audioBuffer.sampleRate;
+//   const buffers: Float32Array[] = [];
 
-  const channels = audioBuffer.numberOfChannels;
-  const sampleRate = audioBuffer.sampleRate;
-  const samples = audioBuffer.length;
-  const buffers = [];
+//   for (let channel = 0; channel < channels; channel++) {
+//     buffers.push(audioBuffer.getChannelData(channel));
+//   }
 
-  for (let channel = 0; channel < channels; channel++) {
-    buffers.push(audioBuffer.getChannelData(channel));
-  }
+//   return new Promise((resolve, reject) => {
+//     const worker = new Worker(
+//       new URL('./audio-export-worker.ts', import.meta.url),
+//       { type: 'module' }
+//     );
 
-  const encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
-  const mp3Data = [];
-  const chunkSize = 1152;
+//     worker.onmessage = (event) => {
+//       const { mp3Blob } = event.data;
+//       resolve(mp3Blob);
+//     };
 
-  // Scale audio data
-  const leftBuffer = buffers[0];
-  const leftScaled = new Int16Array(leftBuffer.length);
-  for (let i = 0; i < leftBuffer.length; i++) {
-    leftScaled[i] = leftBuffer[i] * 32767.5;
-  }
+//     worker.onerror = (error) => {
+//       reject(error);
+//     };
 
-  const rightScaled =
-    channels > 1 ? new Int16Array(buffers[1].length) : leftScaled;
-  if (channels > 1) {
-    const rightBuffer = buffers[1];
-    for (let i = 0; i < rightBuffer.length; i++) {
-      rightScaled[i] = rightBuffer[i] * 32767.5;
-    }
-  }
+//     worker.postMessage({ channels, sampleRate, buffers });
+//   });
+// };
 
-  for (let i = 0; i < samples; i += chunkSize) {
-    const leftChunk = leftScaled.subarray(i, i + chunkSize);
-    const rightChunk =
-      channels > 1 ? rightScaled.subarray(i, i + chunkSize) : leftChunk;
-    const mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
-    if (mp3buf.length > 0) {
-      mp3Data.push(new Int8Array(mp3buf));
-    }
-  }
+// export const exportAudio = (audioBuffer: AudioBuffer) => {
+//   const channels = audioBuffer.numberOfChannels;
+//   const sampleRate = audioBuffer.sampleRate;
+//   const buffers: Float32Array[] = [];
 
-  const mp3buf = encoder.flush();
-  if (mp3buf.length > 0) {
-    mp3Data.push(new Int8Array(mp3buf));
-  }
+//   const encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+//   const mp3Data: Int8Array[] = [];
+//   const chunkSize = 1152;
 
-  const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
-  console.log(mp3Blob);
-  // const url = URL.createObjectURL(mp3Blob);
-  // const a = document.createElement('a');
-  // a.href = url;
-  // a.download = 'cropped_audio.mp3';
-  // a.click();
-  // URL.revokeObjectURL(url);
-};
+//   // Scale audio data
+//   const leftBuffer = buffers[0];
+//   if (!leftBuffer) {
+//     throw new Error('Left buffer is undefined');
+//   }
+//   const leftScaled = new Int16Array(leftBuffer.length);
+//   for (let i = 0; i < leftBuffer.length; i++) {
+//     leftScaled[i] = leftBuffer[i]! * 32767.5;
+//   }
+
+//   let rightScaled: Int16Array;
+//   if (channels > 1) {
+//     const rightBuffer = buffers[1];
+//     if (!rightBuffer) {
+//       throw new Error('Right buffer is undefined');
+//     }
+//     rightScaled = new Int16Array(rightBuffer.length);
+//     for (let i = 0; i < rightBuffer.length; i++) {
+//       rightScaled[i] = rightBuffer[i]! * 32767.5;
+//     }
+//   } else {
+//     rightScaled = leftScaled;
+//   }
+
+//   for (let i = 0; i < leftScaled.length; i += chunkSize) {
+//     const leftChunk = leftScaled.subarray(i, i + chunkSize);
+//     const rightChunk =
+//       channels > 1 ? rightScaled.subarray(i, i + chunkSize) : leftChunk;
+//     const mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
+//     if (mp3buf.length > 0) {
+//       mp3Data.push(new Int8Array(mp3buf));
+//     }
+//   }
+
+//   const mp3buf = encoder.flush();
+//   if (mp3buf.length > 0) {
+//     mp3Data.push(new Int8Array(mp3buf));
+//   }
+
+//   const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+//   return mp3Blob;
+// };
 
 export const cropAudioBuffer = (
   buffer: AudioBuffer,
@@ -153,7 +178,7 @@ export const cropAudioBuffer = (
     const oldData = buffer.getChannelData(channel);
     const newData = newAudioBuffer.getChannelData(channel);
     for (let i = 0; i < newLength; i++) {
-      newData[i] = oldData[i + startSample];
+      newData[i] = oldData[i + startSample]!;
     }
   }
 
@@ -209,10 +234,10 @@ export const trimAudioBuffer = (
 
     let newDataIndex = 0;
     for (let i = 0; i < startSample; i++) {
-      newData[newDataIndex++] = oldData[i];
+      newData[newDataIndex++] = oldData[i]!;
     }
     for (let i = endSample; i < buffer.length; i++) {
-      newData[newDataIndex++] = oldData[i];
+      newData[newDataIndex++] = oldData[i]!;
     }
   }
 

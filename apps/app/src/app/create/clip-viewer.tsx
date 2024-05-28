@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Navbar } from './clip-builder/navbar';
 import ReactPlayer from 'react-player';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
+import { cn } from '@/lib/utils';
 
 type Props = {
   initialClipStart?: number;
@@ -30,6 +31,7 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
     setFineZoomStart,
     setFineZoomEnd,
     setPlayTime,
+    activeTab,
   } = useClipBuilder();
 
   const initZoomMargin = 5000;
@@ -71,7 +73,13 @@ export const ClipViewer = ({ initialClipStart, initialClipEnd }: Props) => {
     <>
       <Navbar />
       {/* weird that we need a wrapping div here but ReactPlayer needs a display:block wrapper to properly size */}
-      <div>
+      <div
+        className={cn(
+          activeTab !== 'audio-editor' && activeTab !== 'final-confirm'
+            ? 'block'
+            : 'hidden',
+        )}
+      >
         <div className='flex aspect-video w-full items-center justify-center'>
           {isClient &&
             (videoUrl ? (

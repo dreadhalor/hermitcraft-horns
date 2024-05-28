@@ -2,8 +2,6 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Default",
   "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
     "esModuleInterop": true,
     "incremental": false,
     "isolatedModules": true,
@@ -15,6 +13,13 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2022"
+    "target": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../apps/app/src/*"],
+      "@ui/*": ["../../apps/app/src/components/ui/*"],
+      "@drizzle/*": ["../../apps/app/drizzle/*"],
+      "@audio-editor/*": ["../audio-editor/src/*"]
+    }
   }
 }

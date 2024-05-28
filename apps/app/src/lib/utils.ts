@@ -61,11 +61,11 @@ export const getPaginationRange = ({
 
   const range = Array.from({ length: end - start + 1 }, (_, i) => i + start);
 
-  if (range[0] > 1) {
+  if (range[0]! > 1) {
     range.unshift(1);
   }
 
-  if (range[range.length - 1] < totalPages) {
+  if (range[range.length - 1]! < totalPages) {
     range.push(totalPages);
   }
 

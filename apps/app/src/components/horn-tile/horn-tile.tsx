@@ -1,18 +1,15 @@
 'use client';
 
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { cn, getYouTubeId } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
 import { useRouter } from 'next/navigation';
 import { Horn } from '@/trpc';
+import HornTileBorder from './horn-tile-border';
+import { Howl } from 'howler';
+import { useHowlerProgress } from '@/hooks/use-howler-progress';
 
 type HornTileProps = {
   horn: Horn;
@@ -27,36 +24,58 @@ export const HornTile = forwardRef<
   { togglePlayback: () => void },
   HornTileProps
 >(({ horn, className, onClick }, ref) => {
-  const { tagline, clipUrl, season, user, hermit, start, end } = horn;
+  const { tagline, clipUrl, season, user, hermit, start, end, video } = horn!;
   const { username } = user ?? {};
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
 
   const profilePic = hermit?.ProfilePicture || JoeHills.src;
+  const [howl, setHowl] = useState<Howl | null>(null);
+  const { playbackProgress, setPlaybackProgress, updatePlaybackProgress } =
+    useHowlerProgress(howl);
+
+  useEffect(() => {
+    if (clipUrl) {
+      const newHowl = new Howl({
+        src: [clipUrl],
+        preload: true,
+        onplay: updatePlaybackProgress,
+        onpause: () => {
+          setPlaybackProgress(0);
+        },
+        onend: () => {
+          setPlaybackProgress(0);
+        },
+      });
+
+      setHowl(newHowl);
+
+      return () => {
+        newHowl.unload();
+      };
+    }
+  }, [clipUrl]);
+
+  useEffect(() => {
+    if (howl) howl.load();
+  }, [howl]);
 
   const handlePlayClick = () => {
-    if (audioRef.current) {
-      if (audioRef.current.paused) {
-        audioRef.current.play();
+    if (howl) {
+      if (!howl.playing()) {
+        howl.play();
       } else {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        howl.stop();
+        setPlaybackProgress(0);
       }
     }
   };
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.load();
-    }
-  }, [clipUrl]);
 
   useImperativeHandle(
     ref,
     () => ({
       togglePlayback: handlePlayClick,
     }),
-    [audioRef],
+    [howl],
   );
 
   return (
@@ -66,14 +85,18 @@ export const HornTile = forwardRef<
         className,
       )}
     >
-      <HornTileBorder audioRef={audioRef} />
-      {clipUrl && <audio ref={audioRef} src={clipUrl} />}
+      <HornTileBorder progress={playbackProgress} color='white' />
       <div
         className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
         onClick={onClick ? onClick : handlePlayClick}
       >
-        <div className='relative h-full w-full overflow-hidden rounded-md'>
-          <Image src={profilePic} alt='profile pic' fill />
+        <div className='relative h-full w-full overflow-hidden'>
+          <Image
+            src={profilePic}
+            alt='profile pic'
+            fill
+            className={cn('rounded-md border')}
+          />
         </div>
       </div>
       <div className='pointer-events-none absolute inset-0 p-[8px]'>
@@ -82,14 +105,16 @@ export const HornTile = forwardRef<
             <span className='text-[10px]'>{username ?? 'no user'}</span>
             <HornTileMenu horn={horn} />
           </div>
-          <span className='my-auto text-center font-bold'>{tagline}</span>
+          <span className='my-auto line-clamp-4 text-center text-[12px] font-bold leading-4'>
+            {tagline}
+          </span>
           <div className='flex justify-center'>
             {season && <span className='mr-auto text-center'>S{season}</span>}
             <button
               className='pointer-events-auto cursor-pointer text-center hover:underline'
               onClick={() => {
                 router.push(
-                  `/create?id=${getYouTubeId(horn.video)}&start=${start}&end=${end}`,
+                  `/create?id=${getYouTubeId(video)}&start=${start}&end=${end}`,
                 );
               }}
             >
@@ -101,102 +126,3 @@ export const HornTile = forwardRef<
     </div>
   );
 });
-
-type HornTileBorderProps = {
-  audioRef: React.RefObject<HTMLAudioElement>;
-};
-
-const HornTileBorder = ({ audioRef }: HornTileBorderProps) => {
-  const tileRef = useRef<HTMLDivElement | null>(null);
-  const [percentage, setPercentage] = useState(0);
-  const animationFrameRef = useRef<number | null>(null);
-
-  const createArcPath = (percentage: number) => {
-    const tile = tileRef.current;
-    if (!tile) return '';
-
-    const radius = Math.max(tile.offsetWidth, tile.offsetHeight) * 2;
-    const centerX = tile.offsetWidth / 2;
-    const centerY = tile.offsetHeight / 2;
-
-    const startAngle = -90;
-    const endAngle = (percentage / 100) * 360 - 90;
-
-    const startX = centerX + radius * Math.cos(startAngle * (Math.PI / 180));
-    const startY = centerY + radius * Math.sin(startAngle * (Math.PI / 180));
-    const endX = centerX + radius * Math.cos(endAngle * (Math.PI / 180));
-    const endY = centerY + radius * Math.sin(endAngle * (Math.PI / 180));
-
-    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
-
-    const d = cn(
-      `M ${centerX} ${centerY}`,
-      `L ${startX} ${startY}`,
-      `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
-      `L ${centerX} ${centerY}`,
-    );
-
-    return d;
-  };
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    const tile = tileRef.current;
-
-    const animate = () => {
-      if (audio && tile && !audio.paused) {
-        const progress = audio.currentTime / audio.duration;
-        setPercentage(progress * 100);
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    const handlePlay = () => {
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    const handlePause = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      setPercentage(0);
-    };
-
-    const handleEnded = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      setPercentage(0);
-    };
-
-    if (audio) {
-      audio.addEventListener('play', handlePlay);
-      audio.addEventListener('pause', handlePause);
-      audio.addEventListener('ended', handleEnded);
-    }
-
-    return () => {
-      if (audio) {
-        audio.removeEventListener('play', handlePlay);
-        audio.removeEventListener('pause', handlePause);
-        audio.removeEventListener('ended', handleEnded);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [audioRef]);
-
-  return (
-    <div
-      ref={tileRef}
-      className={cn(
-        'pointer-events-none absolute inset-0 rounded-lg border-white',
-        percentage > 0 && 'border-2',
-      )}
-      style={{
-        clipPath: `path('${createArcPath(percentage)}')`,
-      }}
-    />
-  );
-};

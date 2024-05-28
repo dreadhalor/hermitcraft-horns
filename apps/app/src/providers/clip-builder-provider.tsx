@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { Hermit } from '@drizzle/db';
+import { useAudioContext } from '@repo/audio-editor';
+import { PublishDraftParams, usePublishDraft } from '@/hooks/use-publish-draft';
 
 type ClipBuilderContextType = {
   zoomStart: number;
@@ -21,10 +23,10 @@ type ClipBuilderContextType = {
   setPlayTime: (value: number) => void;
   playSliderValue: number;
   setPlaySliderValue: (value: number) => void;
-  clipStart: number;
-  setClipStart: (value: number) => void;
-  clipEnd: number;
-  setClipEnd: (value: number) => void;
+  clipStart: number | undefined;
+  setClipStart: (value: number | undefined) => void;
+  clipEnd: number | undefined;
+  setClipEnd: (value: number | undefined) => void;
   duration: number;
   setDuration: (value: number) => void;
   playerRef: React.MutableRefObject<ReactPlayer | null>;
@@ -45,6 +47,22 @@ type ClipBuilderContextType = {
   playClip: () => void;
   file: File | null;
   setFile: (value: File | null) => void;
+  activeTab: string;
+  setActiveTab: (value: string) => void;
+  showAudioEditor: boolean;
+  setShowAudioEditor: (value: boolean) => void;
+  // re-exporting from usePublishDraft
+  publishDraft: ({
+    file,
+    start,
+    end,
+    videoUrl,
+    userId,
+    hermitId,
+    tagline,
+    season,
+  }: PublishDraftParams) => Promise<void>;
+  isPublishing: boolean;
 };
 
 const ClipBuilderContext = React.createContext<ClipBuilderContextType>(
@@ -70,8 +88,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [playTime, setPlayTime] = useState(0);
   const [playSliderValue, setPlaySliderValue] = useState(0);
 
-  const [clipStart, setClipStart] = useState(0);
-  const [clipEnd, setClipEnd] = useState(0);
+  const [clipStart, setClipStart] = useState<number | undefined>(0);
+  const [clipEnd, setClipEnd] = useState<number | undefined>(0);
 
   const [duration, setDuration] = useState(0);
 
@@ -86,6 +104,18 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [season, setSeason] = useState<string>('');
 
   const [file, setFile] = useState<File | null>(null);
+
+  const [activeTab, setActiveTab] = React.useState('clip-builder');
+  const changeActiveTab = (tab: string) => {
+    stopAudio();
+    setActiveTab(tab);
+  };
+
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
+
+  const { handleFileUpload, stopAudio } = useAudioContext();
+
+  const { publishDraft, isLoading: isPublishing } = usePublishDraft();
 
   const searchParams = useSearchParams();
   const videoId = searchParams.get('id') || '';
@@ -113,8 +143,14 @@ export const ClipBuilderProvider = ({ children }: Props) => {
     }
   }, [fineZoomStart, zoomStart, fineZoomEnd, zoomEnd]);
 
+  useEffect(() => {
+    if (!file) return;
+    handleFileUpload(file);
+  }, [file, handleFileUpload]);
+
   // we want to be able to play the clip through once in a function we will export & trigger with a button
   const playClip = () => {
+    if (!clipStart || !clipEnd) return;
     if (playerRef.current) {
       playerRef.current.seekTo(clipStart / 1000);
       playerRef.current.getInternalPlayer().playVideo();
@@ -208,6 +244,12 @@ export const ClipBuilderProvider = ({ children }: Props) => {
           playClip,
           file,
           setFile,
+          activeTab,
+          setActiveTab: changeActiveTab,
+          showAudioEditor,
+          setShowAudioEditor,
+          publishDraft,
+          isPublishing,
         }}
       >
         {children}

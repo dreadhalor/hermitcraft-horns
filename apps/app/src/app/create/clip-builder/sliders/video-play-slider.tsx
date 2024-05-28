@@ -53,8 +53,8 @@ export const VideoPlaySlider = ({ min, max }: Props) => {
         max={max}
         step={100}
         value={[playSliderValue]}
-        onValueChange={([val]) => handlePlaySliderChange(val)}
-        onValueCommit={([val]) => handlePlaySliderValueCommit(val)}
+        onValueChange={([val]) => handlePlaySliderChange(val!)}
+        onValueCommit={([val]) => handlePlaySliderValueCommit(val!)}
         onPointerDown={() => {
           setCurrentlySeeking(true);
           setShowTooltip(true);

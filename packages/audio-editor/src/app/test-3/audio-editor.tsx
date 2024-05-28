@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useSandboxAudioPlayer } from './use-sandbox-audio-player';
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@audio-editor/components/ui/slider';
 
 interface Props {
   file?: File;
@@ -36,7 +36,7 @@ export const AudioEditor = ({ file }: Props) => {
   handleFileUpload(file);
 
   const handleRangeChange = (values: number[]) => {
-    const [start, end] = values;
+    const [start, end] = values as [number, number];
     if (!isNaN(start) && start >= 0 && start <= (audioBuffer?.duration || 0)) {
       setSelectionStart(start);
     } else {

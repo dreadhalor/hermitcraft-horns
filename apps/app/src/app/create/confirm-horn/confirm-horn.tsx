@@ -7,11 +7,19 @@ import React from 'react';
 import { Button } from '@ui/button';
 import { FaPlay } from 'react-icons/fa6';
 
-interface Props {
-  setActiveTab: (tab: string) => void;
-}
-export const ConfirmHorn = ({ setActiveTab }: Props) => {
-  const { tagline, hermit, season, file } = useClipBuilder();
+export const ConfirmHorn = () => {
+  const {
+    tagline,
+    hermit,
+    season,
+    clipStart,
+    clipEnd,
+    videoUrl,
+    file,
+    setActiveTab,
+    publishDraft,
+    isPublishing,
+  } = useClipBuilder();
   const { user } = useHHUser();
   const hornRef = React.useRef<any>(null);
 
@@ -21,10 +29,26 @@ export const ConfirmHorn = ({ setActiveTab }: Props) => {
     }
   };
 
+  const handlePublish = async () => {
+    if (!file) return;
+    await publishDraft({
+      file,
+      start: clipStart ?? 0,
+      end: clipEnd ?? 0,
+      videoUrl,
+      userId: user!.id,
+      hermitId: hermit!.ChannelID!,
+      tagline,
+      season,
+    });
+  };
+
   return (
     <div className='flex h-full w-full items-center justify-center px-4'>
       <div className='grid grid-cols-1 gap-2'>
-        <span className='text-lg font-bold'>Congrats, you made a horn!</span>
+        <span className='mt-4 text-lg font-bold'>
+          Congrats, you made a horn!
+        </span>
         <HornFileTile
           ref={hornRef}
           horn={{
@@ -47,6 +71,14 @@ export const ConfirmHorn = ({ setActiveTab }: Props) => {
           <Button type='button' className='w-full' onClick={playHorn}>
             <FaPlay className='mr-2' />
             Play
+          </Button>
+          <Button
+            type='button'
+            className='col-span-2'
+            onClick={handlePublish}
+            disabled={!file || isPublishing}
+          >
+            {isPublishing ? 'Publishing...' : '🎉 Publish Horn!'}
           </Button>
         </div>
       </div>

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { ReactP5Wrapper } from '@p5-wrapper/react';
-import { downloadAudio } from './audio-utils';
+import { NextReactP5Wrapper } from '@p5-wrapper/next';
 import { WaveformSketch } from './waveform-sketch';
 import { MinimapSketch } from './minimap-sketch';
 import { useAudioContext } from './audio-provider';
@@ -10,11 +9,11 @@ import { FaCropSimple } from 'react-icons/fa6';
 import { IoIosRedo, IoMdCut } from 'react-icons/io';
 import { FaPlay, FaPause } from 'react-icons/fa';
 import { RiRewindStartFill } from 'react-icons/ri';
-import LoopSelection from '@/assets/loop-selection.svg';
-import ClearSelection from '@/assets/clear-selection.svg';
+import LoopSelection from '@audio-editor/assets/loop-selection.svg';
+import ClearSelection from '@audio-editor/assets/clear-selection.svg';
 import Image from 'next/image';
 import { MdLoop } from 'react-icons/md';
-import { cn } from '@/lib/utils';
+import { cn } from '@audio-editor/lib/utils';
 import { IoIosUndo } from 'react-icons/io';
 
 const Page = () => {
@@ -37,7 +36,7 @@ const Page = () => {
     canRedo,
     handleCrop,
     handleTrim,
-    // Re-exported from useSandboxAudioPlayer
+    // Re-exported from useAudioPlayer
     isPlaying,
     playPause,
     stopAudio,
@@ -242,7 +241,7 @@ const Page = () => {
         id='waveform'
         className='w-full bg-[#4665BA] rounded-md shadow mb-4 p-4 min-h-0'
       >
-        <ReactP5Wrapper
+        <NextReactP5Wrapper
           sketch={WaveformSketch as any}
           audioBuffer={audioBuffer}
           currentTime={getCurrentTime()}
@@ -265,7 +264,7 @@ const Page = () => {
       >
         <div className='relative w-full h-full'>
           <div ref={sketchWidthRef} className='absolute inset-0' />
-          <ReactP5Wrapper
+          <NextReactP5Wrapper
             sketch={MinimapSketch as any}
             audioBuffer={audioBuffer}
             currentTime={getCurrentTime()}
@@ -278,17 +277,6 @@ const Page = () => {
           />
         </div>
       </div>
-      <button
-        onClick={() => downloadAudio(audioBuffer)}
-        className={cn(
-          buttonClass,
-          hasTrack ? enabledClass : disabledClass,
-          'w-auto px-2'
-        )}
-        disabled={!audioBuffer}
-      >
-        Download
-      </button>
     </div>
   );
 };

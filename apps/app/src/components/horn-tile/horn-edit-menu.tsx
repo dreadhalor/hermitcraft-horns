@@ -35,15 +35,18 @@ export const HornEditMenu = ({ horn }: Props) => {
   const { editClip } = useEditClip();
   const { deleteClip } = useDeleteClip();
   const closeRef = React.useRef<HTMLButtonElement>(null);
+  const { hermit, id } = horn!;
+  const tagline = horn?.tagline ?? '';
+  const season = horn?.season ?? 'unknown';
 
   const form = useForm<EditClipFrontendSchema>({
     resolver: zodResolver(editClipFrontendSchema),
     defaultValues: {
-      id: horn.id,
-      tagline: horn.tagline ?? '',
-      season: horn.season ?? '',
+      id,
+      tagline,
+      season,
       hermit: hermits.find(
-        (hermit) => hermit.ChannelID === horn.hermit?.ChannelID,
+        (_hermit) => _hermit.ChannelID === hermit?.ChannelID,
       ),
     },
   });
@@ -97,7 +100,7 @@ export const HornEditMenu = ({ horn }: Props) => {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <Button
                     variant='destructive'
-                    onClick={() => deleteClip({ id: horn.id })}
+                    onClick={() => deleteClip({ id })}
                   >
                     Delete Horn
                   </Button>

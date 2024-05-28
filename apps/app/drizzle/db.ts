@@ -278,7 +278,7 @@ export const getPaginatedClips = async ({
     })),
   );
 
-  const totalCount = totalCountResult[0].count;
+  const totalCount = totalCountResult[0]!.count;
   const totalPages = Math.ceil(totalCount / limit);
 
   return {
@@ -394,12 +394,12 @@ export const getCachedHermitcraftVideos = async () => {
 
   if (cachedResult.length > 0) {
     const now = new Date();
-    const lastUpdate = new Date(cachedResult[0].updatedAt);
+    const lastUpdate = new Date(cachedResult[0]!.updatedAt);
     const age = now.getTime() - lastUpdate.getTime();
 
     if (age < CACHE_DURATION) {
       // seeeeee we're returning cached data, plz don't be mad at me Hypno
-      return cachedResult[0].data;
+      return cachedResult[0]!.data;
     }
   }
 

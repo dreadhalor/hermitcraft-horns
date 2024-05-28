@@ -19,8 +19,8 @@ export const ZoomSlider = () => {
     clipEnd,
   } = useClipBuilder();
 
-  const clipStartRelative = duration ? clipStart / duration : 0;
-  const clipEndRelative = duration ? clipEnd / duration : 0;
+  const clipStartRelative = duration ? (clipStart ?? 0) / duration : 0;
+  const clipEndRelative = duration ? (clipEnd ?? 0) / duration : 0;
 
   const fineZoomStartRelative = duration ? fineZoomStart / duration : 0;
   const fineZoomEndRelative = duration ? fineZoomEnd / duration : 0;
@@ -44,8 +44,8 @@ export const ZoomSlider = () => {
         max={duration || 0}
         value={[zoomStart, zoomEnd]}
         onValueChange={(value) => {
-          setZoomStart(value[0]);
-          setZoomEnd(value[1]);
+          setZoomStart(value[0]!);
+          setZoomEnd(value[1]!);
         }}
         step={1000}
         onPointerDown={() => setSliderActive(true)}

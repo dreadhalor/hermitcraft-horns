@@ -36,6 +36,7 @@ export const useAudioPlayer = () => {
 
   useEffect(() => {
     audioContextRef.current = new AudioContext();
+
     return () => {
       audioContextRef.current?.close();
       if (animationFrameId.current !== null) {

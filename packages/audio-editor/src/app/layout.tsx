@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
-import { cn } from '@/lib/utils';
+import { cn } from '@audio-editor/lib/utils';
 import { AudioProvider } from './test-2/audio-provider';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -14,11 +16,19 @@ const fontSans = FontSans({
   variable: '--font-sans',
 });
 
-export default function RootLayout({
+const readAudioFile = async (filename: string) => {
+  const filePath = path.join(process.cwd(), 'public', filename);
+  const fileBuffer = await fs.readFile(filePath);
+  return fileBuffer.toString('base64'); // Convert to base64 string
+};
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const audioFileBuffer = await readAudioFile('wels.mp3');
+
   return (
     <html lang='en' className='h-full' suppressHydrationWarning>
       <head />
@@ -28,7 +38,9 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <AudioProvider>{children}</AudioProvider>
+        <AudioProvider initialFileBuffer={audioFileBuffer}>
+          {children}
+        </AudioProvider>
       </body>
     </html>
   );
