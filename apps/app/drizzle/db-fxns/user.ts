@@ -56,7 +56,7 @@ export const getNewUsername = async () => {
   const [countDestructure] = await db
     .select({ count: count() })
     .from(schema.newUsernames);
-  const availableNameCount = countDestructure.count;
+  const availableNameCount = countDestructure!.count;
 
   if (!availableNameCount) {
     console.log('no available usernames');
@@ -70,7 +70,7 @@ export const getNewUsername = async () => {
     .from(schema.newUsernames)
     .offset(randomIndex)
     .limit(1);
-  const { username } = result[0];
+  const { username } = result[0]!;
   return username;
 };
 

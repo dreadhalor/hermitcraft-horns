@@ -19,8 +19,8 @@ export const FineZoomSlider = () => {
 
   const zoomRange = zoomEnd - zoomStart;
 
-  const clipStartRelative = (clipStart - zoomStart) / zoomRange;
-  const clipEndRelative = (clipEnd - zoomStart) / zoomRange;
+  const clipStartRelative = ((clipStart ?? 0) - zoomStart) / zoomRange;
+  const clipEndRelative = ((clipEnd ?? 0) - zoomStart) / zoomRange;
 
   const [sliderActive, setSliderActive] = React.useState(false);
   const [leftThumbFocused, setLeftThumbFocused] = React.useState(false);
@@ -41,8 +41,8 @@ export const FineZoomSlider = () => {
         max={zoomEnd}
         value={[fineZoomStart, fineZoomEnd]}
         onValueChange={(value) => {
-          setFineZoomStart(value[0]);
-          setFineZoomEnd(value[1]);
+          setFineZoomStart(value[0]!);
+          setFineZoomEnd(value[1]!);
         }}
         step={100}
         onPointerDown={() => setSliderActive(true)}

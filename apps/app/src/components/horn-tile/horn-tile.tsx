@@ -90,7 +90,7 @@ export const HornTile = forwardRef<
         className='absolute inset-0 flex items-center justify-center p-[4px] brightness-[60%]'
         onClick={onClick ? onClick : handlePlayClick}
       >
-        <div className='relative h-full w-full overflow-hidden rounded-md'>
+        <div className='relative h-full w-full overflow-hidden'>
           <Image
             src={profilePic}
             alt='profile pic'

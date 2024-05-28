@@ -23,10 +23,10 @@ type ClipBuilderContextType = {
   setPlayTime: (value: number) => void;
   playSliderValue: number;
   setPlaySliderValue: (value: number) => void;
-  clipStart: number;
-  setClipStart: (value: number) => void;
-  clipEnd: number;
-  setClipEnd: (value: number) => void;
+  clipStart: number | undefined;
+  setClipStart: (value: number | undefined) => void;
+  clipEnd: number | undefined;
+  setClipEnd: (value: number | undefined) => void;
   duration: number;
   setDuration: (value: number) => void;
   playerRef: React.MutableRefObject<ReactPlayer | null>;
@@ -88,8 +88,8 @@ export const ClipBuilderProvider = ({ children }: Props) => {
   const [playTime, setPlayTime] = useState(0);
   const [playSliderValue, setPlaySliderValue] = useState(0);
 
-  const [clipStart, setClipStart] = useState(0);
-  const [clipEnd, setClipEnd] = useState(0);
+  const [clipStart, setClipStart] = useState<number | undefined>(0);
+  const [clipEnd, setClipEnd] = useState<number | undefined>(0);
 
   const [duration, setDuration] = useState(0);
 
@@ -150,6 +150,7 @@ export const ClipBuilderProvider = ({ children }: Props) => {
 
   // we want to be able to play the clip through once in a function we will export & trigger with a button
   const playClip = () => {
+    if (!clipStart || !clipEnd) return;
     if (playerRef.current) {
       playerRef.current.seekTo(clipStart / 1000);
       playerRef.current.getInternalPlayer().playVideo();

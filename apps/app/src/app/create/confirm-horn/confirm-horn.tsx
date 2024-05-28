@@ -33,8 +33,8 @@ export const ConfirmHorn = () => {
     if (!file) return;
     await publishDraft({
       file,
-      start: clipStart,
-      end: clipEnd,
+      start: clipStart ?? 0,
+      end: clipEnd ?? 0,
       videoUrl,
       userId: user!.id,
       hermitId: hermit!.ChannelID!,

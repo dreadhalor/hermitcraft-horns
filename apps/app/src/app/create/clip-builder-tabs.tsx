@@ -33,7 +33,7 @@ export const ClipBuilderTabs = ({ hermits }: Props) => {
   } = useClipBuilder();
   const { user } = useHHUser();
 
-  const clipLength = (clipEnd - clipStart) / 1000;
+  const clipLength = (clipEnd ?? 0 - (clipStart ?? 0)) / 1000;
   const disabled = clipLength > MAX_CLIP_LENGTH || !user || isPublishing;
 
   useEffect(() => {
