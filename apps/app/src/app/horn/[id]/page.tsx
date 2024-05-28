@@ -25,7 +25,7 @@ const HornPage = () => {
     return (
       <div className='flex flex-1 items-center justify-center'>
         No horn here, sorry! Try&nbsp;
-        <Link href='/' className='underline'>
+        <Link href='/home' className='underline'>
           going back
         </Link>
         .
@@ -41,7 +41,7 @@ const HornPage = () => {
 
   return (
     <main className='flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
-      <Link href='/' className='w-full'>
+      <Link href='/home' className='w-full'>
         <Image src={Banner} alt='banner' className='w-full' />
       </Link>
       <Link
@@ -60,7 +60,7 @@ const HornPage = () => {
         >
           Play / Stop
         </Button>
-        <Link href='/' className='mt-2 hover:underline'>
+        <Link href='/home' className='mt-2 hover:underline'>
           &larr; Back to home
         </Link>
       </div>

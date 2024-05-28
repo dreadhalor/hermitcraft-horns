@@ -25,7 +25,9 @@ interface Props {
   setSelectedTime: (time: TimeRange) => void;
   selectedQuote: string | null;
   setSelectedQuote: (quote: string | null) => void;
+  clearFilters: () => void;
 }
+
 export const HornFilters = ({
   selectedHermit,
   setSelectedHermit,
@@ -33,6 +35,7 @@ export const HornFilters = ({
   setSelectedTime,
   selectedQuote,
   setSelectedQuote,
+  clearFilters,
 }: Props) => {
   const [tab, setTab] = React.useState('main');
   const numFilters =
@@ -62,11 +65,7 @@ export const HornFilters = ({
                 <Button
                   variant='link'
                   className='h-auto w-auto p-0 text-xs text-red-700'
-                  onClick={() => {
-                    setSelectedHermit(null);
-                    setSelectedTime('allTime');
-                    setSelectedQuote(null);
-                  }}
+                  onClick={clearFilters}
                 >
                   clear filters
                 </Button>

@@ -27,7 +27,7 @@ export const Navbar = () => {
     <div className='flex flex-nowrap items-center gap-2 p-2'>
       <button
         className='relative -mt-[2px] aspect-square h-full'
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/home')}
       >
         <Image src={GoatHornImage} alt='goat horn image' fill />
       </button>

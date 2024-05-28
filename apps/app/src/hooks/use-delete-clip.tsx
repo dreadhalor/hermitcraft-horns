@@ -23,7 +23,7 @@ export const useDeleteClip = () => {
     onSuccess: () => {
       toast.success('Horn deleted!');
       if (pathname.startsWith('/horn')) {
-        router.push('/');
+        router.push('/home');
       }
       queryClient.invalidateQueries({ queryKey });
     },

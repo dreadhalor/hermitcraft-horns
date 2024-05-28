@@ -10,7 +10,7 @@ export const MainNav = () => {
   const pathname = usePathname();
   const getActiveTab = (pathname: string) => {
     switch (pathname) {
-      case '/':
+      case '/home':
         return 'horns';
       case '/create':
         return 'create';
@@ -30,7 +30,7 @@ export const MainNav = () => {
             asChild
             className='flex h-full items-center justify-center gap-2 rounded-none text-muted data-[state=active]:bg-[#354B87] data-[state=active]:text-white'
           >
-            <Link href='/'>
+            <Link href='/home'>
               <GoatHornSVG fill='white' className='h-7 w-7' />
               <span>Home</span>
             </Link>
