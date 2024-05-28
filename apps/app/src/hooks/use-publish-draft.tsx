@@ -61,7 +61,7 @@ export const usePublishDraft = () => {
       toast.success(
         'Clip created successfully! Check it out in the home feed.',
       );
-      router.push('/');
+      router.push('/home');
       setClipUrl(uploadedAudioUrl);
     } catch (error) {
       console.error('Error publishing draft:', error);

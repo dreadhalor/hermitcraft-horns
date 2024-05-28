@@ -28,7 +28,7 @@ const ProfilePage = () => {
         <div className='flex gap-2'>
           <button
             className='relative -mt-[2px] aspect-square h-[36px]'
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
           >
             <Image src={GoatHornImage} alt='goat horn image' fill />
           </button>
@@ -65,7 +65,7 @@ const ProfilePage = () => {
               emptyMessage={
                 <span>
                   No favorites found... yet! Try&nbsp;
-                  <a href='/' className='font-bold hover:underline'>
+                  <a href='/home' className='font-bold hover:underline'>
                     picking some favorites from the home feed!
                   </a>
                 </span>
@@ -85,7 +85,7 @@ const ProfilePage = () => {
       </SignedOut>
       <SignedIn>
         <Button
-          onClick={() => signOut(() => router.push('/'))}
+          onClick={() => signOut(() => router.push('/home'))}
           variant='destructive'
           className='mt-[20px] w-full bg-[hsl(0,50%,50%)] hover:bg-[hsl(0,50%,40%)]'
         >

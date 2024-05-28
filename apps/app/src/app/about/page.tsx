@@ -12,7 +12,7 @@ const AboutPage = () => {
       <div className='flex items-center gap-4'>
         <button
           className='relative -mt-[2px] aspect-square h-[48px] transition-transform duration-300 ease-in-out hover:scale-110'
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/home')}
         >
           <Image src={GoatHornImage} alt='goat horn image' fill />
         </button>
@@ -101,7 +101,7 @@ const AboutPage = () => {
           I may have to put you on hold...
         </Link>
       </p>
-      <p>
+      <p className='text-lg text-gray-700'>
         Oh, & if anyone's looking for a software engineer...{' '}
         <a
           href='https://scottjhetrick.com'

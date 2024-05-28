@@ -22,22 +22,56 @@ import {
 } from '@ui/pagination';
 import { TimeRange, getPaginationRange } from '@/lib/utils';
 import { HornFilters } from './horn-filters/horn-filters';
-import { Button } from '../ui/button';
+import { Button } from '@ui/button';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useApp } from '@/providers/app-provider';
 
 interface Props {
   id?: string;
   favorites?: boolean;
   emptyMessage?: string | React.ReactNode;
+  useParams?: boolean; // Whether or not the URL params hold state
 }
 
-export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
+export const HornsList = ({
+  id,
+  favorites = false,
+  emptyMessage,
+  useParams = false, // Default value is false
+}: Props) => {
   const { user } = useHHUser();
+  const { hermits } = useApp();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const [selectedSort, setSelectedSort] = useState<string>('newest');
+  const initialPage = useParams
+    ? parseInt(searchParams.get('page') || '1', 10)
+    : 1;
+  const initialHermitName = useParams ? searchParams.get('hermit') || '' : '';
+  const initialSort = useParams
+    ? searchParams.get('sort') || 'newest'
+    : 'newest';
+  const initialTime = useParams
+    ? searchParams.get('time') || 'allTime'
+    : 'allTime';
+  const initialQuote = useParams ? searchParams.get('quote') || '' : '';
+
+  const [selectedSort, setSelectedSort] = useState<string>(initialSort);
   const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
-  const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<TimeRange>('allTime');
-  const [selectedPage, setSelectedPage] = useState<number>(1);
+  const [selectedQuote, setSelectedQuote] = useState<string | null>(
+    initialQuote || null,
+  );
+  const [selectedTime, setSelectedTime] = useState<TimeRange>(
+    initialTime as TimeRange,
+  );
+  const [selectedPage, setSelectedPage] = useState<number>(initialPage);
+
+  useEffect(() => {
+    if (initialHermitName) {
+      const hermit = hermits.find((h) => h.ChannelName === initialHermitName);
+      setSelectedHermit(hermit || null);
+    }
+  }, [initialHermitName, hermits]);
 
   const { data, isLoading } = trpc.getPaginatedClips.useQuery({
     userId: user?.id ?? '',
@@ -59,8 +93,109 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
     }) ?? [];
 
   useEffect(() => {
+    if (useParams) {
+      const currentPage = parseInt(searchParams.get('page') || '1', 10);
+      if (currentPage !== selectedPage) {
+        setSelectedPage(currentPage);
+      }
+    }
+  }, [searchParams, selectedPage, useParams]);
+
+  const updateURL = (params: URLSearchParams) => {
+    if (params.get('page') === '1') {
+      params.delete('page');
+    }
+    if (params.get('time') === 'allTime') {
+      params.delete('time');
+    }
+    if (params.get('sort') === 'newest') {
+      params.delete('sort');
+    }
+    if (params.get('quote') === '') {
+      params.delete('quote');
+    }
+    const queryString = params.toString();
+    router.replace(`?${queryString}`);
+  };
+
+  const resetPageAndFilters = (params: URLSearchParams) => {
     setSelectedPage(1);
-  }, [selectedSort, selectedTime, selectedHermit]);
+    if (useParams) {
+      params.set('page', '1');
+      updateURL(params);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setSelectedPage(page);
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      if (page === 1) {
+        params.delete('page');
+      } else {
+        params.set('page', page.toString());
+      }
+      updateURL(params);
+    }
+  };
+
+  const handleHermitChange = (hermit: Hermit | null) => {
+    setSelectedHermit(hermit);
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      if (hermit) {
+        params.set('hermit', hermit.ChannelName);
+      } else {
+        params.delete('hermit');
+      }
+      resetPageAndFilters(params);
+    } else setSelectedPage(1);
+  };
+
+  const handleSortChange = (sort: string) => {
+    setSelectedSort(sort);
+
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      params.set('sort', sort);
+      resetPageAndFilters(params);
+    } else setSelectedPage(1);
+  };
+
+  const handleTimeChange = (time: TimeRange) => {
+    setSelectedTime(time);
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      params.set('time', time);
+      resetPageAndFilters(params);
+    } else setSelectedPage(1);
+  };
+
+  const handleQuoteChange = (quote: string | null) => {
+    setSelectedQuote(quote);
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      if (quote) {
+        params.set('quote', quote);
+      } else {
+        params.delete('quote');
+      }
+      resetPageAndFilters(params);
+    } else setSelectedPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedHermit(null);
+    setSelectedTime('allTime');
+    setSelectedQuote(null);
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      params.delete('hermit');
+      params.delete('time');
+      params.delete('quote');
+      resetPageAndFilters(params);
+    } else setSelectedPage(1);
+  };
 
   if (isLoading || !clips) {
     return <div>Loading...</div>;
@@ -74,14 +209,14 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
           <Button
             variant='link'
             className='ml-auto p-0 text-xs text-white'
-            onClick={() => setSelectedQuote(null)}
+            onClick={() => handleQuoteChange(null)}
           >
             Clear
           </Button>
         </div>
       )}
       <div className='flex items-center justify-between'>
-        <Select value={selectedSort} onValueChange={setSelectedSort}>
+        <Select value={selectedSort} onValueChange={handleSortChange}>
           <SelectTrigger className='w-[160px]'>
             <SelectValue placeholder='Sort by' />
           </SelectTrigger>
@@ -94,11 +229,12 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
         <HornFilters
           {...{
             selectedHermit,
-            setSelectedHermit,
+            setSelectedHermit: handleHermitChange,
             selectedTime,
-            setSelectedTime,
+            setSelectedTime: handleTimeChange,
             selectedQuote,
-            setSelectedQuote,
+            setSelectedQuote: handleQuoteChange,
+            clearFilters: handleClearFilters,
           }}
         />
       </div>
@@ -122,7 +258,7 @@ export const HornsList = ({ id, favorites = false, emptyMessage }: Props) => {
               <PaginationItem className='cursor-pointer'>
                 <PaginationLink
                   isActive={page === selectedPage}
-                  onClick={() => setSelectedPage(page)}
+                  onClick={() => handlePageChange(page)}
                 >
                   {page}
                 </PaginationLink>
