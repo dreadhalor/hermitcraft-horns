@@ -54,9 +54,14 @@ export const useAudioContext = () => {
   return context;
 };
 
-export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
+interface AudioProviderProps {
+  children: React.ReactNode;
+  initialFileBuffer?: string; // Base64 string
+}
+export const AudioProvider = ({
   children,
-}) => {
+  initialFileBuffer,
+}: AudioProviderProps) => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [duration, setDuration] = useState(0);
   const [visibleStartTime, setVisibleStartTime] = useState(0);
@@ -64,6 +69,23 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   const [undoStack, setUndoStack] = useState<AudioBuffer[]>([]);
   const [redoStack, setRedoStack] = useState<AudioBuffer[]>([]);
   const [exportingFile, setExportingFile] = useState(false);
+
+  useEffect(() => {
+    if (initialFileBuffer) {
+      console.log('initial file buffer', initialFileBuffer);
+      const byteString = atob(initialFileBuffer); // Decode base64
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uintArray = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < byteString.length; i++) {
+        uintArray[i] = byteString.charCodeAt(i);
+      }
+      const initFile = new File([uintArray], 'audio.mp3', {
+        type: 'audio/mp3',
+      });
+      console.log('initial file', initFile);
+      handleFileUpload(initFile);
+    }
+  }, [initialFileBuffer]);
 
   console.log('audio provider');
 
@@ -102,6 +124,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     const audioContext = new AudioContext();
     if (!file) return;
     const arrayBuffer = await file.arrayBuffer();
+    console.log('array buffer', arrayBuffer);
     const decodedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     setAudioBuffer(decodedAudioBuffer);
     setDuration(decodedAudioBuffer.duration);

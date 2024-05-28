@@ -33,6 +33,7 @@ export const MinimapSketch = (p5: MinimapProps) => {
   let dragOffset = 0;
   let windowWidth = 0;
   let availableWidth = 0;
+  let isDragging = false;
 
   p5.updateWithProps = (props: MinimapProps) => {
     if (props.audioBuffer) audioBuffer = props.audioBuffer;
@@ -143,55 +144,90 @@ export const MinimapSketch = (p5: MinimapProps) => {
     p.rect(endX - handleSize / 2, 0, handleSize, height);
   };
 
-  p5.mousePressed = () => {
-    if (
-      audioBuffer &&
-      p5.mouseX >= 0 &&
-      p5.mouseX <= p5.width &&
-      p5.mouseY >= 0 &&
-      p5.mouseY <= p5.height
-    ) {
+  const handleStartDrag = (x: number, y: number) => {
+    if (audioBuffer && isWithinCanvas(x, y)) {
       const handleSize = 10;
       const startX = (visibleStartTime / audioBuffer.duration) * p5.width;
       const endX = (visibleEndTime / audioBuffer.duration) * p5.width;
 
-      if (Math.abs(p5.mouseX - startX) < handleSize) {
+      isDragging = true;
+
+      if (Math.abs(x - startX) < handleSize) {
         isDraggingStartHandle = true;
-      } else if (Math.abs(p5.mouseX - endX) < handleSize) {
+      } else if (Math.abs(x - endX) < handleSize) {
         isDraggingEndHandle = true;
-      } else if (p5.mouseX > startX && p5.mouseX < endX) {
+      } else if (x > startX && x < endX) {
         isDraggingWindow = true;
-        dragOffset = p5.mouseX - startX;
+        dragOffset = x - startX;
       }
     }
+  };
+
+  const handleDrag = (x: number, y: number) => {
+    if (isDragging) {
+      if (isDraggingWindow && audioBuffer && onBoundsChange) {
+        let newStartX = x - dragOffset;
+        newStartX = Math.max(0, Math.min(newStartX, p5.width - windowWidth));
+        const newStartTime = (newStartX / p5.width) * audioBuffer.duration;
+        const newEndTime =
+          newStartTime +
+          ((visibleEndTime - visibleStartTime) / audioBuffer.duration) *
+            audioBuffer.duration;
+        onBoundsChange(newStartTime, newEndTime);
+      } else if (isDraggingStartHandle && audioBuffer && onBoundsChange) {
+        const newStartX = Math.max(0, Math.min(x, p5.width));
+        const newStartTime = (newStartX / p5.width) * audioBuffer.duration;
+        if (newStartTime < visibleEndTime) {
+          onBoundsChange(newStartTime, visibleEndTime);
+        }
+      } else if (isDraggingEndHandle && audioBuffer && onBoundsChange) {
+        const newEndX = Math.max(0, Math.min(x, p5.width));
+        const newEndTime = (newEndX / p5.width) * audioBuffer.duration;
+        if (newEndTime > visibleStartTime) {
+          onBoundsChange(visibleStartTime, newEndTime);
+        }
+      }
+    }
+  };
+
+  const isWithinCanvas = (x: number, y: number) => {
+    return x >= 0 && x <= p5.width && y >= 0 && y <= p5.height;
+  };
+
+  p5.mousePressed = () => {
+    handleStartDrag(p5.mouseX, p5.mouseY);
   };
 
   p5.mouseDragged = () => {
-    if (isDraggingWindow && audioBuffer && onBoundsChange) {
-      let newStartX = p5.mouseX - dragOffset;
-      newStartX = Math.max(0, Math.min(newStartX, p5.width - windowWidth));
-      const newStartTime = (newStartX / p5.width) * audioBuffer.duration;
-      const newEndTime =
-        newStartTime +
-        ((visibleEndTime - visibleStartTime) / audioBuffer.duration) *
-          audioBuffer.duration;
-      onBoundsChange(newStartTime, newEndTime);
-    } else if (isDraggingStartHandle && audioBuffer && onBoundsChange) {
-      const newStartX = Math.max(0, Math.min(p5.mouseX, p5.width));
-      const newStartTime = (newStartX / p5.width) * audioBuffer.duration;
-      if (newStartTime < visibleEndTime) {
-        onBoundsChange(newStartTime, visibleEndTime);
-      }
-    } else if (isDraggingEndHandle && audioBuffer && onBoundsChange) {
-      const newEndX = Math.max(0, Math.min(p5.mouseX, p5.width));
-      const newEndTime = (newEndX / p5.width) * audioBuffer.duration;
-      if (newEndTime > visibleStartTime) {
-        onBoundsChange(visibleStartTime, newEndTime);
-      }
-    }
+    handleDrag(p5.mouseX, p5.mouseY);
   };
 
   p5.mouseReleased = () => {
+    isDragging = false;
+    isDraggingWindow = false;
+    isDraggingStartHandle = false;
+    isDraggingEndHandle = false;
+  };
+
+  p5.touchStarted = (event: any) => {
+    const touch = p5.touches[0] as any;
+    const coords = [touch?.x || p5.mouseX, touch?.y || p5.mouseY];
+    if (isWithinCanvas(coords[0], coords[1])) event.preventDefault(); // Prevent page scroll
+    handleStartDrag(coords[0], coords[1]);
+  };
+
+  p5.touchMoved = (event: any) => {
+    const touch = p5.touches[0] as any;
+    const coords = [touch?.x || p5.mouseX, touch?.y || p5.mouseY];
+    if (isWithinCanvas(coords[0], coords[1])) event.preventDefault(); // Prevent page scroll
+    handleDrag(coords[0], coords[1]);
+  };
+
+  p5.touchEnded = (event: any) => {
+    const touch = p5.touches[0] as any;
+    const coords = [touch?.x || p5.mouseX, touch?.y || p5.mouseY];
+    if (isWithinCanvas(coords[0], coords[1])) event.preventDefault(); // Prevent page scroll
+    isDragging = false;
     isDraggingWindow = false;
     isDraggingStartHandle = false;
     isDraggingEndHandle = false;
