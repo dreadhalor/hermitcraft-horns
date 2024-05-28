@@ -1,13 +1,7 @@
 'use client';
 
 import JoeHills from '@/assets/hermits/joehills.jpeg';
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { cn, getYouTubeId } from '@/lib/utils';
 import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';

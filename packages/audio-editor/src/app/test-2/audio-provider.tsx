@@ -73,7 +73,6 @@ export const AudioProvider = ({
 
   useEffect(() => {
     if (initialFileBuffer) {
-      console.log('initial file buffer', initialFileBuffer);
       const byteString = atob(initialFileBuffer); // Decode base64
       const arrayBuffer = new ArrayBuffer(byteString.length);
       const uintArray = new Uint8Array(arrayBuffer);
@@ -83,12 +82,9 @@ export const AudioProvider = ({
       const initFile = new File([uintArray], 'audio.mp3', {
         type: 'audio/mp3',
       });
-      console.log('initial file', initFile);
       handleFileUpload(initFile);
     }
   }, [initialFileBuffer]);
-
-  console.log('audio provider');
 
   const {
     selectionStart,
@@ -126,7 +122,6 @@ export const AudioProvider = ({
     unmute(audioContext);
     if (!file) return;
     const arrayBuffer = await file.arrayBuffer();
-    console.log('array buffer', arrayBuffer);
     const decodedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     setAudioBuffer(decodedAudioBuffer);
     setDuration(decodedAudioBuffer.duration);
