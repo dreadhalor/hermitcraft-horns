@@ -253,10 +253,11 @@ export const HornsList = ({
           {range.map((page, index) => (
             <Fragment key={index}>
               {index > 0 && page - range[index - 1]! > 1 && (
-                <PaginationEllipsis />
+                <PaginationEllipsis className='w-4' />
               )}
               <PaginationItem className='cursor-pointer'>
                 <PaginationLink
+                  className='h-[28px] w-[28px]'
                   isActive={page === selectedPage}
                   onClick={() => handlePageChange(page)}
                 >
@@ -264,7 +265,7 @@ export const HornsList = ({
                 </PaginationLink>
               </PaginationItem>
               {index === range.length - 1 && page < totalPages && (
-                <PaginationEllipsis />
+                <PaginationEllipsis className='w-4' />
               )}
             </Fragment>
           ))}
