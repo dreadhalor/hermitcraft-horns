@@ -7,9 +7,10 @@ import Image from 'next/image';
 import { HornTileMenu } from './horn-tile-menu';
 import { useRouter } from 'next/navigation';
 import { Horn } from '@/trpc';
-import HornTileBorder from './horn-tile-border';
-import { Howl } from 'howler';
+import { HornTileBorder } from './horn-tile-border';
+import { Howl, Howler } from 'howler';
 import { useHowlerProgress } from '@/hooks/use-howler-progress';
+import { unmute } from '@repo/audio-editor';
 
 type HornTileProps = {
   horn: Horn;
@@ -19,6 +20,8 @@ type HornTileProps = {
     togglePlayback: () => void;
   }>;
 };
+
+var ctxLocked = 0;
 
 export const HornTile = forwardRef<
   { togglePlayback: () => void },
@@ -39,6 +42,13 @@ export const HornTile = forwardRef<
         src: [clipUrl],
         preload: true,
         onplay: updatePlaybackProgress,
+        onload: () => {
+          if (ctxLocked === 0) {
+            // hack of all hacks, but it won't play on silent otherwise
+            unmute(Howler.ctx);
+            ctxLocked = 1;
+          }
+        },
         onpause: () => {
           setPlaybackProgress(0);
         },

@@ -6,7 +6,7 @@ type HornTileBorderProps = {
   color: string;
 };
 
-const HornTileBorder = ({ progress, color }: HornTileBorderProps) => {
+export const HornTileBorder = ({ progress, color }: HornTileBorderProps) => {
   const tileRef = useRef<HTMLDivElement | null>(null);
 
   const createArcPath = (percentage: number) => {
@@ -51,5 +51,3 @@ const HornTileBorder = ({ progress, color }: HornTileBorderProps) => {
     />
   );
 };
-
-export default HornTileBorder;
