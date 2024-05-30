@@ -1,15 +1,14 @@
 import React from 'react';
-import Banner from '@/assets/banner.png';
-import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/tabs';
 import { HornsList } from '@/components/horn-tile/horns-list';
 import { VideosList } from '@/components/videos-list/videos-list';
 import Link from 'next/link';
+import { MenuStuff } from './menu-stuff';
 
 const Home = () => {
   return (
-    <main className='flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
-      <Image src={Banner} alt='banner' className='w-full' />
+    <main className='relative flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
+      <MenuStuff />
       <Link
         href='/about'
         className='my-[-10px] text-sm font-semibold text-[#354B87] hover:underline'
