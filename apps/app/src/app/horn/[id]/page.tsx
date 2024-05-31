@@ -35,7 +35,9 @@ const HornPage = () => {
 
   if (isLoading || !horn) {
     return (
-      <div className='flex flex-1 items-center justify-center'>Loading...</div>
+      <div className='flex flex-1 items-center justify-center'>
+        Loading horn...
+      </div>
     );
   }
 

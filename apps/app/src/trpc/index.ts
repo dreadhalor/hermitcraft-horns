@@ -8,6 +8,7 @@ import {
   deleteClip as drizzleDeleteClip,
   getPaginatedClips as drizzleGetPaginatedClips,
   getClip as drizzleGetClip,
+  getRandomClip as drizzleGetRandomClip,
 } from '@drizzle/db';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
@@ -35,6 +36,10 @@ export const appRouter = router({
       const result = await drizzleGetClip(clipId, userId);
       return result;
     }),
+  getRandomClip: publicProcedure.query(async () => {
+    const result = await drizzleGetRandomClip();
+    return result;
+  }),
   getClips: publicProcedure
     .input(
       z.object({

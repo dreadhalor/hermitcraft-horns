@@ -1,4 +1,4 @@
-import { useApp } from '@/providers/app-provider';
+import { useApp } from '@/providers/app-provider-client';
 import React from 'react';
 import { SheetClose } from '@ui/sheet';
 import { Button } from '@ui/button';

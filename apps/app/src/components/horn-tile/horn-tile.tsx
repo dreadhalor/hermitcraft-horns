@@ -106,6 +106,7 @@ export const HornTile = forwardRef<
             alt='profile pic'
             fill
             className={cn('rounded-md border')}
+            sizes='100%'
           />
         </div>
       </div>

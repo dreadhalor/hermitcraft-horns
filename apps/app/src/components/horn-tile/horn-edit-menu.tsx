@@ -12,7 +12,7 @@ import { TaglineInput } from './tagline-input';
 import { SelectHermit } from './select-hermit';
 import { SelectSeason } from './select-season';
 import { useEditClip } from '@/hooks/use-edit-clip';
-import { useApp } from '@/providers/app-provider';
+import { useApp } from '@/providers/app-provider-client';
 import { useDeleteClip } from '@/hooks/use-delete-clip';
 import { SheetClose } from '@ui/sheet';
 import {

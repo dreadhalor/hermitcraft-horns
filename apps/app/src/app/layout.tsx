@@ -8,10 +8,10 @@ import { Suspense } from 'react';
 import { ClerkProvider } from '@clerk/nextjs';
 import { MainNav } from '@/components/main-nav';
 import { UserProvider } from '@/providers/user-provider';
-import { AppProvider } from '@/providers/app-provider';
 import { Toaster } from 'sonner';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { AppProviderServer } from '@/providers/app-provider-server';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -39,14 +39,13 @@ export default function RootLayout({
           )}
         >
           <TRPCProvider>
-            <AppProvider>
+            <AppProviderServer>
               <TooltipProvider>
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserProvider>
                     <div className='flex flex-1 justify-center'>
                       <div className='relative flex w-full flex-1 flex-col sm:max-w-lg'>
                         {children}
-
                         <MainNav />
                       </div>
                     </div>
@@ -54,7 +53,7 @@ export default function RootLayout({
                   </UserProvider>
                 </Suspense>
               </TooltipProvider>
-            </AppProvider>
+            </AppProviderServer>
           </TRPCProvider>
           <Analytics />
           <SpeedInsights />
