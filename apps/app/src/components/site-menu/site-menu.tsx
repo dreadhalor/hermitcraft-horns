@@ -15,6 +15,8 @@ export const SiteMenu = ({ imageRef }: Props) => {
     setTop((imageRef.current?.getBoundingClientRect().height ?? 0) / 2);
   }, [imageRef]);
 
+  console.log('top', top);
+
   if (!top) return null;
 
   return (
