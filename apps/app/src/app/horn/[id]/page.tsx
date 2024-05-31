@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { HornTile } from '@/components/horn-tile/horn-tile';
 import { trpc } from '@/trpc/client';
 import { useHHUser } from '@/providers/user-provider';
@@ -13,6 +13,7 @@ import { useRef } from 'react';
 const HornPage = () => {
   const { id } = useParams();
   const { user } = useHHUser();
+  const router = useRouter();
   const hornIdNum = id as string;
   const hornRef = useRef<any>();
 
@@ -61,6 +62,14 @@ const HornPage = () => {
           }}
         >
           Play / Stop
+        </Button>
+        <Button
+          className='-mt-1 w-full'
+          onClick={() => {
+            router.push(`/horn/random`);
+          }}
+        >
+          Randomize Horn
         </Button>
         <Link href='/home' className='mt-2 hover:underline'>
           &larr; Back to home

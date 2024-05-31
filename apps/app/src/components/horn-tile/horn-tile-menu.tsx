@@ -99,7 +99,8 @@ export const HornTileMenu = ({ horn, disabled }: Props) => {
             </SheetHeader>
             <Separator className='mx-4 w-auto bg-gray-600' />
             <div className='grid grid-cols-[auto_1fr]'>
-              {!pathname.startsWith('/horn') && (
+              {(!pathname.startsWith('/horn') ||
+                pathname.startsWith('/horn/random')) && (
                 <SheetClose asChild>
                   <Link
                     href={`/horn/${id}`}
