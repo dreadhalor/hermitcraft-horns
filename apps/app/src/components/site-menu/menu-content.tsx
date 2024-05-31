@@ -4,6 +4,14 @@ import HermitClockLogo from '@/assets/hermitclock-logo.svg';
 import Image from 'next/image';
 import { Noto_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import { Button } from '@ui/button';
+import {
+  FaChevronRight,
+  FaGithub,
+  FaSquareXTwitter,
+  FaX,
+} from 'react-icons/fa6';
+import { FaCoffee } from 'react-icons/fa';
 
 const hermitClockFont = Noto_Sans({
   subsets: ['latin'],
@@ -13,11 +21,10 @@ const hermitClockFont = Noto_Sans({
 export const MenuContent = () => {
   return (
     <div className='flex w-full flex-col'>
-      {/* <span className='w-full bg-black px-2 py-1 text-[12px] text-white'>
-        From our friends:
-      </span> */}
-
-      <div
+      <a
+        href='https://hermitclock.com'
+        target='_blank'
+        rel='noopener'
         className={cn(
           'relative flex h-[120px] w-full items-center justify-center bg-gray-200 text-white',
           hermitClockFont.variable,
@@ -46,25 +53,17 @@ export const MenuContent = () => {
             </p>
           </div>
         </div>
+      </a>
+      <div className='flex justify-end gap-1 p-1 text-[30px] text-[#3554A9]'>
+        <FaCoffee />
+        <FaSquareXTwitter />
+        <FaGithub />
       </div>
+
+      <Button className='h-[60px] justify-start rounded-none bg-transparent text-black shadow-none hover:bg-[#4665BA] hover:text-white'>
+        News
+        <FaChevronRight className='ml-auto' />
+      </Button>
     </div>
   );
 };
-
-// /* HermitClock */
-
-// width: 88px;
-// height: 19px;
-
-// font-style: normal;
-// font-weight: 700;
-// font-size: 14px;
-// line-height: 19px;
-// /* identical to box height */
-
-// color: #FFFFFF;
-
-// /* Inside auto layout */
-// flex: none;
-// order: 1;
-// flex-grow: 0;
