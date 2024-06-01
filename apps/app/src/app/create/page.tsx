@@ -2,7 +2,7 @@
 
 import { ClipViewer } from './clip-viewer';
 import { ClipBuilderTabs } from './clip-builder-tabs';
-import { useApp } from '@/providers/app-provider';
+import { useApp } from '@/providers/app-provider-client';
 import { useSearchParams } from 'next/navigation';
 
 const LoadVideoPage = () => {

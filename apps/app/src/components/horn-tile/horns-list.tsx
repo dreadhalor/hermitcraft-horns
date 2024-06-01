@@ -24,7 +24,7 @@ import { TimeRange, getPaginationRange } from '@/lib/utils';
 import { HornFilters } from './horn-filters/horn-filters';
 import { Button } from '@ui/button';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useApp } from '@/providers/app-provider';
+import { useApp } from '@/providers/app-provider-client';
 
 interface Props {
   id?: string;

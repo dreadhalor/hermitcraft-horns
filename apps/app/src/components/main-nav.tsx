@@ -5,6 +5,10 @@ import GoatHornSVG from '@/assets/goat-horn-icon.svg';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FaCircleUser, FaFilm } from 'react-icons/fa6';
+import { Sheet, SheetContent, SheetTrigger } from '@ui/sheet';
+import { Button } from '@ui/button';
+import { IoMenu } from 'react-icons/io5';
+import { MenuContent } from './site-menu/menu-content';
 
 export const MainNav = () => {
   const pathname = usePathname();
@@ -24,7 +28,7 @@ export const MainNav = () => {
   return (
     <div className='sticky bottom-0 left-0 h-[60px] w-full shrink-0 sm:bottom-4 sm:mx-auto sm:mt-4 sm:max-w-lg sm:drop-shadow-md'>
       <Tabs className='h-full w-full' value={getActiveTab(pathname)}>
-        <TabsList className='grid h-full w-full grid-cols-3 overflow-hidden rounded-none bg-[#4665BA] p-0 sm:rounded-full'>
+        <TabsList className='grid h-full w-full grid-cols-[1fr,1fr,1fr,auto] overflow-hidden rounded-none bg-[#4665BA] p-0 sm:rounded-full'>
           <TabsTrigger
             value='horns'
             asChild
@@ -55,6 +59,16 @@ export const MainNav = () => {
               <span>Profile</span>
             </Link>
           </TabsTrigger>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button className='flex h-full items-center justify-center gap-2 rounded-none bg-transparent px-3 text-muted shadow-none hover:bg-[#3554A9] sm:pr-4'>
+                <IoMenu size={20} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side='right' className='border-0 p-0'>
+              <MenuContent />
+            </SheetContent>
+          </Sheet>
         </TabsList>
       </Tabs>
     </div>

@@ -92,6 +92,45 @@ export const getClip = async (clipId: string, userId?: string) => {
 
   return parsedFields[0];
 };
+export const getRandomClip = async () => {
+  const result = await db
+    .select({
+      clips: schema.clips,
+      users: schema.users,
+      hermitcraftChannels: schema.hermitcraftChannels,
+      likesCount: sql<number>`cast(count(${schema.likes.clip}) as int)`.as(
+        'likes_count',
+      ),
+    })
+    .from(schema.clips)
+    .leftJoin(schema.users, eq(schema.clips.user, schema.users.id))
+    .leftJoin(
+      schema.hermitcraftChannels,
+      eq(schema.clips.hermit, schema.hermitcraftChannels.ChannelID),
+    )
+    .leftJoin(schema.likes, eq(schema.clips.id, schema.likes.clip))
+    .groupBy(
+      schema.clips.id,
+      schema.users.id,
+      schema.hermitcraftChannels.ChannelID,
+    )
+    .orderBy(sql`random()`)
+    .limit(1);
+
+  const parsedFields = await Promise.all(
+    result.map(async ({ clips, users, hermitcraftChannels, likesCount }) => ({
+      ...clips,
+      user: users,
+      hermit: hermitcraftChannels,
+      start: parseFloat(clips.start),
+      end: parseFloat(clips.end),
+      liked: false, // Adjust as needed
+      likes: likesCount,
+    })),
+  );
+
+  return parsedFields[0];
+};
 
 interface GetAllClipsParams {
   userId: string;

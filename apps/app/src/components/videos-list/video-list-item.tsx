@@ -27,10 +27,24 @@ export const VideoListItem = ({ video }: Props) => {
           {video.friendlyDuration}
         </span>
       </div>
-      <div className='flex flex-col justify-between p-[4px]'>
-        <span className='line-clamp-4'>{video.title}</span>
-        <div className='flex gap-2'>
-          <span>{video.uploader.DisplayName}</span>
+      <div className='flex w-full max-w-full flex-col justify-between'>
+        <span
+          className='line-clamp-4'
+          style={{
+            wordBreak: 'break-word',
+          }}
+        >
+          {video.title}
+        </span>
+        <div className='flex w-full gap-2'>
+          <span
+            className='line-clamp-1'
+            style={{
+              wordBreak: 'break-word',
+            }}
+          >
+            {video.uploader.DisplayName}
+          </span>
           <span className='text-muted-foreground'>
             {video.uploadedFriendlyMobile}
           </span>

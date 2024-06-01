@@ -1,25 +1,42 @@
 import React from 'react';
-import Banner from '@/assets/banner.png';
-import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/tabs';
 import { HornsList } from '@/components/horn-tile/horns-list';
 import { VideosList } from '@/components/videos-list/videos-list';
 import Link from 'next/link';
+import { FaCoffee } from 'react-icons/fa';
+import Image from 'next/image';
+import Banner from '@/assets/banner.png';
 
-const Home = () => {
+interface NextPageProps {
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+const Home = ({ searchParams }: NextPageProps) => {
+  const { tab } = searchParams;
+
   return (
-    <main className='flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
+    <main className='relative flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
       <Image src={Banner} alt='banner' className='w-full' />
-      <Link
-        href='/about'
-        className='my-[-10px] text-sm font-semibold text-[#354B87] hover:underline'
+      <div className='my-[-10px] flex justify-end gap-3 p-1 text-[20px] '>
+        <Link
+          href='/about'
+          className='text-sm font-semibold text-[#354B87] hover:underline'
+        >
+          By Scott Hetrick &rarr;
+        </Link>
+      </div>
+
+      <Tabs
+        className='w-full'
+        defaultValue={tab === 'videos' ? 'videos' : 'horns'}
       >
-        By Scott Hetrick &rarr;
-      </Link>
-      <Tabs className='w-full' defaultValue='horns'>
         <TabsList className='mb-2 grid w-full grid-cols-2'>
-          <TabsTrigger value='horns'>Horns</TabsTrigger>
-          <TabsTrigger value='videos'>Videos</TabsTrigger>
+          <TabsTrigger value='horns' asChild>
+            <Link href='/home'>Horns</Link>
+          </TabsTrigger>
+          <TabsTrigger value='videos' asChild>
+            <Link href='/home?tab=videos'>Videos</Link>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value='horns'>
           <HornsList useParams />

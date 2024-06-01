@@ -53,6 +53,7 @@
     "react-player": "^2.16.0",
     "sharp": "^0.33.3",
     "sonner": "^1.4.41",
+    "superjson": "^2.2.1",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^6.12.0",
