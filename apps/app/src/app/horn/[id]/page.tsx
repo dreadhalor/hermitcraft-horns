@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Banner from '@/assets/banner.png';
 import { Button } from '@ui/button';
 import { useRef } from 'react';
+import { FaPlay, FaShuffle } from 'react-icons/fa6';
 
 const HornPage = () => {
   const { id } = useParams();
@@ -56,19 +57,21 @@ const HornPage = () => {
       <div className='flex w-full max-w-[250px] flex-1 flex-col items-center justify-center gap-2'>
         <HornTile horn={horn} ref={hornRef} />
         <Button
-          className='w-full'
+          className='w-full gap-2'
           onClick={() => {
             hornRef.current?.togglePlayback();
           }}
         >
+          <FaPlay />
           Play / Stop
         </Button>
         <Button
-          className='-mt-1 w-full'
+          className='-mt-1 w-full gap-2'
           onClick={() => {
             router.push(`/horn/random`);
           }}
         >
+          <FaShuffle />
           Randomize Horn
         </Button>
         <Link href='/home' className='mt-2 hover:underline'>

@@ -37,6 +37,10 @@ export const HornTile = forwardRef<
     useHowlerProgress(howl);
 
   useEffect(() => {
+    setPlaybackProgress(0);
+  }, [horn]);
+
+  useEffect(() => {
     if (clipUrl) {
       const newHowl = new Howl({
         src: [clipUrl],
