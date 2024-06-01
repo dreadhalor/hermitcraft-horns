@@ -3,14 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/tabs';
 import { HornsList } from '@/components/horn-tile/horns-list';
 import { VideosList } from '@/components/videos-list/videos-list';
 import Link from 'next/link';
-import { MenuStuff } from './menu-stuff';
 import { FaCoffee } from 'react-icons/fa';
-import { FaGithub, FaSquareXTwitter } from 'react-icons/fa6';
+import Image from 'next/image';
+import Banner from '@/assets/banner.png';
 
 const Home = () => {
   return (
     <main className='relative flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
-      <MenuStuff />
+      <Image src={Banner} alt='banner' className='w-full' />
       <div className='my-[-10px] flex justify-end gap-3 p-1 text-[20px] '>
         <a
           href='https://buymeacoffee.com/dreadhalor'
@@ -20,8 +20,6 @@ const Home = () => {
         >
           <FaCoffee />
         </a>
-        {/* <FaGithub />
-        <FaSquareXTwitter /> */}
         <Link
           href='/about'
           className='text-sm font-semibold text-[#354B87] hover:underline'

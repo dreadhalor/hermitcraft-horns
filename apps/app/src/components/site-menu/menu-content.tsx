@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@ui/button';
 import {
   FaChevronRight,
+  FaCircleUser,
+  FaFilm,
   FaFire,
   FaGithub,
   FaSquareXTwitter,
@@ -18,6 +20,7 @@ import { FaCoffee, FaRandom } from 'react-icons/fa';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import Link from 'next/link';
 import GoatHornSVG from '@/assets/goat-horn-icon.svg';
+import { usePathname, useRouter } from 'next/navigation';
 
 const hermitClockFont = Noto_Sans({
   subsets: ['latin'],
@@ -46,6 +49,7 @@ const MenuLinkItem = ({
   href: string;
   className?: string;
 }) => {
+  const router = useRouter();
   return (
     <Link
       href={href}
@@ -60,6 +64,52 @@ const MenuLinkItem = ({
     </Link>
   );
 };
+const MenuSamePageLinkItem = ({
+  children,
+  href,
+  path,
+  className,
+}: {
+  children: React.ReactNode;
+  href: string;
+  path: string;
+  className?: string;
+}) => {
+  const pathname = usePathname();
+  const useLinkTag = pathname !== path;
+  console.log(pathname, path, useLinkTag);
+
+  if (useLinkTag) {
+    return (
+      <Link
+        href={href}
+        className={cn(
+          buttonVariants(),
+          'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
+          className,
+        )}
+      >
+        <div className='flex items-center gap-2'>{children}</div>
+        <FaChevronRight className='ml-auto' />
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      className={cn(
+        buttonVariants(),
+        'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
+        className,
+      )}
+    >
+      <div className='flex items-center gap-2'>{children}</div>
+      <FaChevronRight className='ml-auto' />
+    </a>
+  );
+};
+
 const MenuExternalLinkItem = ({
   children,
   href,
@@ -124,6 +174,10 @@ export const MenuContent = () => {
         </div>
       </a>
       <MenuSectionHeader className='mt-6'>Pages</MenuSectionHeader>
+      <MenuItem>
+        <MdNewReleases size={20} />
+        What's New
+      </MenuItem>
       <MenuLinkItem href='/home'>
         <GoatHornSVG fill='white' className='h-[20px] w-[20px]' />
         Home
@@ -132,24 +186,19 @@ export const MenuContent = () => {
         <IoChatboxEllipses size={20} />
         About
       </MenuLinkItem>
-      <MenuItem>
-        <MdNewReleases size={20} />
-        What's New
-      </MenuItem>
+      <MenuLinkItem href='/create'>
+        <FaFilm size={20} />
+        Create
+      </MenuLinkItem>
+      <MenuLinkItem href='/profile'>
+        <FaCircleUser size={20} />
+        Profile
+      </MenuLinkItem>
       <MenuSectionHeader className='mt-4'>Explore</MenuSectionHeader>
-      <Link
-        href='/about'
-        className={cn(
-          buttonVariants(),
-          'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
-        )}
-      >
-        <div className='flex items-center gap-2'>
-          <FaFire />
-          Popular Horns
-        </div>
-        <FaChevronRight className='ml-auto' />
-      </Link>
+      <MenuSamePageLinkItem href='/home?sort=most_liked' path='/home'>
+        <FaFire />
+        Popular Horns
+      </MenuSamePageLinkItem>
       <MenuLinkItem href='/horn/random'>
         <FaRandom />
         Random Horn
@@ -184,19 +233,6 @@ export const MenuContent = () => {
           helping me with the design of this menu that I in no way wanted to do.
         </span>
       </div>
-
-      <Link
-        href='/privacy-policy'
-        className={cn(
-          buttonVariants(),
-          'mt-4 h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
-        )}
-      >
-        <div className='flex items-center gap-2'>
-          <MdPrivacyTip size={20} />
-          Privacy Policy
-        </div>
-      </Link>
     </div>
   );
 };
