@@ -4,6 +4,9 @@ import React from 'react';
 import GoatHornImage from '@/assets/goat-horn.webp';
 import Image from 'next/image';
 import Link from 'next/link';
+import { FaGithub, FaSquareXTwitter } from 'react-icons/fa6';
+import { IoPizzaSharp } from 'react-icons/io5';
+import { FaCoffee } from 'react-icons/fa';
 
 const AboutPage = () => {
   const router = useRouter();
@@ -17,6 +20,32 @@ const AboutPage = () => {
           <Image src={GoatHornImage} alt='goat horn image' fill />
         </button>
         <h1 className='text-4xl font-bold text-gray-800'>About</h1>
+        <div className='ml-auto flex gap-2'>
+          <a
+            href='https://www.scottjhetrick.com'
+            className='transition-all hover:scale-110'
+          >
+            <IoPizzaSharp size={22} />
+          </a>
+          <a
+            href='https://www.buymeacoffee.com/dreadhalor'
+            className='transition-all hover:scale-110'
+          >
+            <FaCoffee size={22} />
+          </a>
+          <a
+            href='https://github.com/dreadhalor/hermitcraft-horns'
+            className='transition-all hover:scale-110'
+          >
+            <FaGithub size={22} />
+          </a>
+          <a
+            href='https://www.x.com/dreadhalor'
+            className='transition-all hover:scale-110'
+          >
+            <FaSquareXTwitter size={22} />
+          </a>
+        </div>
       </div>
       <p className='text-lg text-gray-700'>
         <b className='text-xl text-blue-700'>Oh, snappers!</b> Welcome to
@@ -75,9 +104,10 @@ const AboutPage = () => {
           href='https://github.com/dreadhalor/hermitcraft-horns'
           target='_blank'
           rel='noreferrer'
-          className='text-blue-700 underline hover:text-blue-800'
+          className='inline-flex items-baseline gap-1 text-blue-700 underline hover:text-blue-800'
         >
-          Hermitcraft Horns GitHub repo
+          <FaGithub size={20} className='self-center' /> Hermitcraft Horns
+          GitHub repo
         </a>{' '}
         & give it a star! 🌟
       </p>
@@ -102,7 +132,22 @@ const AboutPage = () => {
         </Link>
       </p>
       <p className='text-lg text-gray-700'>
-        Oh, & if anyone's looking for a software engineer...{' '}
+        & if you're feeling generous, you can{' '}
+        <a
+          href='https://www.buymeacoffee.com/dreadhalor'
+          target='_blank'
+          rel='noreferrer'
+          className='text-blue-700 underline hover:text-blue-800'
+        >
+          buy me a coffee
+        </a>{' '}
+        to help keep me awake & coding! ☕️ As amazing as the Hermitcraft
+        community has been in adopting this site, all the traffic does mean this
+        site is no longer cheap to run & since I&apos;m unemployed at the moment
+        I could use all the help I can get to keep it running smoothly!
+      </p>
+      <p className='text-lg text-gray-700'>
+        Speaking of which, if anyone's looking for a software engineer...{' '}
         <a
           href='https://scottjhetrick.com'
           target='_blank'

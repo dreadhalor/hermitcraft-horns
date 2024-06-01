@@ -4,7 +4,7 @@ import HermitClockLogo from '@/assets/hermitclock-logo.svg';
 import Image from 'next/image';
 import { Noto_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
-import { Button, buttonVariants } from '@ui/button';
+import { buttonVariants } from '@ui/button';
 import {
   FaChevronRight,
   FaCircleUser,
@@ -14,13 +14,14 @@ import {
   FaSquareXTwitter,
   FaYoutube,
 } from 'react-icons/fa6';
-import { MdNewReleases, MdPrivacyTip } from 'react-icons/md';
+// import { MdNewReleases, MdPrivacyTip } from 'react-icons/md';
 import { IoPizzaSharp } from 'react-icons/io5';
 import { FaCoffee, FaRandom } from 'react-icons/fa';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import Link from 'next/link';
 import GoatHornSVG from '@/assets/goat-horn-icon.svg';
 import { usePathname, useRouter } from 'next/navigation';
+import { SheetClose } from '@ui/sheet';
 
 const hermitClockFont = Noto_Sans({
   subsets: ['latin'],
@@ -51,17 +52,19 @@ const MenuLinkItem = ({
 }) => {
   const router = useRouter();
   return (
-    <Link
-      href={href}
-      className={cn(
-        buttonVariants(),
-        'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
-        className,
-      )}
-    >
-      <div className='flex items-center gap-2'>{children}</div>
-      <FaChevronRight className='ml-auto' />
-    </Link>
+    <SheetClose asChild>
+      <Link
+        href={href}
+        className={cn(
+          buttonVariants(),
+          'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
+          className,
+        )}
+      >
+        <div className='flex items-center gap-2'>{children}</div>
+        <FaChevronRight className='ml-auto' />
+      </Link>
+    </SheetClose>
   );
 };
 const MenuSamePageLinkItem = ({
@@ -77,11 +80,28 @@ const MenuSamePageLinkItem = ({
 }) => {
   const pathname = usePathname();
   const useLinkTag = pathname !== path;
-  console.log(pathname, path, useLinkTag);
 
   if (useLinkTag) {
     return (
-      <Link
+      <SheetClose asChild>
+        <Link
+          href={href}
+          className={cn(
+            buttonVariants(),
+            'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
+            className,
+          )}
+        >
+          <div className='flex items-center gap-2'>{children}</div>
+          <FaChevronRight className='ml-auto' />
+        </Link>
+      </SheetClose>
+    );
+  }
+
+  return (
+    <SheetClose asChild>
+      <a
         href={href}
         className={cn(
           buttonVariants(),
@@ -91,22 +111,8 @@ const MenuSamePageLinkItem = ({
       >
         <div className='flex items-center gap-2'>{children}</div>
         <FaChevronRight className='ml-auto' />
-      </Link>
-    );
-  }
-
-  return (
-    <a
-      href={href}
-      className={cn(
-        buttonVariants(),
-        'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
-        className,
-      )}
-    >
-      <div className='flex items-center gap-2'>{children}</div>
-      <FaChevronRight className='ml-auto' />
-    </a>
+      </a>
+    </SheetClose>
   );
 };
 
@@ -119,28 +125,21 @@ const MenuExternalLinkItem = ({
   href: string;
   className?: string;
 }) => (
-  <a
-    href={href}
-    target='_blank'
-    rel='noopener'
-    className={cn(
-      buttonVariants(),
-      'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
-      className,
-    )}
-  >
-    <div className='flex items-center gap-2'>{children}</div>
-  </a>
-);
-
-const MenuItem = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <Button className='h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]'>
+  <SheetClose asChild>
+    <a
+      href={href}
+      target='_blank'
+      rel='noopener'
+      className={cn(
+        buttonVariants(),
+        'h-[32px] justify-start rounded-none bg-transparent px-6 text-[16px] text-white shadow-none hover:bg-[#4665BA]',
+        className,
+      )}
+    >
       <div className='flex items-center gap-2'>{children}</div>
-      <FaChevronRight className='ml-auto' />
-    </Button>
-  );
-};
+    </a>
+  </SheetClose>
+);
 
 export const MenuContent = () => {
   return (
@@ -203,10 +202,10 @@ export const MenuContent = () => {
         <FaRandom />
         Random Horn
       </MenuLinkItem>
-      <MenuItem>
+      <MenuSamePageLinkItem href='/home?tab=videos' path='/home'>
         <FaYoutube />
         Recent Videos
-      </MenuItem>
+      </MenuSamePageLinkItem>
       <MenuSectionHeader className='mt-4'>Socials</MenuSectionHeader>
       <MenuExternalLinkItem href='https://www.scottjhetrick.com'>
         <IoPizzaSharp size={20} />
@@ -226,11 +225,29 @@ export const MenuContent = () => {
       <div className='flex w-full flex-col px-5'>
         <span className='mt-4 text-[14px] font-medium'>
           Hermitcraft Horns is built and maintained by Scott Hetrick, a software
-          engineer & avid viewer of HermitCraft.
+          engineer & avid viewer of HermitCraft. This site is not affiliated
+          with HermitCraft.
         </span>
         <span className='mt-2 text-[14px]'>
-          Shoutout also goes out to Jack Whitworth, creator of HermitClock, for
-          helping me with the design of this menu.
+          Shoutout also goes out to{' '}
+          <a
+            href='https://jackwhitworth.com/'
+            target='_blank'
+            rel='noopener'
+            className='hover:underline'
+          >
+            Jack Whitworth
+          </a>
+          , creator of{' '}
+          <a
+            href='https://www.hermitclock.com'
+            target='_blank'
+            rel='noopener'
+            className='hover:underline'
+          >
+            HermitClock
+          </a>
+          , for helping me with the design of this menu.
         </span>
       </div>
     </div>

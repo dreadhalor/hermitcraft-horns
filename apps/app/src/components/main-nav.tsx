@@ -61,8 +61,8 @@ export const MainNav = () => {
           </TabsTrigger>
           <Sheet>
             <SheetTrigger asChild>
-              <Button className='flex h-full items-center justify-center gap-2 rounded-none bg-transparent text-muted shadow-none hover:bg-[#3554A9]'>
-                <IoMenu />
+              <Button className='flex h-full items-center justify-center gap-2 rounded-none bg-transparent px-3 text-muted shadow-none hover:bg-[#3554A9] sm:px-6'>
+                <IoMenu size={20} />
               </Button>
             </SheetTrigger>
             <SheetContent side='right' className='border-0 p-0'>

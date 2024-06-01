@@ -7,19 +7,17 @@ import { FaCoffee } from 'react-icons/fa';
 import Image from 'next/image';
 import Banner from '@/assets/banner.png';
 
-const Home = () => {
+interface NextPageProps {
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+const Home = ({ searchParams }: NextPageProps) => {
+  const { tab } = searchParams;
+
   return (
     <main className='relative flex flex-1 flex-col items-center gap-[20px] p-[20px]'>
       <Image src={Banner} alt='banner' className='w-full' />
       <div className='my-[-10px] flex justify-end gap-3 p-1 text-[20px] '>
-        <a
-          href='https://buymeacoffee.com/dreadhalor'
-          target='_blank'
-          rel='noopener'
-          className='text-[#354B87] transition-transform duration-200 ease-in-out hover:scale-105'
-        >
-          <FaCoffee />
-        </a>
         <Link
           href='/about'
           className='text-sm font-semibold text-[#354B87] hover:underline'
@@ -28,10 +26,17 @@ const Home = () => {
         </Link>
       </div>
 
-      <Tabs className='w-full' defaultValue='horns'>
+      <Tabs
+        className='w-full'
+        defaultValue={tab === 'videos' ? 'videos' : 'horns'}
+      >
         <TabsList className='mb-2 grid w-full grid-cols-2'>
-          <TabsTrigger value='horns'>Horns</TabsTrigger>
-          <TabsTrigger value='videos'>Videos</TabsTrigger>
+          <TabsTrigger value='horns' asChild>
+            <Link href='/home'>Horns</Link>
+          </TabsTrigger>
+          <TabsTrigger value='videos' asChild>
+            <Link href='/home?tab=videos'>Videos</Link>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value='horns'>
           <HornsList useParams />
