@@ -174,10 +174,10 @@ export const MenuContent = () => {
         </div>
       </a>
       <MenuSectionHeader className='mt-6'>Pages</MenuSectionHeader>
-      <MenuItem>
+      {/* <MenuLinkItem href='/whats-new'>
         <MdNewReleases size={20} />
         What's New
-      </MenuItem>
+      </MenuLinkItem> */}
       <MenuLinkItem href='/home'>
         <GoatHornSVG fill='white' className='h-[20px] w-[20px]' />
         Home
@@ -230,7 +230,7 @@ export const MenuContent = () => {
         </span>
         <span className='mt-2 text-[14px]'>
           Shoutout also goes out to Jack Whitworth, creator of HermitClock, for
-          helping me with the design of this menu that I in no way wanted to do.
+          helping me with the design of this menu.
         </span>
       </div>
     </div>
