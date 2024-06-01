@@ -150,7 +150,7 @@ export const MenuContent = () => {
         </div>
         <FaChevronRight className='ml-auto' />
       </Link>
-      <MenuLinkItem href=''>
+      <MenuLinkItem href='/horn/random'>
         <FaRandom />
         Random Horn
       </MenuLinkItem>
