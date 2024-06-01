@@ -1,5 +1,3 @@
-'use client';
-import { useRouter } from 'next/navigation';
 import React from 'react';
 import GoatHornImage from '@/assets/goat-horn.webp';
 import Image from 'next/image';
@@ -7,18 +5,20 @@ import Link from 'next/link';
 import { FaGithub, FaSquareXTwitter } from 'react-icons/fa6';
 import { IoPizzaSharp } from 'react-icons/io5';
 import { FaCoffee } from 'react-icons/fa';
+import { cn } from '@/lib/utils';
 
 const AboutPage = () => {
-  const router = useRouter();
   return (
     <div className='about-page flex flex-1 flex-col gap-6 px-8 py-8 sm:px-0'>
       <div className='flex items-center gap-4'>
-        <button
-          className='relative -mt-[2px] aspect-square h-[48px] transition-transform duration-300 ease-in-out hover:scale-110'
-          onClick={() => router.push('/home')}
+        <Link
+          href='/home'
+          className={cn(
+            'relative -mt-[2px] aspect-square h-[48px] transition-transform duration-300 ease-in-out hover:scale-110',
+          )}
         >
           <Image src={GoatHornImage} alt='goat horn image' fill />
-        </button>
+        </Link>
         <h1 className='text-4xl font-bold text-gray-800'>About</h1>
         <div className='ml-auto flex gap-2'>
           <a
