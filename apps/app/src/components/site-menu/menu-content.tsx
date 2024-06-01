@@ -234,7 +234,7 @@ export const MenuContent = () => {
             href='https://jackwhitworth.com/'
             target='_blank'
             rel='noopener'
-            className='hover:underline'
+            className='underline'
           >
             Jack Whitworth
           </a>
@@ -243,7 +243,7 @@ export const MenuContent = () => {
             href='https://www.hermitclock.com'
             target='_blank'
             rel='noopener'
-            className='hover:underline'
+            className='underline'
           >
             HermitClock
           </a>
