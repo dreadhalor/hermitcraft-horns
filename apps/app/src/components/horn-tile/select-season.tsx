@@ -11,7 +11,10 @@ import {
 import { FormControl, FormField, FormItem, FormLabel } from '@ui/form';
 import { useFormContext } from 'react-hook-form';
 
-export const SelectSeason = () => {
+interface Props {
+  nullable?: boolean;
+}
+export const SelectSeason = ({ nullable = false }: Props) => {
   const form = useFormContext();
 
   return (
@@ -29,7 +32,10 @@ export const SelectSeason = () => {
             </FormControl>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value='unknown'>N/A</SelectItem>
+                {nullable && <SelectItem value='all'>All</SelectItem>}
+                <SelectItem value='none'>
+                  {nullable ? 'None' : 'N/A'}
+                </SelectItem>
                 <SelectItem value='10'>10</SelectItem>
                 <SelectItem value='9'>9</SelectItem>
                 <SelectItem value='8'>8</SelectItem>

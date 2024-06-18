@@ -37,7 +37,7 @@ export const HornEditMenu = ({ horn }: Props) => {
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const { hermit, id } = horn!;
   const tagline = horn?.tagline ?? '';
-  const season = horn?.season ?? 'unknown';
+  const season = horn?.season ?? 'none';
 
   const form = useForm<EditClipFrontendSchema>({
     resolver: zodResolver(editClipFrontendSchema),
@@ -56,7 +56,7 @@ export const HornEditMenu = ({ horn }: Props) => {
     const backendValues = {
       ...rest,
       hermit: hermit?.ChannelID,
-      season: season !== 'unknown' ? season : '',
+      season: season !== 'none' ? season : '',
     } satisfies EditClipSchema;
     await editClip(backendValues);
     closeRef.current?.click();
