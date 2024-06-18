@@ -27,6 +27,7 @@ import { trpc } from '@/trpc/client';
 import { getQueryKey } from '@trpc/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import superjson from 'superjson';
 
 interface ContentProps {
   setOpen: (open: boolean) => void;
@@ -58,11 +59,11 @@ const EditUsernameDialogContent = ({ setOpen }: ContentProps) => {
   const onSubmit = async (values: { username: string }) => {
     // there must be a better way to do this
     const unique = await fetch(
-      `/api/trpc/validateUsername?input=${JSON.stringify({ username: values.username })}`,
+      `/api/trpc/validateUsername?input=${superjson.stringify({ username: values.username })}`,
     )
       .then((res) => res.json())
-      .then((data) => data.result.data);
-
+      // we need to use data.json because superjson wraps the response
+      .then((data) => data.result.data.json);
     if (!unique) {
       return form.setError('username', {
         type: 'manual',
