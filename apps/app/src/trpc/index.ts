@@ -86,7 +86,7 @@ export const appRouter = router({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).optional(),
         timeFilter: z.custom<TimeRange>().optional(),
-        season: z.string().nullable().optional(),
+        season: z.string().optional(),
         likedOnly: z.boolean().optional(),
         searchTerm: z.string().optional(),
       }),
