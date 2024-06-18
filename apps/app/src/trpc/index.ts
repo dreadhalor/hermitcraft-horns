@@ -48,12 +48,21 @@ export const appRouter = router({
         hermitId: z.string().optional(),
         sort: z.string().optional(),
         timeFilter: z.custom<TimeRange>().optional(),
+        season: z.string().optional(),
         likedOnly: z.boolean().optional(),
       }),
     )
     .query(
       async ({
-        input: { userId, filterUserId, hermitId, sort, timeFilter, likedOnly },
+        input: {
+          userId,
+          filterUserId,
+          hermitId,
+          sort,
+          timeFilter,
+          season,
+          likedOnly,
+        },
       }) => {
         const result = await getAllClips({
           userId,
@@ -61,6 +70,7 @@ export const appRouter = router({
           hermitId,
           sort,
           timeFilter,
+          season,
           likedOnly,
         });
         return result;
@@ -76,6 +86,7 @@ export const appRouter = router({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).optional(),
         timeFilter: z.custom<TimeRange>().optional(),
+        season: z.string().nullable().optional(),
         likedOnly: z.boolean().optional(),
         searchTerm: z.string().optional(),
       }),
@@ -90,6 +101,7 @@ export const appRouter = router({
           page,
           limit,
           timeFilter,
+          season,
           likedOnly,
           searchTerm,
         },
@@ -102,6 +114,7 @@ export const appRouter = router({
           page,
           limit,
           timeFilter,
+          season,
           likedOnly,
           searchTerm,
         });

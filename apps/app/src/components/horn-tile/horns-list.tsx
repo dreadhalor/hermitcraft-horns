@@ -55,6 +55,7 @@ export const HornsList = ({
     ? searchParams.get('time') || 'allTime'
     : 'allTime';
   const initialQuote = useParams ? searchParams.get('quote') || '' : '';
+  const initialSeason = useParams ? searchParams.get('season') || 'all' : 'all';
 
   const [selectedSort, setSelectedSort] = useState<string>(initialSort);
   const [selectedHermit, setSelectedHermit] = useState<Hermit | null>(null);
@@ -64,6 +65,8 @@ export const HornsList = ({
   const [selectedTime, setSelectedTime] = useState<TimeRange>(
     initialTime as TimeRange,
   );
+  const [selectedSeason, setSelectedSeason] = useState<string>(initialSeason);
+
   const [selectedPage, setSelectedPage] = useState<number>(initialPage);
 
   useEffect(() => {
@@ -80,6 +83,7 @@ export const HornsList = ({
     sort: selectedSort,
     page: selectedPage,
     timeFilter: selectedTime,
+    season: selectedSeason === 'all' ? '' : selectedSeason,
     likedOnly: favorites,
     searchTerm: selectedQuote || undefined,
   });
@@ -113,6 +117,9 @@ export const HornsList = ({
     }
     if (params.get('quote') === '') {
       params.delete('quote');
+    }
+    if (params.get('season') === 'all') {
+      params.delete('season');
     }
     const queryString = params.toString();
     router.replace(`?${queryString}`);
@@ -184,15 +191,30 @@ export const HornsList = ({
     } else setSelectedPage(1);
   };
 
+  const handleSeasonChange = (season: string) => {
+    setSelectedSeason(season);
+    if (useParams) {
+      const params = new URLSearchParams(searchParams);
+      if (season) {
+        params.set('season', season);
+      } else {
+        params.delete('season');
+      }
+      resetPageAndFilters(params);
+    } else setSelectedPage(1);
+  };
+
   const handleClearFilters = () => {
     setSelectedHermit(null);
     setSelectedTime('allTime');
     setSelectedQuote(null);
+    setSelectedSeason('all');
     if (useParams) {
       const params = new URLSearchParams(searchParams);
       params.delete('hermit');
       params.delete('time');
       params.delete('quote');
+      params.delete('season');
       resetPageAndFilters(params);
     } else setSelectedPage(1);
   };
@@ -234,6 +256,8 @@ export const HornsList = ({
             setSelectedTime: handleTimeChange,
             selectedQuote,
             setSelectedQuote: handleQuoteChange,
+            selectedSeason,
+            setSelectedSeason: handleSeasonChange,
             clearFilters: handleClearFilters,
           }}
         />

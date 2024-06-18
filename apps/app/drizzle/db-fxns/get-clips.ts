@@ -8,22 +8,14 @@ const getTimeFilter = (timeFilter: TimeRange) => {
 
   switch (timeFilter) {
     case 'today':
-      const startOfToday = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-      );
-      return gte(schema.clips.createdAt, startOfToday);
+      const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      return gte(schema.clips.createdAt, past24Hours);
     case 'thisWeek':
-      const startOfWeek = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() - now.getDay(),
-      );
-      return gte(schema.clips.createdAt, startOfWeek);
+      const past7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return gte(schema.clips.createdAt, past7Days);
     case 'thisMonth':
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      return gte(schema.clips.createdAt, startOfMonth);
+      const past30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return gte(schema.clips.createdAt, past30Days);
     default:
       return undefined;
   }
@@ -36,7 +28,9 @@ interface GetAllClipsParams {
   sort?: string;
   timeFilter?: TimeRange;
   likedOnly?: boolean;
+  season?: string;
 }
+
 export const getAllClips = async ({
   userId,
   filterUserId,
@@ -44,6 +38,7 @@ export const getAllClips = async ({
   sort,
   timeFilter,
   likedOnly,
+  season,
 }: GetAllClipsParams) => {
   const sqlFilters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
@@ -56,6 +51,11 @@ export const getAllClips = async ({
       AND ${schema.likes.user} = ${userId}
     )`
       : undefined,
+    season === 'none' // treat '' as 'do not filter', but 'none' as 'filter for no season'
+      ? eq(schema.clips.season, '')
+      : season
+        ? eq(schema.clips.season, season)
+        : undefined,
   ].filter(Boolean);
 
   const sortFxn = (sort: string) => {
@@ -120,7 +120,9 @@ interface GetPaginatedClipsParams {
   timeFilter?: TimeRange;
   likedOnly?: boolean;
   searchTerm?: string;
+  season?: string;
 }
+
 export const getPaginatedClips = async ({
   userId,
   filterUserId,
@@ -131,8 +133,8 @@ export const getPaginatedClips = async ({
   timeFilter,
   likedOnly,
   searchTerm,
+  season,
 }: GetPaginatedClipsParams) => {
-  console.log('searchTerm', searchTerm);
   const sqlFilters = [
     filterUserId ? eq(schema.clips.user, filterUserId) : undefined,
     hermitId ? eq(schema.clips.hermit, hermitId) : undefined,
@@ -147,6 +149,11 @@ export const getPaginatedClips = async ({
     searchTerm
       ? sql`similarity(${schema.clips.tagline}, ${searchTerm}) > 0.1`
       : undefined,
+    season === 'none' // treat '' as 'do not filter', but 'none' as 'filter for no season'
+      ? eq(schema.clips.season, '')
+      : season
+        ? eq(schema.clips.season, season)
+        : undefined,
   ].filter(Boolean);
 
   const sortFxn = (sort: string | undefined, searchTerm?: string) => {

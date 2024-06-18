@@ -23,24 +23,28 @@ const AboutPage = () => {
         <div className='ml-auto flex gap-2'>
           <a
             href='https://www.scottjhetrick.com'
+            target='_blank'
             className='transition-all hover:scale-110'
           >
             <IoPizzaSharp size={22} />
           </a>
           <a
             href='https://www.buymeacoffee.com/dreadhalor'
+            target='_blank'
             className='transition-all hover:scale-110'
           >
             <FaCoffee size={22} />
           </a>
           <a
             href='https://github.com/dreadhalor/hermitcraft-horns'
+            target='_blank'
             className='transition-all hover:scale-110'
           >
             <FaGithub size={22} />
           </a>
           <a
             href='https://www.x.com/dreadhalor'
+            target='_blank'
             className='transition-all hover:scale-110'
           >
             <FaSquareXTwitter size={22} />

@@ -8,6 +8,7 @@ import { EditClipSchema } from '@/schemas';
 export const db = drizzle(vercelSql, { schema });
 
 export * from './db-fxns/user';
+export * from './db-fxns/get-clips';
 
 export const hasLikedClip = async (userId: string, clipId: string) => {
   const result = await db
