@@ -43,6 +43,15 @@ const videoProcessingQueue = new Queue('video-processing', {
   },
 });
 
+// Output a success or failure message on connecting to Redis
+videoProcessingQueue.on('error', (error) => {
+  console.error('Error connecting to Redis:', error);
+});
+
+videoProcessingQueue.on('ready', () => {
+  console.log('Connected to Redis');
+});
+
 const appRouter = t.router({
   enqueueTask: t.procedure
     .input(
@@ -145,6 +154,8 @@ async function downloadAudioSlice(
     console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
 
     const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --audio-quality 0 --postprocessor-args "-af loudnorm=I=-16:LRA=11:TP=-1.5" --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;
+
+    console.log(`Executing command: ${command}`);
 
     await new Promise<void>((resolve, reject) => {
       exec(command, (error, stdout, stderr) => {
