@@ -1,0 +1,42 @@
+name: Check ytdl Status
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  check-status:
+    name: Check ytdl Service
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check ytdl status on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/ytdl
+            
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📊 Docker Container Status"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            docker ps -a | grep -E "ytdl|gluetun|redis"
+            
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📝 ytdl Service Logs (last 100 lines)"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            docker-compose logs --tail=100 ytdl
+            
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🌐 Port Check (inside container)"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            docker exec gluetun wget -q -O- --timeout=2 http://localhost:3001/health 2>&1 || echo "Health check failed or no /health endpoint"
+            
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔥 gluetun VPN Status"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            docker-compose logs --tail=20 gluetun | grep -i "ip\|connected\|error" || docker-compose logs --tail=20 gluetun
