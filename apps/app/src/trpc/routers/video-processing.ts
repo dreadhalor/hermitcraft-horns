@@ -49,27 +49,41 @@ export const enqueueTask = publicProcedure
         },
       );
 
-      console.log('enqueueTask response:', response);
+      console.log('📡 Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
 
       if (!response.ok) {
-        console.error(
-          'Failed to enqueue task, response status:',
-          response.status,
-        );
+        let errorDetails = `HTTP ${response.status} ${response.statusText}`;
+        let responseText = '';
         
-        // Update log with failure
+        try {
+          responseText = await response.text();
+          console.error('❌ Response body:', responseText);
+          errorDetails += ` | Body: ${responseText}`;
+        } catch (e) {
+          console.error('❌ Could not read response body:', e);
+          errorDetails += ' | Could not read response body';
+        }
+        
+        console.error('❌ Failed to enqueue task - Full error:', errorDetails);
+        
+        // Update log with detailed failure
         if (logId) {
           await db
             .update(schema.generationLogs)
             .set({
               status: 'failed',
-              errorMessage: `HTTP ${response.status}: Failed to enqueue task`,
+              errorMessage: errorDetails.substring(0, 500), // Limit to 500 chars
               completedAt: new Date(),
             })
             .where(eq(schema.generationLogs.id, logId));
         }
         
-        throw new Error('Failed to enqueue task');
+        throw new Error(errorDetails);
       }
 
       const responseData = await response.json();
@@ -88,7 +102,14 @@ export const enqueueTask = publicProcedure
 
       return result.data as { taskId: string };
     } catch (error) {
-      console.error('Error calling enqueueTask:', error);
+      console.error('💥 EXCEPTION in enqueueTask:');
+      console.error('   Type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('   Message:', error instanceof Error ? error.message : String(error));
+      if (error instanceof Error && error.stack) {
+        console.error('   Stack:', error.stack);
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
       
       // Update log with failure if we have a logId
       if (logId) {
@@ -96,7 +117,7 @@ export const enqueueTask = publicProcedure
           .update(schema.generationLogs)
           .set({
             status: 'failed',
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            errorMessage: errorMessage.substring(0, 500),
             completedAt: new Date(),
           })
           .where(eq(schema.generationLogs.id, logId));
