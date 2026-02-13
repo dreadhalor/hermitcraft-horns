@@ -1,6 +1,6 @@
 # Hermitcraft Horns
 
-A web app for creating, sharing, and browsing Hermitcraft sound clips (affectionately called "horns"). Built with a modern stack and deployed across Vercel and AWS.
+A web app for creating, sharing, and browsing Hermitcraft sound clips. Built with a modern stack and deployed across Vercel and AWS.
 
 ## Architecture Overview
 
