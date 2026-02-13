@@ -72,8 +72,9 @@ export const enqueueTask = publicProcedure
         throw new Error('Failed to enqueue task');
       }
 
-      const { result } = await response.json();
-      console.log('enqueueTask result:', result);
+      const responseData = await response.json();
+      console.log('✅ Success! Response data:', responseData);
+      const { result } = responseData;
 
       // Update log with taskId
       if (logId) {
