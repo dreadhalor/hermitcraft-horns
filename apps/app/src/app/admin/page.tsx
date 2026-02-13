@@ -103,7 +103,7 @@ export default function AdminPage() {
   const total = stats?.total || 0;
 
   return (
-    <div className='container mx-auto max-w-7xl p-6'>
+    <div className='container mx-auto max-w-[1600px] p-6 w-full'>
       <h1 className='mb-6 text-3xl font-bold'>Admin Dashboard</h1>
 
       {/* Time Range Filter */}
@@ -223,13 +223,13 @@ export default function AdminPage() {
         ) : logs && logs.length > 0 ? (
           <div className='rounded-lg border bg-card shadow-sm'>
             <div className='overflow-x-auto'>
-              <table className='w-full'>
+              <table className='w-full table-fixed'>
                 <thead>
                   <tr className='border-b'>
-                    <th className='p-3 text-left'>Time</th>
-                    <th className='p-3 text-left'>User</th>
-                    <th className='p-3 text-left'>Video</th>
-                    <th className='p-3 text-left'>Duration</th>
+                    <th className='p-3 text-left w-[180px]'>Time</th>
+                    <th className='p-3 text-left w-[150px]'>User</th>
+                    <th className='p-3 text-left w-[280px]'>Video</th>
+                    <th className='p-3 text-left w-[180px]'>Duration</th>
                     <th className='p-3 text-left'>Status</th>
                   </tr>
                 </thead>
@@ -241,7 +241,7 @@ export default function AdminPage() {
 
                     return (
                       <tr key={log.id} className='border-b last:border-0 hover:bg-muted/50'>
-                        <td className='p-3 text-sm'>
+                        <td className='p-3 text-sm whitespace-nowrap'>
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
                         <td className='p-3 text-sm'>
@@ -253,17 +253,18 @@ export default function AdminPage() {
                             </span>
                           )}
                         </td>
-                        <td className='max-w-xs truncate p-3 text-sm'>
+                        <td className='p-3 text-sm'>
                           <a
                             href={log.videoUrl}
                             target='_blank'
                             rel='noopener noreferrer'
-                            className='text-blue-500 hover:underline'
+                            className='text-blue-500 hover:underline block truncate'
+                            title={log.videoUrl}
                           >
                             {log.videoUrl.replace('https://www.youtube.com/watch?v=', 'YT: ')}
                           </a>
                         </td>
-                        <td className='p-3 text-sm'>
+                        <td className='p-3 text-sm whitespace-nowrap'>
                           {parseFloat(log.start).toFixed(1)}s - {parseFloat(log.end).toFixed(1)}s
                         </td>
                         <td className='p-3'>
