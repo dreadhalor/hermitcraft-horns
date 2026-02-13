@@ -112,8 +112,8 @@ export default function AdminPage() {
 
       {/* Stats Overview */}
       {statsLoading ? (
-        <div>Loading stats...</div>
-      ) : (
+        <div className='mb-8'>Loading stats...</div>
+      ) : stats ? (
         <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-4'>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
             <h3 className='text-sm font-medium text-muted-foreground'>Total Requests</h3>
@@ -134,6 +134,8 @@ export default function AdminPage() {
             </p>
           </div>
         </div>
+      ) : (
+        <div className='mb-8'>No stats available</div>
       )}
 
       {/* Top Users */}
