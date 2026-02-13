@@ -74,18 +74,28 @@ export default function AdminPage() {
     },
     {
       enabled: !!user && isAdmin,
+      retry: 2,
+      retryDelay: 1000,
     },
   );
 
   // Debug stats loading
   useEffect(() => {
+    console.log('📊 Stats State:', {
+      statsLoading,
+      hasStats: !!stats,
+      hasError: !!statsError,
+      errorMessage: statsError?.message,
+      queryEnabled: !!user && isAdmin,
+      userId: user?.id,
+    });
     if (statsError) {
       console.error('❌ Stats query error:', statsError);
     }
     if (stats) {
       console.log('✅ Stats loaded:', stats);
     }
-  }, [stats, statsError]);
+  }, [stats, statsError, statsLoading, user, isAdmin]);
 
   const { data: logs, isLoading: logsLoading } =
     trpc.getGenerationLogs.useQuery(
