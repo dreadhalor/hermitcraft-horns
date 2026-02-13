@@ -24,6 +24,7 @@ const generationLogs = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: text('userId'),
+    source: text('source').notNull().default('web'),
     videoUrl: text('videoUrl').notNull(),
     start: numeric('start').notNull(),
     end: numeric('end').notNull(),
@@ -241,13 +242,14 @@ videoProcessingQueue.process(async (job) => {
     try {
       await db.insert(generationLogs).values({
         userId: null, // ytdl doesn't have user context
+        source: 'cli', // Mark as CLI request
         videoUrl,
         start: start.toString(),
         end: end.toString(),
         status: 'active',
         taskId,
       });
-      console.log(`📝 Logged generation request to database (taskId: ${taskId})`);
+      console.log(`📝 Logged CLI generation request to database (taskId: ${taskId})`);
     } catch (error) {
       console.error('Error logging to database:', error);
       // Don't fail the job if logging fails

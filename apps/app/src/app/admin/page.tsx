@@ -213,7 +213,15 @@ export default function AdminPage() {
                         <td className='p-3 text-sm'>
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
-                        <td className='p-3 text-sm'>{log.username || 'Unknown'}</td>
+                        <td className='p-3 text-sm'>
+                          {log.username || (
+                            <span className='flex items-center gap-1 text-muted-foreground'>
+                              <span className='rounded bg-muted px-1.5 py-0.5 text-xs font-medium'>
+                                {log.source === 'cli' ? 'CLI' : 'Unknown'}
+                              </span>
+                            </span>
+                          )}
+                        </td>
                         <td className='max-w-xs truncate p-3 text-sm'>
                           <a
                             href={log.videoUrl}

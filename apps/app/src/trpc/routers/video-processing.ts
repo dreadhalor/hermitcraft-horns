@@ -27,6 +27,7 @@ export const enqueueTask = publicProcedure
         .insert(schema.generationLogs)
         .values({
           userId,
+          source: 'web',
           videoUrl,
           start: start.toString(),
           end: end.toString(),

@@ -31,6 +31,7 @@ export const getGenerationLogs = publicProcedure
       .select({
         id: schema.generationLogs.id,
         userId: schema.generationLogs.userId,
+        source: schema.generationLogs.source,
         username: schema.users.username,
         videoUrl: schema.generationLogs.videoUrl,
         start: schema.generationLogs.start,

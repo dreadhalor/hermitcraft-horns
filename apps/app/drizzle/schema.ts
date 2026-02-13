@@ -114,6 +114,7 @@ export const generationLogs = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: text('userId').references(() => users.id), // Nullable for CLI requests
+    source: text('source').notNull().default('web'), // 'web' or 'cli'
     videoUrl: text('videoUrl').notNull(),
     start: numeric('start').notNull(),
     end: numeric('end').notNull(),
