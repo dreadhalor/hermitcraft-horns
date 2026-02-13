@@ -3,7 +3,7 @@
 import { trpc } from '@/trpc/client';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -49,7 +49,7 @@ export default function AdminPage() {
     }
   }, [isLoaded, isAdmin, router]);
 
-  const getSinceDate = () => {
+  const sinceDate = useMemo(() => {
     const now = new Date();
     switch (timeRange) {
       case '24h':
@@ -61,7 +61,7 @@ export default function AdminPage() {
       default:
         return undefined;
     }
-  };
+  }, [timeRange]);
 
   const {
     data: stats,
@@ -70,7 +70,7 @@ export default function AdminPage() {
   } = trpc.getGenerationStats.useQuery(
     {
       adminUserId: user?.id || '',
-      since: getSinceDate(),
+      since: sinceDate,
     },
     {
       enabled: !!user && isAdmin,
