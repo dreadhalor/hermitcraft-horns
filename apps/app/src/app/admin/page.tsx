@@ -11,8 +11,9 @@ export default function AdminPage() {
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
 
-  // Check if user is admin (you'll need to update this with your actual user ID)
-  const isAdmin = user?.id === 'user_2qxmZM0H7kT9Lr8WPa3VXjcyLqN';
+  // Check if user is admin using environment variable
+  const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID;
+  const isAdmin = user?.id === ADMIN_USER_ID;
 
   useEffect(() => {
     if (isLoaded && !isAdmin) {
