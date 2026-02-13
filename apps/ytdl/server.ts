@@ -117,6 +117,20 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
   if (!apiKey || apiKey !== validApiKey) {
     console.error('❌ Authentication FAILED - Invalid or missing API key');
     
+    // Build detailed error message with full diagnostics
+    const providedKeyPreview = apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'NONE';
+    const expectedKeyPreview = validApiKey ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}` : 'NOT SET';
+    const origin = Array.isArray(req.headers['origin']) ? req.headers['origin'][0] : req.headers['origin'];
+    
+    const detailedError = [
+      apiKey ? 'Auth failed: Invalid API key' : 'Auth failed: Missing API key',
+      `Provided: ${providedKeyPreview} (len: ${apiKey?.length || 0})`,
+      `Expected: ${expectedKeyPreview} (len: ${validApiKey?.length || 0})`,
+      `Origin: ${origin || 'none'}`,
+      `Path: ${req.path}`,
+      `Method: ${req.method}`,
+    ].join(' | ');
+    
     // Log rejected request to database for tracking
     if (db) {
       try {
@@ -133,10 +147,10 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
           start: requestInfo.start?.toString() || '0',
           end: requestInfo.end?.toString() || '0',
           status: 'failed',
-          errorMessage: `Authentication failed: ${apiKey ? 'Invalid API key' : 'Missing API key'}`,
+          errorMessage: detailedError,
           completedAt: new Date(),
         });
-        console.log('📝 Logged rejected request to database');
+        console.log('📝 Logged rejected request to database with detailed error');
       } catch (error) {
         console.error('Error logging rejected request:', error);
       }
