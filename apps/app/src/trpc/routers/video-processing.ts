@@ -37,17 +37,32 @@ export const enqueueTask = publicProcedure
       
       logId = log!.id;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_YTDL_URL}trpc/enqueueTask`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': process.env.YTDL_INTERNAL_API_KEY || '',
-          },
-          body: JSON.stringify({ videoUrl, start, end }),
+      // Prepare request details for logging
+      const ytdlUrl = process.env.NEXT_PUBLIC_YTDL_URL;
+      const apiKey = process.env.YTDL_INTERNAL_API_KEY;
+      const fullUrl = `${ytdlUrl}trpc/enqueueTask`;
+      const requestBody = { videoUrl, start, end };
+      
+      // Log the full outgoing request for debugging
+      console.log('🚀 Outgoing Request to YTDL:');
+      console.log('   URL:', fullUrl);
+      console.log('   API Key Present:', !!apiKey);
+      console.log('   API Key Length:', apiKey?.length || 0);
+      console.log('   API Key Preview:', apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'MISSING');
+      console.log('   Request Body:', JSON.stringify(requestBody));
+      console.log('   Full Headers:', {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING',
+      });
+
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey || '',
         },
-      );
+        body: JSON.stringify(requestBody),
+      });
 
       console.log('📡 Response received:', {
         status: response.status,
@@ -71,13 +86,14 @@ export const enqueueTask = publicProcedure
         
         console.error('❌ Failed to enqueue task - Full error:', errorDetails);
         
-        // Update log with detailed failure
+        // Update log with detailed failure including request info
+        const fullErrorMessage = `${errorDetails} | Sent to: ${fullUrl} | API Key Present: ${!!apiKey}`;
         if (logId) {
           await db
             .update(schema.generationLogs)
             .set({
               status: 'failed',
-              errorMessage: errorDetails.substring(0, 500), // Limit to 500 chars
+              errorMessage: fullErrorMessage.substring(0, 500), // Limit to 500 chars
               completedAt: new Date(),
             })
             .where(eq(schema.generationLogs.id, logId));
