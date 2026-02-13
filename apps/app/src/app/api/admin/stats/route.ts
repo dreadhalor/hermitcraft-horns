@@ -8,6 +8,14 @@ function authenticateAdmin(req: NextRequest): boolean {
   const apiKey = req.headers.get('x-api-key') || req.headers.get('authorization')?.replace('Bearer ', '');
   const validKey = process.env.ADMIN_API_KEY;
   
+  console.log('[Admin Auth Debug]', {
+    hasValidKey: !!validKey,
+    hasApiKey: !!apiKey,
+    keysMatch: apiKey === validKey,
+    receivedKeyPrefix: apiKey?.substring(0, 10),
+    validKeyPrefix: validKey?.substring(0, 10),
+  });
+  
   if (!validKey) {
     console.error('ADMIN_API_KEY not configured');
     return false;
