@@ -2,13 +2,26 @@
 import { Button } from '@ui/button';
 import { useClipBuilder } from '@/providers/clip-builder-provider';
 import { useHHUser } from '@/providers/user-provider';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MAX_CLIP_LENGTH, kebabIt } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useGenerateClip } from '@/hooks/use-generate-clip';
 import { useAudioContext } from '@repo/audio-editor';
 
+const LOADING_MESSAGES = [
+  "Summoning the Hermits...",
+  "Downloading from the YouTube dimension...",
+  "Extracting pure audio essence...",
+  "Adding extra hermit-y goodness...",
+  "Polishing your horn...",
+  "Consulting the Voidlings...",
+  "Calibrating the boatem...",
+  "Feeding Jellie...",
+];
+
 export const NextStepButton = () => {
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [messageIndex, setMessageIndex] = useState(0);
   const {
     clipStart,
     clipEnd,
@@ -106,6 +119,34 @@ export const NextStepButton = () => {
     }
   };
 
+  // Track elapsed time during generation
+  useEffect(() => {
+    if (!isGenerating) {
+      setElapsedTime(0);
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isGenerating]);
+
+  // Cycle through loading messages
+  useEffect(() => {
+    if (!isGenerating) {
+      setMessageIndex(0);
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      setMessageIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [isGenerating]);
+
   useEffect(() => {
     if (file) {
       setFile(file);
@@ -115,7 +156,7 @@ export const NextStepButton = () => {
 
   const getButtonText = () => {
     if (isErrored) return getErrorMessage();
-    if (isGenerating) return 'Generating...';
+    if (isGenerating) return `${LOADING_MESSAGES[messageIndex]} (${elapsedTime}s)`;
     switch (activeTab) {
       case 'clip-builder':
         return 'Next →';
