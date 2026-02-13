@@ -45,7 +45,7 @@ export default function AdminPage() {
     }
   };
 
-  const { data: stats, isLoading: statsLoading } = trpc.getGenerationStats.useQuery(
+  const { data: stats, isLoading: statsLoading, error: statsError } = trpc.getGenerationStats.useQuery(
     {
       adminUserId: user?.id || '',
       since: getSinceDate(),
@@ -54,6 +54,16 @@ export default function AdminPage() {
       enabled: !!user && isAdmin,
     },
   );
+
+  // Debug stats loading
+  useEffect(() => {
+    if (statsError) {
+      console.error('❌ Stats query error:', statsError);
+    }
+    if (stats) {
+      console.log('✅ Stats loaded:', stats);
+    }
+  }, [stats, statsError]);
 
   const { data: logs, isLoading: logsLoading } = trpc.getGenerationLogs.useQuery(
     {
@@ -113,6 +123,11 @@ export default function AdminPage() {
       {/* Stats Overview */}
       {statsLoading ? (
         <div className='mb-8'>Loading stats...</div>
+      ) : statsError ? (
+        <div className='mb-8 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800'>
+          <h3 className='font-semibold'>Error loading stats</h3>
+          <p className='text-sm'>{statsError.message}</p>
+        </div>
       ) : stats ? (
         <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-4'>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
