@@ -11,12 +11,22 @@ export default function AdminPage() {
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
 
-  // Check if user is admin using environment variable
-  const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID;
-  const isAdmin = user?.id === ADMIN_USER_ID;
+  // Check if user is admin using environment variable (supports multiple IDs)
+  const ADMIN_USER_IDS = process.env.NEXT_PUBLIC_ADMIN_USER_ID?.split(',').map(id => id.trim()) || [];
+  const isAdmin = user?.id ? ADMIN_USER_IDS.includes(user.id) : false;
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Admin Page Debug:');
+    console.log('  - Your User ID:', user?.id);
+    console.log('  - Allowed Admin IDs:', ADMIN_USER_IDS);
+    console.log('  - Is Admin?', isAdmin);
+    console.log('  - Is Loaded?', isLoaded);
+  }, [user?.id, isAdmin, isLoaded]);
 
   useEffect(() => {
     if (isLoaded && !isAdmin) {
+      console.log('❌ Not admin - redirecting to home');
       router.push('/');
     }
   }, [isLoaded, isAdmin, router]);

@@ -4,12 +4,14 @@ import { db } from '@drizzle/db';
 import * as schema from '../../../drizzle/schema';
 import { desc, eq, and, gte, sql } from 'drizzle-orm';
 
-// Admin user ID - update this with your Clerk user ID
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID || 'user_2qxmZM0H7kT9Lr8WPa3VXjcyLqN';
+// Admin user IDs - supports multiple comma-separated IDs
+const ADMIN_USER_IDS = (process.env.ADMIN_USER_ID || 'user_2qxmZM0H7kT9Lr8WPa3VXjcyLqN')
+  .split(',')
+  .map(id => id.trim());
 
 // Helper to check if user is admin
 function isAdmin(userId: string): boolean {
-  return userId === ADMIN_USER_ID;
+  return ADMIN_USER_IDS.includes(userId);
 }
 
 export const getGenerationLogs = publicProcedure
