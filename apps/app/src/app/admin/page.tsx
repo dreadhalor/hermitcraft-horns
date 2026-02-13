@@ -5,11 +5,25 @@ import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
+
+  const toggleError = (id: string) => {
+    setExpandedErrors(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Check if user is admin using environment variable (supports multiple IDs)
   const ADMIN_USER_IDS = process.env.NEXT_PUBLIC_ADMIN_USER_ID?.split(',').map(id => id.trim()) || [];
@@ -253,27 +267,49 @@ export default function AdminPage() {
                           {parseFloat(log.start).toFixed(1)}s - {parseFloat(log.end).toFixed(1)}s
                         </td>
                         <td className='p-3'>
-                          <span
-                            className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
-                              log.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : log.status === 'failed'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                            }`}
-                          >
-                            {log.status}
-                          </span>
-                          {log.status === 'failed' && log.errorMessage && (
-                            <span className='ml-2 text-xs text-muted-foreground'>
-                              {log.errorMessage}
-                            </span>
-                          )}
-                          {log.status === 'completed' && duration !== 'N/A' && (
-                            <span className='ml-2 text-xs text-muted-foreground'>
-                              ({duration}s)
-                            </span>
-                          )}
+                          <div className='flex flex-col gap-1'>
+                            <div className='flex items-center gap-2'>
+                              <span
+                                className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
+                                  log.status === 'completed'
+                                    ? 'bg-green-100 text-green-800'
+                                    : log.status === 'failed'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
+                                {log.status}
+                              </span>
+                              {log.status === 'completed' && duration !== 'N/A' && (
+                                <span className='text-xs text-muted-foreground'>
+                                  ({duration}s)
+                                </span>
+                              )}
+                              {log.status === 'failed' && log.errorMessage && (
+                                <button
+                                  onClick={() => toggleError(log.id)}
+                                  className='flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
+                                >
+                                  {expandedErrors.has(log.id) ? (
+                                    <>
+                                      Hide error <ChevronUp className='h-3 w-3' />
+                                    </>
+                                  ) : (
+                                    <>
+                                      Show error <ChevronDown className='h-3 w-3' />
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            {log.status === 'failed' && log.errorMessage && expandedErrors.has(log.id) && (
+                              <div className='mt-2 rounded bg-red-50 p-2 text-xs text-red-900'>
+                                <div className='font-mono whitespace-pre-wrap break-all'>
+                                  {log.errorMessage}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
