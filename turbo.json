@@ -1,6 +1,29 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
+  "globalEnv": [
+    "POSTGRES_URL",
+    "POSTGRES_URL_NON_POOLING",
+    "POSTGRES_URL_NO_SSL",
+    "POSTGRES_PRISMA_URL",
+    "POSTGRES_USER",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_HOST",
+    "POSTGRES_DATABASE",
+    "DATABASE_URL",
+    "CLERK_SECRET_KEY",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "UPLOADTHING_SECRET",
+    "UPLOADTHING_APP_ID",
+    "YTDL_INTERNAL_API_KEY",
+    "NEXT_PUBLIC_YTDL_URL",
+    "ADMIN_API_KEY",
+    "ADMIN_USER_ID",
+    "NEXT_PUBLIC_ADMIN_USER_ID",
+    "SENTRY_AUTH_TOKEN",
+    "SENTRY_ORG",
+    "SENTRY_PROJECT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
