@@ -82,7 +82,10 @@ app.use(
 
 // API Key authentication middleware
 const authenticateApiKey = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+  const rawApiKey = req.headers['x-api-key'] || req.headers['authorization'];
+  const apiKey = typeof rawApiKey === 'string' 
+    ? (rawApiKey.startsWith('Bearer ') ? rawApiKey.replace('Bearer ', '') : rawApiKey)
+    : undefined;
   const validApiKey = process.env.YTDL_INTERNAL_API_KEY;
 
   // Log ALL incoming requests for debugging
@@ -94,12 +97,16 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
   console.log('   API Key Preview:', apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'NONE');
   console.log('   Valid Key Expected:', validApiKey ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}` : 'NOT SET');
   console.log('   Keys Match:', apiKey === validApiKey);
+  
+  const origin = Array.isArray(req.headers['origin']) ? req.headers['origin'][0] : req.headers['origin'];
+  const userAgent = Array.isArray(req.headers['user-agent']) ? req.headers['user-agent'][0] : req.headers['user-agent'];
+  
   console.log('   Headers:', JSON.stringify({
     'content-type': req.headers['content-type'],
     'x-api-key': apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING',
     'authorization': req.headers['authorization'] ? 'PROVIDED' : 'MISSING',
-    'origin': req.headers['origin'],
-    'user-agent': req.headers['user-agent'],
+    'origin': origin,
+    'user-agent': userAgent,
   }));
 
   if (!validApiKey) {
