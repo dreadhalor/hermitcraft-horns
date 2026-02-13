@@ -21,9 +21,7 @@ services:
       - ytdl-network
 
   ytdl:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
     container_name: ytdl
     network_mode: "service:gluetun"  # Route all traffic through gluetun
     depends_on:
