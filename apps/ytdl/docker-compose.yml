@@ -1,8 +1,47 @@
-# config for AWS
 services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "3001:3001"  # Expose ytdl service port
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - OPENVPN_USER=${NORDVPN_USERNAME}
+      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+      - SERVER_COUNTRIES=United States
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
+    volumes:
+      - ./gluetun:/gluetun
+    restart: unless-stopped
+    networks:
+      - ytdl-network
+
   ytdl:
     build:
       context: .
+      dockerfile: Dockerfile
     container_name: ytdl
-    ports:
-      - '3001:3001'
+    network_mode: "service:gluetun"  # Route all traffic through gluetun
+    depends_on:
+      - gluetun
+      - redis
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    networks:
+      - ytdl-network
+    restart: unless-stopped
+
+networks:
+  ytdl-network:
+    driver: bridge

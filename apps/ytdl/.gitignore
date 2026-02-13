@@ -4,3 +4,9 @@ cache
 
 # Mac thing
 .DS_Store
+
+# Environment variables
+.env
+
+# Gluetun data
+gluetun/
