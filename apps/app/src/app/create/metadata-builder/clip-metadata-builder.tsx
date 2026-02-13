@@ -45,6 +45,7 @@ export const ClipMetadataBuilder = ({
             <SelectContent>
               <SelectGroup>
                 <SelectItem value='none'>N/A</SelectItem>
+                <SelectItem value='11'>11</SelectItem>
                 <SelectItem value='10'>10</SelectItem>
                 <SelectItem value='9'>9</SelectItem>
                 <SelectItem value='8'>8</SelectItem>

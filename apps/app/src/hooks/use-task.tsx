@@ -1,42 +1,148 @@
 import { trpc } from '@/trpc/client';
 import { EnqueueTaskInput } from '@repo/ytdl';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import * as Sentry from '@sentry/nextjs';
+
+const TIMEOUT_MS = 180000; // 3 minutes
 
 export const useTask = () => {
   const enqueueTaskMutation = trpc.enqueueTask.useMutation();
   const [taskId, setTaskId] = useState<string | null>(null);
   const [taskData, setTaskData] = useState<any>(null);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const { isLoading, error } = trpc.checkTaskStatus.useQuery(
     { taskId: taskId ?? '' },
     {
       enabled: !!taskId,
       refetchInterval: (data) => {
-        if (data?.status === 'completed') {
-          return false; // Stop polling when data is received
+        // Stop polling if completed or failed
+        if (data?.status === 'completed' || data?.status === 'failed') {
+          return false;
         }
+        
+        // Check for timeout
+        if (startTimeRef.current && Date.now() - startTimeRef.current > TIMEOUT_MS) {
+          return false;
+        }
+        
         return taskId ? 1000 : false; // Poll every second if taskId exists
       },
       onSuccess: (data) => {
         if (data?.status === 'completed') {
           setTaskId(null);
           setTaskData(data);
+          setTaskError(null);
+          startTimeRef.current = null;
+        } else if (data?.status === 'failed') {
+          setTaskId(null);
+          setTaskData(null);
+          setTaskError('Failed to download audio from YouTube. Please try a different video or try again later.');
+          startTimeRef.current = null;
+          
+          // Report to Sentry
+          Sentry.captureException(new Error('YTDL task failed'), {
+            tags: {
+              'error.type': 'ytdl_failure',
+              'task.status': 'failed',
+            },
+            contexts: {
+              task: {
+                taskId: taskId,
+                duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : null,
+              },
+            },
+          });
         }
       },
+      onError: (err) => {
+        console.error('Error checking task status:', err);
+        setTaskId(null);
+        setTaskData(null);
+        setTaskError('Unable to connect to the YouTube audio download service. Please try again later.');
+        startTimeRef.current = null;
+        
+        // Report to Sentry
+        Sentry.captureException(err, {
+          tags: {
+            'error.type': 'ytdl_failure',
+            'task.status': 'network_error',
+          },
+          contexts: {
+            task: {
+              taskId: taskId,
+              duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : null,
+            },
+          },
+        });
+      },
+      retry: 2, // Retry failed requests twice before giving up
     },
   );
 
+  // Check for timeout
+  useEffect(() => {
+    if (!taskId || !startTimeRef.current) return;
+
+    const timeoutId = setTimeout(() => {
+      if (taskId) {
+        console.error('Task timeout after 3 minutes');
+        setTaskId(null);
+        setTaskData(null);
+        setTaskError('Audio download timed out after 3 minutes. The YouTube download service may be overloaded or unavailable.');
+        
+        // Report timeout to Sentry
+        Sentry.captureException(new Error('YTDL task timeout'), {
+          tags: {
+            'error.type': 'ytdl_failure',
+            'task.status': 'timeout',
+          },
+          contexts: {
+            task: {
+              taskId: taskId,
+              timeout_ms: TIMEOUT_MS,
+            },
+          },
+        });
+        
+        startTimeRef.current = null;
+      }
+    }, TIMEOUT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [taskId]);
+
   const enqueueTask = async ({ videoUrl, start, end }: EnqueueTaskInput) => {
     try {
+      setTaskError(null);
+      setTaskData(null);
       const { taskId } = await enqueueTaskMutation.mutateAsync({
         videoUrl,
         start,
         end,
       });
       setTaskId(taskId);
+      startTimeRef.current = Date.now();
       return taskId;
     } catch (error) {
       console.error('Error enqueuing task:', error);
+      setTaskError('Failed to start audio download. The YouTube download service may be unavailable.');
+      
+      // Report to Sentry
+      Sentry.captureException(error, {
+        tags: {
+          'error.type': 'ytdl_failure',
+          'task.status': 'enqueue_failed',
+        },
+        extra: {
+          videoUrl,
+          start,
+          end,
+        },
+      });
+      
+      throw error;
     }
   };
 
@@ -46,5 +152,5 @@ export const useTask = () => {
     }
   }, [taskId]);
 
-  return { enqueueTask, taskData, isLoading, error };
+  return { enqueueTask, taskData, isLoading, error: taskError };
 };

@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": "..",
+    "paths": {
+      "@drizzle/db": ["./drizzle/db"],
+      "@drizzle/*": ["./drizzle/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
+}
