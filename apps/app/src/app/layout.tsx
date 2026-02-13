@@ -44,8 +44,7 @@ export default function RootLayout({
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserProvider>
                     <div className='flex flex-1 justify-center'>
-                      <div className='relative flex w-full flex-1 flex-col'>
-                        {/* <div className='relative flex w-full flex-1 flex-col sm:max-w-lg'> */}
+                      <div className='relative flex w-full flex-1 flex-col sm:max-w-lg'>
                         {children}
                         <MainNav />
                       </div>
