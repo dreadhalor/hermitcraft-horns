@@ -197,3 +197,4 @@ Do whatever you want with it - MIT or whatever. Just maybe give a shoutout if yo
 Built by [@dreadhalor](https://github.com/dreadhalor) • Check out the live site at [hermitcraft-horns.com](https://hermitcraft-horns.com)
 # Admin panel enabled
 # Trigger redeploy for ADMIN_API_KEY
+# Trigger redeploy for admin API

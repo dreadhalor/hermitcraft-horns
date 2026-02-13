@@ -16,7 +16,7 @@ YTDL_KEY="b9ed97215fc43a2da861f0feafa8b5e81eedae9e27395cca4b092c5a2fe92d6c"
 ADMIN_KEY="91c935895488cab478a81b79b5084355d6930929c94dcc70187e46a87a3c745b"
 
 # URLs
-YTDL_URL="http://54.89.134.191:3001"
+YTDL_URL="https://ytdl.hermitcraft-horns.com"
 ADMIN_URL="https://www.hermitcraft-horns.com"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
