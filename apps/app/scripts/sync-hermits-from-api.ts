@@ -56,7 +56,7 @@ async function syncHermitsFromAPI() {
       .limit(1);
 
     if (existingHermit.length > 0) {
-      const existing = existingHermit[0];
+      const existing = existingHermit[0]!;
       
       // Check if ProfilePicture or other fields changed
       const needsUpdate = 
