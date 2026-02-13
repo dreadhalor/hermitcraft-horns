@@ -114,19 +114,70 @@ const appRouter = t.router({
         videoUrl: z.string(),
         start: z.number(),
         end: z.number(),
+        userId: z.string().optional(),
+        source: z.enum(['web', 'cli']).default('cli'),
       })
     )
     .mutation(async ({ input }) => {
-      const { videoUrl, start, end } = input;
+      const { videoUrl, start, end, userId, source } = input;
       console.log('Received enqueueTask request with input:', input);
 
+      let logId: string | undefined;
+
       try {
+        // Log the request to database FIRST
+        if (db) {
+          try {
+            const [log] = await db.insert(generationLogs).values({
+              userId: userId || null,
+              source,
+              videoUrl,
+              start: start.toString(),
+              end: end.toString(),
+              status: 'initiated',
+            }).returning();
+            logId = log?.id;
+            console.log(`📝 Logged ${source} generation request to database (logId: ${logId})`);
+          } catch (error) {
+            console.error('Error logging to database:', error);
+            // Don't fail the request if logging fails
+          }
+        }
+
         console.log('Enqueueing task...');
         const taskId = await videoProcessingQueue.add({ videoUrl, start, end });
         console.log('Task enqueued with taskId:', taskId);
+
+        // Update log with taskId
+        if (db && logId) {
+          try {
+            await db.update(generationLogs)
+              .set({ taskId: String(taskId.id) })
+              .where(eq(generationLogs.id, logId));
+          } catch (error) {
+            console.error('Error updating log with taskId:', error);
+          }
+        }
+
         return { taskId: taskId.id };
       } catch (error) {
         console.error('Error enqueuing task:', error);
+        
+        // Update log with failure
+        if (db && logId) {
+          try {
+            await db.update(generationLogs)
+              .set({ 
+                status: 'failed',
+                errorMessage: error instanceof Error ? error.message : String(error),
+                completedAt: new Date(),
+              })
+              .where(eq(generationLogs.id, logId));
+          } catch (logError) {
+            console.error('Error updating log with failure:', logError);
+          }
+        }
+        
         throw new Error('Failed to enqueue task');
       }
     }),
@@ -237,21 +288,16 @@ videoProcessingQueue.process(async (job) => {
   const { videoUrl, start, end } = job.data;
   const taskId = String(job.id);
   
-  // Log to database when processing starts
+  // Update log status to 'active' when processing starts
   if (db) {
     try {
-      await db.insert(generationLogs).values({
-        userId: null, // ytdl doesn't have user context
-        source: 'cli', // Mark as CLI request
-        videoUrl,
-        start: start.toString(),
-        end: end.toString(),
-        status: 'active',
-        taskId,
-      });
-      console.log(`📝 Logged CLI generation request to database (taskId: ${taskId})`);
+      await db
+        .update(generationLogs)
+        .set({ status: 'active' })
+        .where(eq(generationLogs.taskId, taskId));
+      console.log(`📝 Updated log to active (taskId: ${taskId})`);
     } catch (error) {
-      console.error('Error logging to database:', error);
+      console.error('Error updating log to active:', error);
       // Don't fail the job if logging fails
     }
   }

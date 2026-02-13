@@ -10,11 +10,13 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>(
+    '7d',
+  );
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
 
   const toggleError = (id: string) => {
-    setExpandedErrors(prev => {
+    setExpandedErrors((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -26,7 +28,9 @@ export default function AdminPage() {
   };
 
   // Check if user is admin using environment variable (supports multiple IDs)
-  const ADMIN_USER_IDS = process.env.NEXT_PUBLIC_ADMIN_USER_ID?.split(',').map(id => id.trim()) || [];
+  const ADMIN_USER_IDS =
+    process.env.NEXT_PUBLIC_ADMIN_USER_ID?.split(',').map((id) => id.trim()) ||
+    [];
   const isAdmin = user?.id ? ADMIN_USER_IDS.includes(user.id) : false;
 
   // Debug logging
@@ -59,7 +63,11 @@ export default function AdminPage() {
     }
   };
 
-  const { data: stats, isLoading: statsLoading, error: statsError } = trpc.getGenerationStats.useQuery(
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = trpc.getGenerationStats.useQuery(
     {
       adminUserId: user?.id || '',
       since: getSinceDate(),
@@ -79,16 +87,17 @@ export default function AdminPage() {
     }
   }, [stats, statsError]);
 
-  const { data: logs, isLoading: logsLoading } = trpc.getGenerationLogs.useQuery(
-    {
-      adminUserId: user?.id || '',
-      limit: 50,
-      offset: 0,
-    },
-    {
-      enabled: !!user && isAdmin,
-    },
-  );
+  const { data: logs, isLoading: logsLoading } =
+    trpc.getGenerationLogs.useQuery(
+      {
+        adminUserId: user?.id || '',
+        limit: 50,
+        offset: 0,
+      },
+      {
+        enabled: !!user && isAdmin,
+      },
+    );
 
   if (!isLoaded || !isAdmin) {
     return null;
@@ -103,7 +112,7 @@ export default function AdminPage() {
   const total = stats?.total || 0;
 
   return (
-    <div className='container mx-auto max-w-[1600px] p-6 w-full'>
+    <div className='container mx-auto w-full max-w-[1600px] p-6'>
       <h1 className='mb-6 text-3xl font-bold'>Admin Dashboard</h1>
 
       {/* Time Range Filter */}
@@ -145,19 +154,27 @@ export default function AdminPage() {
       ) : stats ? (
         <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-4'>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
-            <h3 className='text-sm font-medium text-muted-foreground'>Total Requests</h3>
+            <h3 className='text-sm font-medium text-muted-foreground'>
+              Total Requests
+            </h3>
             <p className='text-2xl font-bold'>{total}</p>
           </div>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
-            <h3 className='text-sm font-medium text-muted-foreground'>Successful</h3>
+            <h3 className='text-sm font-medium text-muted-foreground'>
+              Successful
+            </h3>
             <p className='text-2xl font-bold text-green-600'>{successRate}</p>
           </div>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
-            <h3 className='text-sm font-medium text-muted-foreground'>Failed</h3>
+            <h3 className='text-sm font-medium text-muted-foreground'>
+              Failed
+            </h3>
             <p className='text-2xl font-bold text-red-600'>{failureRate}</p>
           </div>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
-            <h3 className='text-sm font-medium text-muted-foreground'>Success Rate</h3>
+            <h3 className='text-sm font-medium text-muted-foreground'>
+              Success Rate
+            </h3>
             <p className='text-2xl font-bold'>
               {total > 0 ? ((successRate / total) * 100).toFixed(1) : 0}%
             </p>
@@ -200,14 +217,20 @@ export default function AdminPage() {
             <div className='space-y-2'>
               {stats.recentActivity.map((day) => (
                 <div key={day.date} className='flex items-center gap-4'>
-                  <span className='w-24 text-sm text-muted-foreground'>{day.date}</span>
+                  <span className='w-24 text-sm text-muted-foreground'>
+                    {day.date}
+                  </span>
                   <div className='flex-1'>
                     <div
                       className='h-6 rounded bg-blue-500'
-                      style={{ width: `${(day.count / (stats.recentActivity[0]?.count || 1)) * 100}%` }}
+                      style={{
+                        width: `${(day.count / (stats.recentActivity[0]?.count || 1)) * 100}%`,
+                      }}
                     />
                   </div>
-                  <span className='w-12 text-right font-mono text-sm'>{day.count}</span>
+                  <span className='w-12 text-right font-mono text-sm'>
+                    {day.count}
+                  </span>
                 </div>
               ))}
             </div>
@@ -217,7 +240,9 @@ export default function AdminPage() {
 
       {/* Recent Requests Log */}
       <div>
-        <h2 className='mb-4 text-xl font-semibold'>Recent Generation Requests</h2>
+        <h2 className='mb-4 text-xl font-semibold'>
+          Recent Generation Requests
+        </h2>
         {logsLoading ? (
           <div>Loading logs...</div>
         ) : logs && logs.length > 0 ? (
@@ -226,22 +251,30 @@ export default function AdminPage() {
               <table className='w-full table-fixed'>
                 <thead>
                   <tr className='border-b'>
-                    <th className='p-3 text-left w-[180px]'>Time</th>
-                    <th className='p-3 text-left w-[150px]'>User</th>
-                    <th className='p-3 text-left w-[280px]'>Video</th>
-                    <th className='p-3 text-left w-[180px]'>Duration</th>
+                    <th className='w-[180px] p-3 text-left'>Time</th>
+                    <th className='w-[150px] p-3 text-left'>User</th>
+                    <th className='w-[280px] p-3 text-left'>Video</th>
+                    <th className='w-[180px] p-3 text-left'>Duration</th>
                     <th className='p-3 text-left'>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.map((log) => {
-                    const duration = log.completedAt && log.createdAt
-                      ? ((new Date(log.completedAt).getTime() - new Date(log.createdAt).getTime()) / 1000).toFixed(1)
-                      : 'N/A';
+                    const duration =
+                      log.completedAt && log.createdAt
+                        ? (
+                            (new Date(log.completedAt).getTime() -
+                              new Date(log.createdAt).getTime()) /
+                            1000
+                          ).toFixed(1)
+                        : 'N/A';
 
                     return (
-                      <tr key={log.id} className='border-b last:border-0 hover:bg-muted/50'>
-                        <td className='p-3 text-sm whitespace-nowrap'>
+                      <tr
+                        key={log.id}
+                        className='border-b last:border-0 hover:bg-muted/50'
+                      >
+                        <td className='whitespace-nowrap p-3 text-sm'>
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
                         <td className='p-3 text-sm'>
@@ -258,14 +291,18 @@ export default function AdminPage() {
                             href={log.videoUrl}
                             target='_blank'
                             rel='noopener noreferrer'
-                            className='text-blue-500 hover:underline block truncate'
+                            className='block truncate text-blue-500 hover:underline'
                             title={log.videoUrl}
                           >
-                            {log.videoUrl.replace('https://www.youtube.com/watch?v=', 'YT: ')}
+                            {log.videoUrl.replace(
+                              'https://www.youtube.com/watch?v=',
+                              'YT: ',
+                            )}
                           </a>
                         </td>
-                        <td className='p-3 text-sm whitespace-nowrap'>
-                          {parseFloat(log.start).toFixed(1)}s - {parseFloat(log.end).toFixed(1)}s
+                        <td className='whitespace-nowrap p-3 text-sm'>
+                          {parseFloat(log.start).toFixed(1)}s -{' '}
+                          {parseFloat(log.end).toFixed(1)}s
                         </td>
                         <td className='p-3'>
                           <div className='flex flex-col gap-1'>
@@ -281,11 +318,12 @@ export default function AdminPage() {
                               >
                                 {log.status}
                               </span>
-                              {log.status === 'completed' && duration !== 'N/A' && (
-                                <span className='text-xs text-muted-foreground'>
-                                  ({duration}s)
-                                </span>
-                              )}
+                              {log.status === 'completed' &&
+                                duration !== 'N/A' && (
+                                  <span className='text-xs text-muted-foreground'>
+                                    ({duration}s)
+                                  </span>
+                                )}
                               {log.status === 'failed' && log.errorMessage && (
                                 <button
                                   onClick={() => toggleError(log.id)}
@@ -293,23 +331,27 @@ export default function AdminPage() {
                                 >
                                   {expandedErrors.has(log.id) ? (
                                     <>
-                                      Hide error <ChevronUp className='h-3 w-3' />
+                                      Hide error{' '}
+                                      <ChevronUp className='h-3 w-3' />
                                     </>
                                   ) : (
                                     <>
-                                      Show error <ChevronDown className='h-3 w-3' />
+                                      Show error{' '}
+                                      <ChevronDown className='h-3 w-3' />
                                     </>
                                   )}
                                 </button>
                               )}
                             </div>
-                            {log.status === 'failed' && log.errorMessage && expandedErrors.has(log.id) && (
-                              <div className='mt-2 rounded bg-red-50 p-2 text-xs text-red-900'>
-                                <div className='font-mono whitespace-pre-wrap break-all'>
-                                  {log.errorMessage}
+                            {log.status === 'failed' &&
+                              log.errorMessage &&
+                              expandedErrors.has(log.id) && (
+                                <div className='mt-2 rounded bg-red-50 p-2 text-xs text-red-900'>
+                                  <div className='whitespace-pre-wrap break-all font-mono'>
+                                    {log.errorMessage}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
                           </div>
                         </td>
                       </tr>

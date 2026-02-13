@@ -1,9 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
-import { db } from '@drizzle/db';
-import * as schema from '../../../drizzle/schema';
-import { eq } from 'drizzle-orm';
-// import { VideoProcessingRouterOutput } from '@repo/ytdl';
+// All logging is now handled by ytdl service
 
 export const enqueueTask = publicProcedure
   .input(
@@ -19,29 +16,18 @@ export const enqueueTask = publicProcedure
     const { userId, videoUrl, start, end } = input;
     console.log('Calling enqueueTask with input:', input);
 
-    let logId: string | undefined;
-
     try {
-      // Log the generation request
-      const [log] = await db
-        .insert(schema.generationLogs)
-        .values({
-          userId,
-          source: 'web',
-          videoUrl,
-          start: start.toString(),
-          end: end.toString(),
-          status: 'initiated',
-        })
-        .returning();
-      
-      logId = log!.id;
-
       // Prepare request details for logging
       const ytdlUrl = process.env.NEXT_PUBLIC_YTDL_URL;
       const apiKey = process.env.YTDL_INTERNAL_API_KEY;
       const fullUrl = `${ytdlUrl}trpc/enqueueTask`;
-      const requestBody = { videoUrl, start, end };
+      const requestBody = { 
+        videoUrl, 
+        start, 
+        end,
+        userId,
+        source: 'web' as const,
+      };
       
       // Log the full outgoing request for debugging
       console.log('🚀 Outgoing Request to YTDL:');
@@ -85,36 +71,12 @@ export const enqueueTask = publicProcedure
         }
         
         console.error('❌ Failed to enqueue task - Full error:', errorDetails);
-        
-        // Update log with detailed failure including request info
-        const fullErrorMessage = `${errorDetails} | Sent to: ${fullUrl} | API Key Present: ${!!apiKey}`;
-        if (logId) {
-          await db
-            .update(schema.generationLogs)
-            .set({
-              status: 'failed',
-              errorMessage: fullErrorMessage.substring(0, 500), // Limit to 500 chars
-              completedAt: new Date(),
-            })
-            .where(eq(schema.generationLogs.id, logId));
-        }
-        
         throw new Error(errorDetails);
       }
 
       const responseData = await response.json();
       console.log('✅ Success! Response data:', responseData);
       const { result } = responseData;
-
-      // Update log with taskId
-      if (logId) {
-        await db
-          .update(schema.generationLogs)
-          .set({
-            taskId: result.data.taskId,
-          })
-          .where(eq(schema.generationLogs.id, logId));
-      }
 
       return result.data as { taskId: string };
     } catch (error) {
@@ -123,20 +85,6 @@ export const enqueueTask = publicProcedure
       console.error('   Message:', error instanceof Error ? error.message : String(error));
       if (error instanceof Error && error.stack) {
         console.error('   Stack:', error.stack);
-      }
-      
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      // Update log with failure if we have a logId
-      if (logId) {
-        await db
-          .update(schema.generationLogs)
-          .set({
-            status: 'failed',
-            errorMessage: errorMessage.substring(0, 500),
-            completedAt: new Date(),
-          })
-          .where(eq(schema.generationLogs.id, logId));
       }
       
       throw error;
