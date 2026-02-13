@@ -47,7 +47,7 @@ export const NextStepButton = () => {
 
   const handleExport = async () => {
     if (playerRef.current) {
-      if (!clipStart || !clipEnd) return;
+      if (!clipStart || !clipEnd || !user) return;
       const duration = playerRef.current.getDuration() * 1000;
       if ((clipEnd ?? 0) <= duration) {
         console.log(
@@ -55,6 +55,7 @@ export const NextStepButton = () => {
         );
         setShowAudioEditor(false);
         await generateClip({
+          userId: user.id,
           videoUrl,
           start: clipStart,
           end: clipEnd,

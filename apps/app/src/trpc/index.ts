@@ -22,6 +22,8 @@ import { editClipSchema, saveClipSchema } from '@/schemas';
 import { checkTaskStatus, enqueueTask } from './routers/video-processing';
 import { TimeRange } from '@/lib/utils';
 import * as UserRouterEndpoints from './routers/user';
+import { getGenerationLogs, getGenerationStats } from './routers/admin';
+import { updateGenerationLogStatus } from './routers/generation-logs';
 
 export const appRouter = router({
   getHermitChannels,
@@ -29,6 +31,9 @@ export const appRouter = router({
   getHermitcraftVideos,
   enqueueTask,
   checkTaskStatus,
+  updateGenerationLogStatus,
+  getGenerationLogs,
+  getGenerationStats,
   ...UserRouterEndpoints,
   getClip: publicProcedure
     .input(z.object({ clipId: z.string(), userId: z.string().optional() }))

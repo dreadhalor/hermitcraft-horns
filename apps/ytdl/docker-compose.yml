@@ -33,6 +33,8 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
 
   redis:

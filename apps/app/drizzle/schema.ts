@@ -108,3 +108,28 @@ export const cachedHermitcraftVideos = pgTable('cachedHermitcraftVideos', {
   data: json('data').notNull(),
   updatedAt: timestamp('updatedAt').defaultNow().notNull(),
 });
+
+export const generationLogs = pgTable(
+  'generationLogs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('userId')
+      .references(() => users.id)
+      .notNull(),
+    videoUrl: text('videoUrl').notNull(),
+    start: numeric('start').notNull(),
+    end: numeric('end').notNull(),
+    status: text('status').notNull(), // 'initiated', 'completed', 'failed'
+    errorMessage: text('errorMessage'),
+    taskId: text('taskId'),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    completedAt: timestamp('completedAt'),
+  },
+  (logs) => {
+    return {
+      userIdIndex: index('generation_logs_userId_idx').on(logs.userId),
+      createdAtIndex: index('generation_logs_createdAt_idx').on(logs.createdAt),
+      statusIndex: index('generation_logs_status_idx').on(logs.status),
+    };
+  },
+);

@@ -13,6 +13,42 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import Queue from 'bull';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import { pgTable, uuid, text, numeric, timestamp, index } from 'drizzle-orm/pg-core';
+import { eq } from 'drizzle-orm';
+
+// Database schema for generationLogs table
+const generationLogs = pgTable(
+  'generationLogs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('userId'),
+    videoUrl: text('videoUrl').notNull(),
+    start: numeric('start').notNull(),
+    end: numeric('end').notNull(),
+    status: text('status').notNull(),
+    errorMessage: text('errorMessage'),
+    taskId: text('taskId'),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    completedAt: timestamp('completedAt'),
+  },
+  (logs) => ({
+    userIdIndex: index('generation_logs_userId_idx').on(logs.userId),
+    createdAtIndex: index('generation_logs_createdAt_idx').on(logs.createdAt),
+    statusIndex: index('generation_logs_status_idx').on(logs.status),
+  }),
+);
+
+// Initialize database connection (only if DATABASE_URL is set)
+let db: ReturnType<typeof drizzle> | null = null;
+if (process.env.DATABASE_URL) {
+  const queryClient = postgres(process.env.DATABASE_URL);
+  db = drizzle(queryClient);
+  console.log('✅ Connected to database for logging');
+} else {
+  console.warn('⚠️  DATABASE_URL not set - running without database logging');
+}
 
 const app = express();
 
@@ -22,6 +58,24 @@ app.use(
     origin: 'http://localhost:3000',
   })
 );
+
+// API Key authentication middleware
+const authenticateApiKey = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+  const validApiKey = process.env.YTDL_INTERNAL_API_KEY;
+
+  if (!validApiKey) {
+    console.warn('⚠️  YTDL_INTERNAL_API_KEY not set - running without authentication!');
+    return next();
+  }
+
+  if (!apiKey || apiKey !== validApiKey) {
+    console.error('❌ Invalid or missing API key');
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
+  }
+
+  next();
+};
 
 const createContext = ({
   req,
@@ -115,6 +169,7 @@ export type CheckTaskStatusOutput = inferProcedureOutput<
 
 app.use(
   '/trpc',
+  authenticateApiKey, // Apply auth middleware to all tRPC endpoints
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext,
@@ -179,12 +234,66 @@ async function downloadAudioSlice(
 
 videoProcessingQueue.process(async (job) => {
   const { videoUrl, start, end } = job.data;
+  const taskId = String(job.id);
+  
+  // Log to database when processing starts
+  if (db) {
+    try {
+      await db.insert(generationLogs).values({
+        userId: null, // ytdl doesn't have user context
+        videoUrl,
+        start: start.toString(),
+        end: end.toString(),
+        status: 'active',
+        taskId,
+      });
+      console.log(`📝 Logged generation request to database (taskId: ${taskId})`);
+    } catch (error) {
+      console.error('Error logging to database:', error);
+      // Don't fail the job if logging fails
+    }
+  }
+  
   try {
     const outputFilename = await downloadAudioSlice(videoUrl, start, end);
-    // Perform any additional processing or cleanup if needed
+    
+    // Update log to completed
+    if (db) {
+      try {
+        await db
+          .update(generationLogs)
+          .set({
+            status: 'completed',
+            completedAt: new Date(),
+          })
+          .where(eq(generationLogs.taskId, taskId));
+        console.log(`✅ Updated log to completed (taskId: ${taskId})`);
+      } catch (error) {
+        console.error('Error updating log:', error);
+      }
+    }
+    
     return outputFilename;
   } catch (error) {
     console.error('Error processing video:', error);
+    
+    // Update log to failed
+    if (db) {
+      try {
+        await db
+          .update(generationLogs)
+          .set({
+            status: 'failed',
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            completedAt: new Date(),
+          })
+          .where(eq(generationLogs.taskId, taskId));
+        console.log(`❌ Updated log to failed (taskId: ${taskId})`);
+      } catch (logError) {
+        console.error('Error updating log:', logError);
+      }
+    }
+    
     throw error;
   }
 });

@@ -1,0 +1,82 @@
+name: Deploy ytdl Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/ytdl/**'
+      - '.github/workflows/deploy-ytdl.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Build and Deploy to EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ytdl
+          IMAGE_TAG: ${{ github.sha }}
+        working-directory: ./apps/ytdl
+        run: |
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/ytdl
+            
+            # Write .env file from GitHub Secrets
+            cat > .env << 'EOF'
+            NORDVPN_USERNAME=${{ secrets.NORDVPN_USERNAME }}
+            NORDVPN_PASSWORD=${{ secrets.NORDVPN_PASSWORD }}
+            REDIS_HOST=redis
+            REDIS_PORT=6379
+            YTDL_INTERNAL_API_KEY=${{ secrets.YTDL_INTERNAL_API_KEY }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            EOF
+            
+            echo "✅ Environment variables updated"
+            
+            # Pull and restart services
+            docker-compose pull ytdl
+            docker-compose down
+            docker-compose up -d
+            
+            echo "Deployment complete! Checking logs..."
+            sleep 5
+            docker-compose logs --tail=50 ytdl
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ ytdl service deployed successfully!"
+          else
+            echo "❌ ytdl deployment failed!"
+          fi

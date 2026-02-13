@@ -4,6 +4,7 @@ import { kebabIt } from '../lib/utils';
 import { toast } from 'sonner';
 
 type GenerateClipParams = {
+  userId: string;
   videoUrl: string;
   start: number;
   end: number;
@@ -18,6 +19,7 @@ export const useGenerateClip = () => {
   const { enqueueTask, taskData, error: taskError } = useTask();
 
   const generateClip = async ({
+    userId,
     videoUrl,
     start,
     end,
@@ -28,8 +30,8 @@ export const useGenerateClip = () => {
       setIsLoading(true);
       setError(null);
       setFile(null);
-      console.log('Enqueuing task with params:', { videoUrl, start, end });
-      await enqueueTask({ videoUrl, start, end });
+      console.log('Enqueuing task with params:', { userId, videoUrl, start, end });
+      await enqueueTask({ userId, videoUrl, start, end });
     } catch (error) {
       console.error('Error enqueuing task:', error);
       setError(error);
