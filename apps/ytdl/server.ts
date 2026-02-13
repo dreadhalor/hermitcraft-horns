@@ -53,17 +53,54 @@ if (process.env.DATABASE_URL) {
 
 const app = express();
 
-// Enable CORS
+// Parse JSON bodies before authentication middleware
+app.use(express.json());
+
+// Enable CORS for both local and production
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://www.hermitcraft-horns.com',
+  'https://hermitcraft-horns.com',
+];
+
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
   })
 );
 
 // API Key authentication middleware
-const authenticateApiKey = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const authenticateApiKey = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
   const validApiKey = process.env.YTDL_INTERNAL_API_KEY;
+
+  // Log ALL incoming requests for debugging
+  console.log('🔐 Authentication Check:');
+  console.log('   Path:', req.path);
+  console.log('   Method:', req.method);
+  console.log('   API Key Provided:', !!apiKey);
+  console.log('   API Key Length:', apiKey?.length || 0);
+  console.log('   API Key Preview:', apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'NONE');
+  console.log('   Valid Key Expected:', validApiKey ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}` : 'NOT SET');
+  console.log('   Keys Match:', apiKey === validApiKey);
+  console.log('   Headers:', JSON.stringify({
+    'content-type': req.headers['content-type'],
+    'x-api-key': apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING',
+    'authorization': req.headers['authorization'] ? 'PROVIDED' : 'MISSING',
+    'origin': req.headers['origin'],
+    'user-agent': req.headers['user-agent'],
+  }));
 
   if (!validApiKey) {
     console.warn('⚠️  YTDL_INTERNAL_API_KEY not set - running without authentication!');
@@ -71,10 +108,37 @@ const authenticateApiKey = (req: express.Request, res: express.Response, next: e
   }
 
   if (!apiKey || apiKey !== validApiKey) {
-    console.error('❌ Invalid or missing API key');
+    console.error('❌ Authentication FAILED - Invalid or missing API key');
+    
+    // Log rejected request to database for tracking
+    if (db) {
+      try {
+        // Try to extract request info if it's a tRPC request
+        let requestInfo: any = {};
+        if (req.body) {
+          requestInfo = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        }
+        
+        await db.insert(generationLogs).values({
+          userId: requestInfo.userId || null,
+          source: requestInfo.source || 'unknown',
+          videoUrl: requestInfo.videoUrl || 'N/A',
+          start: requestInfo.start?.toString() || '0',
+          end: requestInfo.end?.toString() || '0',
+          status: 'failed',
+          errorMessage: `Authentication failed: ${apiKey ? 'Invalid API key' : 'Missing API key'}`,
+          completedAt: new Date(),
+        });
+        console.log('📝 Logged rejected request to database');
+      } catch (error) {
+        console.error('Error logging rejected request:', error);
+      }
+    }
+    
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
   }
 
+  console.log('✅ Authentication PASSED');
   next();
 };
 
