@@ -113,13 +113,11 @@ export const generationLogs = pgTable(
   'generationLogs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: text('userId')
-      .references(() => users.id)
-      .notNull(),
+    userId: text('userId').references(() => users.id), // Nullable for CLI requests
     videoUrl: text('videoUrl').notNull(),
     start: numeric('start').notNull(),
     end: numeric('end').notNull(),
-    status: text('status').notNull(), // 'initiated', 'completed', 'failed'
+    status: text('status').notNull(), // 'initiated', 'completed', 'failed', 'active'
     errorMessage: text('errorMessage'),
     taskId: text('taskId'),
     createdAt: timestamp('createdAt').defaultNow().notNull(),

@@ -22,20 +22,17 @@ Automated deployment workflows for Hermitcraft Horns.
 - `EC2_HOST` - EC2 instance IP or hostname
 - `EC2_SSH_KEY` - Private SSH key for EC2 access
 
-### 2. `deploy-nextjs.yml` - Deploy Next.js App to Vercel
+### 2. Next.js Deployment - Handled by Vercel
 
-**Triggers:**
-- Push to `main` branch with changes in `apps/app/`
-- Manual workflow dispatch
+**No GitHub Actions workflow needed!**
 
-**What it does:**
-1. Builds Next.js app with Vercel CLI
-2. Deploys to Vercel production
+Vercel automatically deploys the Next.js app via its built-in GitHub integration:
+- Triggers on every push to `main` branch
+- No manual configuration needed
+- Manages its own build and deployment
+- View deployment status at: https://vercel.com/dashboard
 
-**Required Secrets:**
-- `VERCEL_TOKEN` - Vercel API token
-- `VERCEL_ORG_ID` - Your Vercel team/org ID (optional)
-- `VERCEL_PROJECT_ID` - Your Vercel project ID (optional)
+**Environment variables** are managed via Vercel Dashboard or CLI.
 
 ## Setup Instructions
 
