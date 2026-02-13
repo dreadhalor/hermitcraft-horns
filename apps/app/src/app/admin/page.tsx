@@ -76,6 +76,9 @@ export default function AdminPage() {
       enabled: !!user && isAdmin,
       retry: 2,
       retryDelay: 1000,
+      staleTime: 30000, // Consider data fresh for 30 seconds
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnMount: false, // Don't refetch on component mount if we have data
     },
   );
 
