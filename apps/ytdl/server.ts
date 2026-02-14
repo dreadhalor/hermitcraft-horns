@@ -1,3 +1,5 @@
+console.log('🎬 server.ts loading...');
+
 import express from 'express';
 import * as trpcExpress from '@trpc/server/adapters/express';
 import {
@@ -17,7 +19,10 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { pgTable, uuid, text, numeric, timestamp, index } from 'drizzle-orm/pg-core';
 import { eq } from 'drizzle-orm';
+
+console.log('📦 Imports complete, loading AWS SDK...');
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+console.log('✅ AWS SDK loaded!');
 
 // Function to load secrets from AWS Secrets Manager
 async function loadSecretsFromAWS() {
@@ -632,6 +637,7 @@ videoProcessingQueue.process(async (job) => {
 
 // Initialize server with secrets loaded from AWS
 (async () => {
+  console.log('🚀 IIFE starting...');
   await loadSecretsFromAWS();
   
   // Initialize database connection AFTER secrets are loaded
