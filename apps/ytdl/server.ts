@@ -454,7 +454,6 @@ async function downloadAudioSlice(
       '--postprocessor-args', `ffmpeg:-ss ${startSeconds} -t ${duration} -af loudnorm=I=-16:LRA=11:TP=-1.5`,
       '--no-cache-dir',
       '--newline', // Force newline after each output line for easier parsing
-      '--extractor-args', 'youtube:player_client=ios', // Use iOS client to bypass JS runtime issues
       '-o', outputFilename,
       videoUrl,
     ];
