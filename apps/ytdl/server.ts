@@ -451,7 +451,7 @@ async function downloadAudioSlice(
       '--postprocessor-args', '-af loudnorm=I=-16:LRA=11:TP=-1.5',
       '--no-cache-dir',
       '--newline', // Force newline after each output line for easier parsing
-      '--exec', 'node', // Tell yt-dlp to use Node.js for JavaScript runtime  
+      '--js-runtimes', 'node', // Enable Node.js as JavaScript runtime for YouTube extraction
       '-o', outputFilename,
       videoUrl,
     ];
