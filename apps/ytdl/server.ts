@@ -60,11 +60,6 @@ async function loadSecretsFromAWS() {
   }
 }
 
-// Wrap server initialization in async function
-async function startServer() {
-  // Load secrets before starting the server
-  await loadSecretsFromAWS();
-
 // Database schema for generationLogs table
 const generationLogs = pgTable(
   'generationLogs',
@@ -642,14 +637,15 @@ videoProcessingQueue.process(async (job) => {
   }
 });
 
-const port = Number.parseInt(process.env.PORT || '3001');
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server is running on port ${port}`);
-});
-}
-
-// Start the server
-startServer().catch((error) => {
+// Initialize server with secrets loaded from AWS
+(async () => {
+  await loadSecretsFromAWS();
+  
+  const port = Number.parseInt(process.env.PORT || '3001');
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Server is running on port ${port}`);
+  });
+})().catch((error) => {
   console.error('❌ Failed to start server:', error);
   process.exit(1);
 });
