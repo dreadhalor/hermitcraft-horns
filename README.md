@@ -194,9 +194,10 @@ Contributions are welcome! The codebase is well-documented and uses modern TypeS
 
 **Infrastructure:**
 - Vercel (frontend hosting)
-- AWS EC2, ELB, Route53
+- AWS EC2, ELB, Route53, Secrets Manager, IAM
 - Docker, Docker Compose
 - PostgreSQL (Vercel Postgres)
+- GitHub Actions (CI/CD)
 
 ## License
 
@@ -205,6 +206,3 @@ Do whatever you want with it - MIT or whatever. Just maybe give a shoutout if yo
 ---
 
 Built by [@dreadhalor](https://github.com/dreadhalor) • Check out the live site at [hermitcraft-horns.com](https://hermitcraft-horns.com)
-# Admin panel enabled
-# Trigger redeploy for ADMIN_API_KEY
-# Trigger redeploy for admin API
