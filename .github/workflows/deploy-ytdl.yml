@@ -44,12 +44,17 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/ytdl
+            
+            export IMAGE_TAG="${{ github.sha }}"
+            echo "📦 Deploying image tag: $IMAGE_TAG"
             
             echo "🎉 NO MORE .env FILE MANIPULATION!"
             echo "📦 ALL secrets fetched from AWS Secrets Manager"
@@ -82,7 +87,7 @@ jobs:
             echo "      - ytdl-network" >> docker-compose.yml
             echo "" >> docker-compose.yml
             echo "  ytdl:" >> docker-compose.yml
-            echo "    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest" >> docker-compose.yml
+            echo "    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:$IMAGE_TAG" >> docker-compose.yml
             echo "    container_name: ytdl" >> docker-compose.yml
             echo "    network_mode: \"service:gluetun\"" >> docker-compose.yml
             echo "    depends_on:" >> docker-compose.yml
@@ -129,8 +134,13 @@ jobs:
             echo "   YTDL_INTERNAL_API_KEY: ${YTDL_INTERNAL_API_KEY:0:8}***"
             echo "   DATABASE_URL: ${DATABASE_URL:0:20}***"
             
-            # Start containers with ALL secrets from environment
-            docker-compose up -d
+            # Log in to ECR and pull latest images
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
+            docker-compose pull ytdl
+            docker-compose pull gluetun
+            
+            # Start containers with ALL secrets from environment (--force-recreate ensures fresh start)
+            docker-compose up -d --force-recreate
             
             echo "Deployment complete! Checking logs..."
             sleep 5
