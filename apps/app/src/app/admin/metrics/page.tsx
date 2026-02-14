@@ -798,13 +798,13 @@ export default function MetricsPage() {
                     )}
 
                     {/* Recent Requests */}
-                    {vpn.ipHistory.length > 0 && vpn.ipHistory[0].recentRequests.length > 0 && (
+                    {vpn.ipHistory.length > 0 && vpn.ipHistory[0]?.recentRequests?.length > 0 && (
                       <>
                         <Separator />
                         <div>
                           <h4 className="font-semibold mb-2">Recent Requests</h4>
                           <div className="space-y-1 text-xs">
-                            {vpn.ipHistory[0].recentRequests.slice(0, 5).map((req, reqIdx) => (
+                            {vpn.ipHistory[0]?.recentRequests?.slice(0, 5).map((req, reqIdx) => (
                               <div key={reqIdx} className="flex items-center gap-2">
                                 <span>{req.success ? '✅' : '❌'}</span>
                                 <span className="font-mono">{req.taskId}</span>
