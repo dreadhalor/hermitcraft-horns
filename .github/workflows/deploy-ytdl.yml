@@ -169,9 +169,9 @@ jobs:
             # Log in to ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
             
-            # Pull latest ytdl image and bring down old containers
+            # Pull latest ytdl image and bring down old containers (remove orphans from architecture change)
             docker-compose pull ytdl
-            docker-compose down
+            docker-compose down --remove-orphans
             
             # Load ALL secrets from AWS Secrets Manager on the HOST (where IAM works)
             # Then pass them as environment variables to the container
@@ -203,8 +203,8 @@ jobs:
             docker-compose pull ytdl
             docker-compose pull gluetun-1 gluetun-2 gluetun-3
             
-            # Start containers with ALL secrets from environment (--force-recreate ensures fresh start)
-            docker-compose up -d --force-recreate
+            # Start containers with ALL secrets from environment (--force-recreate ensures fresh start, --remove-orphans cleans old single-VPN gluetun)
+            docker-compose up -d --force-recreate --remove-orphans
             
             echo "Deployment complete! Waiting for VPN connections..."
             sleep 15
