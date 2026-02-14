@@ -809,6 +809,35 @@ app.get('/admin/docker/status', async (_req, res) => {
   }
 });
 
+// Verify yt-dlp proxy routing by checking what IP yt-dlp sees through each VPN
+app.get('/admin/vpn/verify-proxy', async (_req, res) => {
+  const { execSync } = require('child_process');
+  const results: any[] = [];
+
+  // Check the container's direct IP first (no proxy)
+  try {
+    const directIp = execSync('curl -s --max-time 5 https://api.ipify.org', { encoding: 'utf8' }).trim();
+    results.push({ source: 'direct (no proxy)', ip: directIp, note: 'Server real IP - should NOT match VPN IPs' });
+  } catch {
+    results.push({ source: 'direct (no proxy)', error: 'Could not fetch' });
+  }
+
+  // Check each VPN proxy via curl --proxy (same mechanism yt-dlp --proxy uses)
+  for (const proxy of VPN_PROXIES) {
+    try {
+      const proxyIp = execSync(
+        `curl -s --max-time 10 --proxy ${proxy} https://api.ipify.org`,
+        { encoding: 'utf8', timeout: 15000 },
+      ).trim();
+      results.push({ source: `curl --proxy ${proxy}`, ip: proxyIp });
+    } catch {
+      results.push({ source: proxy, error: 'Could not verify' });
+    }
+  }
+
+  res.json({ success: true, proxyVerification: results });
+});
+
 // Simple REST endpoint for testing (bypasses tRPC complexity)
 app.post('/test/enqueue', async (req, res) => {
   try {

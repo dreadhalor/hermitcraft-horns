@@ -374,14 +374,20 @@ export class VpnDownloadManager {
     onProgress?: (progress: DownloadProgress) => void,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Use --proxy flag to ensure ALL yt-dlp traffic goes through VPN.
+      // Also set http_proxy/HTTPS_PROXY env vars as belt-and-suspenders for ffmpeg subprocesses.
+      // The --proxy flag is the primary mechanism; env vars are the fallback.
+      const finalArgs = proxy
+        ? ['--proxy', proxy, ...args]
+        : args;
       const env = proxy
-        ? { ...process.env, HTTP_PROXY: proxy, HTTPS_PROXY: proxy }
+        ? { ...process.env, http_proxy: proxy, HTTP_PROXY: proxy, https_proxy: proxy, HTTPS_PROXY: proxy }
         : process.env;
 
-      const proxyInfo = proxy ? ` (via ${proxy})` : '';
-      console.log(`Executing: yt-dlp ${args.join(' ')}${proxyInfo}`);
+      const proxyInfo = proxy ? ` (via --proxy ${proxy})` : '';
+      console.log(`Executing: yt-dlp ${finalArgs.join(' ')}${proxyInfo}`);
 
-      const ytdlpProcess = spawn('yt-dlp', args, { env });
+      const ytdlpProcess = spawn('yt-dlp', finalArgs, { env });
       let lastProgress = 0;
       let stderrOutput = '';
 
