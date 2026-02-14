@@ -143,15 +143,23 @@ export const NextStepButton = () => {
     return () => clearInterval(interval);
   }, [isGenerating]);
 
-  // Cycle through loading messages
+  // Cycle through loading messages with randomization
   useEffect(() => {
     if (!isGenerating) {
-      setMessageIndex(0);
+      // Start with a random message
+      setMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
       return;
     }
     
     const interval = setInterval(() => {
-      setMessageIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
+      setMessageIndex(prev => {
+        // Pick a random message that's different from the current one
+        let newIndex;
+        do {
+          newIndex = Math.floor(Math.random() * LOADING_MESSAGES.length);
+        } while (newIndex === prev && LOADING_MESSAGES.length > 1);
+        return newIndex;
+      });
     }, 3000);
     
     return () => clearInterval(interval);
