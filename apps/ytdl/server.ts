@@ -661,6 +661,7 @@ app.get('/admin/vpn/logs', async (req, res) => {
   const tailLines = Math.min(Math.max(parseInt(tail as string) || 100, 10), 500);
 
   // Try each possible container name
+  const errors: string[] = [];
   for (const containerName of possibleNames) {
     try {
       const logs = await fetchDockerLogs(containerName, tailLines);
@@ -672,7 +673,7 @@ app.get('/admin/vpn/logs', async (req, res) => {
         logs,
       });
     } catch (error) {
-      // Try next name
+      errors.push(`${containerName}: ${error instanceof Error ? error.message : String(error)}`);
       continue;
     }
   }
@@ -680,6 +681,7 @@ app.get('/admin/vpn/logs', async (req, res) => {
   res.status(404).json({
     success: false,
     error: `Could not find Docker container for ${proxy}. Tried: ${possibleNames.join(', ')}. Make sure Docker socket is mounted.`,
+    details: errors,
   });
 });
 
@@ -691,7 +693,7 @@ function fetchDockerLogs(containerName: string, tail: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const options: http.RequestOptions = {
       socketPath: '/var/run/docker.sock',
-      path: `/v1.47/containers/${containerName}/logs?stdout=true&stderr=true&tail=${tail}&timestamps=true`,
+      path: `/containers/${containerName}/logs?stdout=true&stderr=true&tail=${tail}&timestamps=true`,
       method: 'GET',
     };
 
@@ -740,7 +742,7 @@ function restartDockerContainer(containerName: string, timeoutSeconds: number = 
   return new Promise((resolve, reject) => {
     const options: http.RequestOptions = {
       socketPath: '/var/run/docker.sock',
-      path: `/v1.47/containers/${containerName}/restart?t=${timeoutSeconds}`,
+      path: `/containers/${containerName}/restart?t=${timeoutSeconds}`,
       method: 'POST',
     };
 
@@ -763,6 +765,50 @@ function restartDockerContainer(containerName: string, timeoutSeconds: number = 
   });
 }
 
+// Docker socket diagnostic endpoint
+app.get('/admin/docker/status', async (_req, res) => {
+  try {
+    const result = await new Promise<string>((resolve, reject) => {
+      const options: http.RequestOptions = {
+        socketPath: '/var/run/docker.sock',
+        path: '/containers/json',
+        method: 'GET',
+      };
+      const req = http.request(options, (response) => {
+        let body = '';
+        response.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        response.on('end', () => {
+          if (response.statusCode === 200) {
+            resolve(body);
+          } else {
+            reject(new Error(`Docker API returned ${response.statusCode}: ${body}`));
+          }
+        });
+      });
+      req.on('error', (error) => {
+        reject(new Error(`Docker socket error: ${error.message}`));
+      });
+      req.end();
+    });
+
+    const containers = JSON.parse(result);
+    const summary = containers.map((c: any) => ({
+      id: c.Id?.substring(0, 12),
+      name: c.Names?.[0]?.replace('/', ''),
+      image: c.Image,
+      state: c.State,
+      status: c.Status,
+    }));
+    res.json({ success: true, containers: summary });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      hint: 'Is /var/run/docker.sock mounted in the ytdl container?',
+    });
+  }
+});
+
 // Simple REST endpoint for testing (bypasses tRPC complexity)
 app.post('/test/enqueue', async (req, res) => {
   try {
@@ -770,7 +816,39 @@ app.post('/test/enqueue', async (req, res) => {
     if (!videoUrl || start == null || end == null) {
       return res.status(400).json({ error: 'Missing videoUrl, start, or end' });
     }
-    const job = await videoProcessingQueue.add({ videoUrl, start, end, userId: userId || null, source: source || 'web' });
+
+    // Create initial DB log (matching tRPC enqueueTask behavior)
+    let logId: string | undefined;
+    if (db) {
+      try {
+        const [log] = await db.insert(generationLogs).values({
+          userId: userId || null,
+          source: source || 'cli',
+          videoUrl,
+          start: String(start),
+          end: String(end),
+          status: 'initiated',
+        }).returning();
+        logId = log?.id;
+        console.log(`📝 [/test/enqueue] Created DB log (logId: ${logId})`);
+      } catch (dbError) {
+        console.error(`⚠️  [/test/enqueue] Failed to create DB log:`, dbError);
+      }
+    }
+
+    const job = await videoProcessingQueue.add({ videoUrl, start, end, userId: userId || null, source: source || 'cli' });
+
+    // Update log with taskId
+    if (db && logId) {
+      try {
+        await db.update(generationLogs)
+          .set({ taskId: String(job.id) })
+          .where(eq(generationLogs.id, logId));
+      } catch (dbError) {
+        console.error(`⚠️  [/test/enqueue] Failed to update DB log with taskId:`, dbError);
+      }
+    }
+
     res.json({ success: true, taskId: String(job.id) });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });

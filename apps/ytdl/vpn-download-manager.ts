@@ -383,6 +383,7 @@ export class VpnDownloadManager {
 
       const ytdlpProcess = spawn('yt-dlp', args, { env });
       let lastProgress = 0;
+      let stderrOutput = '';
 
       ytdlpProcess.stdout.on('data', (data: Buffer) => {
         const output = data.toString();
@@ -404,7 +405,9 @@ export class VpnDownloadManager {
       });
 
       ytdlpProcess.stderr.on('data', (data: Buffer) => {
-        console.error(`yt-dlp error: ${data.toString()}`);
+        const text = data.toString();
+        stderrOutput += text;
+        console.error(`yt-dlp error: ${text}`);
       });
 
       ytdlpProcess.on('close', (code: number) => {
@@ -412,8 +415,9 @@ export class VpnDownloadManager {
           console.log('✅ Download complete');
           resolve();
         } else {
-          console.error(`yt-dlp exited with code ${code}`);
-          reject(new Error(`yt-dlp exited with code ${code}`));
+          const truncatedStderr = stderrOutput.trim().slice(-500);
+          console.error(`yt-dlp exited with code ${code}: ${truncatedStderr}`);
+          reject(new Error(`yt-dlp exited with code ${code}: ${truncatedStderr}`));
         }
       });
     });
