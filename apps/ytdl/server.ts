@@ -920,8 +920,19 @@ app.get('/metrics', async (req, res) => {
       attemptsMade: job.attemptsMade,
     }));
     
-    // Database Metrics - Recent Generation Logs (skip if schema not migrated)
+    // Database Metrics - Recent Generation Logs
     let recentLogs: any[] = [];
+    if (db) {
+      try {
+        recentLogs = await db
+          .select()
+          .from(generationLogs)
+          .orderBy(desc(generationLogs.createdAt))
+          .limit(50);
+      } catch (dbError) {
+        console.error('Failed to fetch recent logs from DB:', dbError);
+      }
+    }
     
     // Combined Jobs List - All jobs with VPN attempts chronologically
     const allJobs = [
