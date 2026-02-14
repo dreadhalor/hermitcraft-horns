@@ -92,7 +92,8 @@ jobs:
             echo "      - NODE_ENV=production" >> docker-compose.yml
             echo "      - REDIS_HOST=redis" >> docker-compose.yml
             echo "      - REDIS_PORT=6379" >> docker-compose.yml
-            echo "      - AWS_REGION=us-east-1" >> docker-compose.yml
+            echo "      - YTDL_INTERNAL_API_KEY=\${YTDL_INTERNAL_API_KEY}" >> docker-compose.yml
+            echo "      - DATABASE_URL=\${DATABASE_URL}" >> docker-compose.yml
             echo "    restart: unless-stopped" >> docker-compose.yml
             echo "" >> docker-compose.yml
             echo "  redis:" >> docker-compose.yml
@@ -115,15 +116,20 @@ jobs:
             docker-compose pull ytdl
             docker-compose down
             
-            # Load secrets from AWS and start containers
-            echo "🔐 Loading secrets from AWS Secrets Manager..."
+            # Load ALL secrets from AWS Secrets Manager on the HOST (where IAM works)
+            # Then pass them as environment variables to the container
+            echo "🔐 Loading ALL secrets from AWS Secrets Manager on EC2 host..."
             export NORDVPN_USERNAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-username --query SecretString --output text)
             export NORDVPN_PASSWORD=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-password --query SecretString --output text)
+            export YTDL_INTERNAL_API_KEY=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/api-key --query SecretString --output text)
+            export DATABASE_URL=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/database-url --query SecretString --output text)
             
-            echo "✅ Secrets loaded from AWS!"
+            echo "✅ All secrets loaded from AWS!"
             echo "   NORDVPN_USERNAME: ${NORDVPN_USERNAME:0:3}***"
+            echo "   YTDL_INTERNAL_API_KEY: ${YTDL_INTERNAL_API_KEY:0:8}***"
+            echo "   DATABASE_URL: ${DATABASE_URL:0:20}***"
             
-            # Start containers with secrets from environment
+            # Start containers with ALL secrets from environment
             docker-compose up -d
             
             echo "Deployment complete! Checking logs..."
