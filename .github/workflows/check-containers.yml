@@ -1,0 +1,26 @@
+name: Check Running Containers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check containers on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "📋 All Docker containers:"
+            docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.CreatedAt}}"
+            
+            echo ""
+            echo "🐳 Docker images:"
+            docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedAt}}\t{{.Size}}" | grep -E "REPOSITORY|ytdl|gluetun"
+            
+            echo ""
+            echo "📁 Working directory contents:"
+            ls -la /home/ec2-user/ytdl/
