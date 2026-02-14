@@ -52,7 +52,7 @@ jobs:
             cd /home/ec2-user/ytdl
             
             # Write .env file from GitHub Secrets
-            cat > .env << 'EOF'
+            cat > .env << EOF
             NORDVPN_USERNAME=${{ secrets.NORDVPN_USERNAME }}
             NORDVPN_PASSWORD=${{ secrets.NORDVPN_PASSWORD }}
             REDIS_HOST=redis
