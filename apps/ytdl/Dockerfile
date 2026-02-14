@@ -1,5 +1,5 @@
 # Use the specified Node.js version on Alpine Linux
-ARG NODE_VERSION=21.6.1
+ARG NODE_VERSION=20
 FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine as base
 ARG PNPM_VERSION=8.15.1
 
