@@ -103,6 +103,7 @@ export const checkTaskStatus = publicProcedure
         z.literal('failed'),
       ]),
       audioBuffer: z.custom<Buffer>().optional(),
+      progress: z.number().optional(),
     }),
   )
   .query(async ({ input }) => {
@@ -123,9 +124,10 @@ export const checkTaskStatus = publicProcedure
     }
 
     const { result } = await response.json();
-    const { status, audioBuffer } = result.data as {
+    const { status, audioBuffer, progress } = result.data as {
       status: string;
       audioBuffer?: Buffer;
+      progress?: number;
     };
 
     // Validate the status value
@@ -140,8 +142,9 @@ export const checkTaskStatus = publicProcedure
       throw new Error('Invalid task status');
     }
 
-    return { status, audioBuffer } as {
+    return { status, audioBuffer, progress } as {
       status: 'not_found' | 'completed' | 'waiting' | 'active' | 'failed';
       audioBuffer?: Buffer;
+      progress?: number;
     };
   });

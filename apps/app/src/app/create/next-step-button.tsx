@@ -38,7 +38,7 @@ export const NextStepButton = () => {
     isPublishing,
   } = useClipBuilder();
   const { exportFile, exportingFile } = useAudioContext();
-  const { file, generateClip, isLoading: isGenerating } = useGenerateClip();
+  const { file, generateClip, isLoading: isGenerating, progress } = useGenerateClip();
   const { user } = useHHUser();
 
   const clipLength = ((clipEnd ?? 0) - (clipStart ?? 0)) / 1000;
@@ -177,15 +177,48 @@ export const NextStepButton = () => {
   };
 
   return (
-    <div className='flex w-full items-center gap-2'>
-      <Button
-        className='flex-1'
-        type='button'
-        onClick={handleNext}
-        disabled={isErrored || isGenerating || isPublishing || exportingFile}
-      >
-        {getButtonText()}
-      </Button>
-    </div>
+    <>
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4'>
+          <div className='w-full max-w-sm rounded-lg bg-card p-6 sm:p-8 shadow-2xl border border-border'>
+            <div className='flex flex-col items-center gap-4 text-center'>
+              <div className='text-xl sm:text-2xl font-bold text-foreground animate-pulse break-words'>
+                {LOADING_MESSAGES[messageIndex]}
+              </div>
+              <div className='text-base sm:text-lg text-muted-foreground'>
+                {elapsedTime}s elapsed
+              </div>
+              {/* Progress bar */}
+              <div className='w-full h-2 bg-muted rounded-full overflow-hidden'>
+                <div 
+                  className='h-full bg-primary transition-all duration-300 rounded-full'
+                  style={{ width: `${progress || Math.min((elapsedTime / 30) * 100, 95)}%` }}
+                />
+              </div>
+              {progress > 0 && (
+                <div className='text-xs text-muted-foreground'>
+                  {progress.toFixed(1)}% complete
+                </div>
+              )}
+              <div className='text-xs sm:text-sm text-muted-foreground'>
+                This usually takes 10-30 seconds
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className='flex w-full items-center gap-2'>
+        <Button
+          className='flex-1'
+          type='button'
+          onClick={handleNext}
+          disabled={isErrored || isGenerating || isPublishing || exportingFile}
+        >
+          {getButtonText()}
+        </Button>
+      </div>
+    </>
   );
 };

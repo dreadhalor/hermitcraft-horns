@@ -8,7 +8,7 @@ import {
   initTRPC,
 } from '@trpc/server';
 import { z } from 'zod';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
@@ -273,11 +273,14 @@ const appRouter = t.router({
       const { taskId } = input;
       const job = await videoProcessingQueue.getJob(taskId);
       if (!job) {
-        return { status: 'not_found' };
+        return { status: 'not_found', progress: 0 };
       }
 
       const status = await job.getState();
-      console.log('Task status:', status);
+      const progressValue = await job.progress();
+      const progress = typeof progressValue === 'number' ? progressValue : 0;
+      
+      console.log('Task status:', status, 'Progress:', progress);
 
       if (status === 'completed') {
         const outputFilename = job.returnvalue;
@@ -287,10 +290,10 @@ const appRouter = t.router({
         // Delete the temporary audio file
         await fs.promises.unlink(audioPath);
 
-        return { status, audioBuffer };
+        return { status, audioBuffer, progress: 100 };
       }
 
-      return { status };
+      return { status, progress };
     }),
 });
 
@@ -331,7 +334,8 @@ function formatTime(milliseconds: number): string {
 async function downloadAudioSlice(
   videoUrl: string,
   startMilliseconds: number,
-  endMilliseconds: number
+  endMilliseconds: number,
+  job?: any // Bull job for progress updates
 ): Promise<string> {
   try {
     // Create the media-output folder if it doesn't exist
@@ -345,19 +349,86 @@ async function downloadAudioSlice(
     const endTime = formatTime(endMilliseconds);
     console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
 
-    const command = `yt-dlp --download-sections "*${startTime}-${endTime}" --force-keyframes-at-cuts -f bestaudio -x --audio-format mp3 --audio-quality 0 --postprocessor-args "-af loudnorm=I=-16:LRA=11:TP=-1.5" --no-cache-dir -o "${outputFilename}" "${videoUrl}"`;
+    const args = [
+      '--download-sections', `*${startTime}-${endTime}`,
+      '--force-keyframes-at-cuts',
+      '-f', 'bestaudio',
+      '-x',
+      '--audio-format', 'mp3',
+      '--audio-quality', '0',
+      '--postprocessor-args', '-af loudnorm=I=-16:LRA=11:TP=-1.5',
+      '--no-cache-dir',
+      '--newline', // Force newline after each output line for easier parsing
+      '-o', outputFilename,
+      videoUrl,
+    ];
 
-    console.log(`Executing command: ${command}`);
+    console.log(`Executing: yt-dlp ${args.join(' ')}`);
 
     await new Promise<void>((resolve, reject) => {
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error executing command: ${error.message}`);
-          reject(error);
+      const process = spawn('yt-dlp', args);
+      
+      let lastProgress = 0;
+      
+      // Parse progress from stdout
+      process.stdout.on('data', (data) => {
+        const output = data.toString();
+        console.log(output.trim());
+        
+        // Parse progress: [download] 42.5% of 2.45MiB at 1.23MiB/s ETA 00:15
+        const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
+        if (progressMatch && job) {
+          const progress = parseFloat(progressMatch[1]);
+          if (progress !== lastProgress) {
+            lastProgress = progress;
+            job.progress(progress);
+            console.log(`📊 Progress: ${progress}%`);
+          }
+        }
+        
+        // Also check for processing stage
+        if (output.includes('[ExtractAudio]') && job && lastProgress < 95) {
+          job.progress(95);
+          console.log('🎵 Extracting audio...');
+        }
+      });
+      
+      // Log errors but don't necessarily fail
+      process.stderr.on('data', (data) => {
+        const output = data.toString();
+        // yt-dlp outputs progress to stderr too sometimes
+        console.log(output.trim());
+        
+        const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
+        if (progressMatch && job) {
+          const progress = parseFloat(progressMatch[1]);
+          if (progress !== lastProgress) {
+            lastProgress = progress;
+            job.progress(progress);
+            console.log(`📊 Progress: ${progress}%`);
+          }
+        }
+      });
+      
+      process.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`yt-dlp exited with code ${code}`);
+          reject(new Error(`yt-dlp exited with code ${code}`));
           return;
         }
-        console.log(`Command output: ${stdout}`);
+        
+        // Set to 100% when complete
+        if (job) {
+          job.progress(100);
+        }
+        
+        console.log('✅ Download complete');
         resolve();
+      });
+      
+      process.on('error', (error) => {
+        console.error('Error spawning yt-dlp:', error);
+        reject(error);
       });
     });
 
@@ -388,7 +459,8 @@ videoProcessingQueue.process(async (job) => {
   }
   
   try {
-    const outputFilename = await downloadAudioSlice(videoUrl, start, end);
+    // Pass job for progress updates
+    const outputFilename = await downloadAudioSlice(videoUrl, start, end, job);
     
     // Update log to completed
     if (db) {

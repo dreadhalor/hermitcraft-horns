@@ -11,6 +11,7 @@ export const useTask = () => {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [taskData, setTaskData] = useState<any>(null);
   const [taskError, setTaskError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
   const startTimeRef = useRef<number | null>(null);
 
   const { isLoading, error } = trpc.checkTaskStatus.useQuery(
@@ -30,11 +31,17 @@ export const useTask = () => {
         
         return taskId ? 1000 : false; // Poll every second if taskId exists
       },
-      onSuccess: (data) => {
+      onSuccess: (data: any) => {
+        // Update progress if available
+        if (data?.progress !== undefined) {
+          setProgress(data.progress);
+        }
+        
         if (data?.status === 'completed') {
           setTaskId(null);
           setTaskData(data);
           setTaskError(null);
+          setProgress(100);
           startTimeRef.current = null;
           
           // Update generation log
@@ -153,6 +160,7 @@ export const useTask = () => {
     try {
       setTaskError(null);
       setTaskData(null);
+      setProgress(0);
       const { taskId } = await enqueueTaskMutation.mutateAsync({
         userId,
         videoUrl,
@@ -190,5 +198,5 @@ export const useTask = () => {
     }
   }, [taskId]);
 
-  return { enqueueTask, taskData, isLoading, error: taskError };
+  return { enqueueTask, taskData, isLoading, error: taskError, progress };
 };

@@ -16,7 +16,7 @@ export const useGenerateClip = () => {
   const [error, setError] = useState<any>(null);
   const [file, setFile] = useState<File | null>(null);
   const [tagline, setTagline] = useState<string>('');
-  const { enqueueTask, taskData, error: taskError } = useTask();
+  const { enqueueTask, taskData, error: taskError, progress } = useTask();
 
   const generateClip = async ({
     userId,
@@ -73,5 +73,5 @@ export const useGenerateClip = () => {
     }
   }, [taskError]);
 
-  return { generateClip, isLoading, error, file };
+  return { generateClip, isLoading, error, file, progress };
 };
