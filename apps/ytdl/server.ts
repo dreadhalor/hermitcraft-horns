@@ -80,6 +80,62 @@ app.use(
   })
 );
 
+// CRITICAL: Log EVERY request FIRST, before auth, before anything
+app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Only log tRPC requests (skip health checks, static files, etc.)
+  if (!req.path.startsWith('/trpc/')) {
+    return next();
+  }
+
+  console.log('📨 INCOMING REQUEST:');
+  console.log('   Path:', req.path);
+  console.log('   Method:', req.method);
+  console.log('   Origin:', req.headers['origin'] || 'none');
+  console.log('   User-Agent:', req.headers['user-agent'] || 'none');
+  console.log('   Body:', JSON.stringify(req.body).substring(0, 500)); // Limit body log length
+
+  // Try to extract tRPC input and log to database immediately
+  if (db && req.path.includes('/enqueueTask')) {
+    try {
+      let requestData: any = {};
+      
+      // tRPC batch format check
+      if (Array.isArray(req.body)) {
+        requestData = req.body[0] || {};
+      } else if (req.body) {
+        requestData = req.body;
+      }
+
+      // Extract videoUrl, start, end, userId, source from the request
+      const videoUrl = requestData.videoUrl || requestData.input?.videoUrl || 'N/A';
+      const start = requestData.start || requestData.input?.start || requestData.startTime || requestData.input?.startTime || 0;
+      const end = requestData.end || requestData.input?.end || requestData.endTime || requestData.input?.endTime || 0;
+      const userId = requestData.userId || requestData.input?.userId || null;
+      const source = requestData.source || requestData.input?.source || 'unknown';
+
+      // Log to database IMMEDIATELY with 'received' status
+      const [log] = await db.insert(generationLogs).values({
+        userId,
+        source,
+        videoUrl,
+        start: start.toString(),
+        end: end.toString(),
+        status: 'received', // New status to indicate we received the request
+      }).returning();
+
+      // Store log ID in request object for later updates
+      (req as any).logId = log?.id;
+      
+      console.log(`✅ Logged request to database (logId: ${log?.id}, source: ${source})`);
+    } catch (error) {
+      console.error('❌ Error logging request to database:', error);
+      // Don't fail the request if logging fails
+    }
+  }
+
+  next();
+});
+
 // API Key authentication middleware
 const authenticateApiKey = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const rawApiKey = req.headers['x-api-key'] || req.headers['authorization'];
@@ -131,26 +187,40 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
       `Method: ${req.method}`,
     ].join(' | ');
     
-    // Log rejected request to database for tracking
+    // Update existing log entry if available, otherwise create new one
     if (db) {
       try {
-        // Try to extract request info if it's a tRPC request
-        let requestInfo: any = {};
-        if (req.body) {
-          requestInfo = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-        }
+        const logId = (req as any).logId;
         
-        await db.insert(generationLogs).values({
-          userId: requestInfo.userId || null,
-          source: requestInfo.source || 'unknown',
-          videoUrl: requestInfo.videoUrl || 'N/A',
-          start: requestInfo.start?.toString() || '0',
-          end: requestInfo.end?.toString() || '0',
-          status: 'failed',
-          errorMessage: detailedError,
-          completedAt: new Date(),
-        });
-        console.log('📝 Logged rejected request to database with detailed error');
+        if (logId) {
+          // Update existing log entry
+          await db.update(generationLogs)
+            .set({
+              status: 'failed',
+              errorMessage: detailedError,
+              completedAt: new Date(),
+            })
+            .where(eq(generationLogs.id, logId));
+          console.log(`📝 Updated existing log with auth failure (logId: ${logId})`);
+        } else {
+          // Fallback: create new log entry
+          let requestInfo: any = {};
+          if (req.body) {
+            requestInfo = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+          }
+          
+          await db.insert(generationLogs).values({
+            userId: requestInfo.userId || null,
+            source: requestInfo.source || 'unknown',
+            videoUrl: requestInfo.videoUrl || 'N/A',
+            start: requestInfo.start?.toString() || '0',
+            end: requestInfo.end?.toString() || '0',
+            status: 'failed',
+            errorMessage: detailedError,
+            completedAt: new Date(),
+          });
+          console.log('📝 Created new log for auth failure (no logId found)');
+        }
       } catch (error) {
         console.error('Error logging rejected request:', error);
       }
@@ -203,28 +273,38 @@ const appRouter = t.router({
         source: z.enum(['web', 'cli']).default('cli'),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { videoUrl, start, end, userId, source } = input;
       console.log('Received enqueueTask request with input:', input);
 
-      let logId: string | undefined;
+      // Get existing logId from request (set by logging middleware)
+      let logId: string | undefined = (ctx.req as any).logId;
 
       try {
-        // Log the request to database FIRST
+        // Update existing log to 'initiated' status, or create new one if not found
         if (db) {
           try {
-            const [log] = await db.insert(generationLogs).values({
-              userId: userId || null,
-              source,
-              videoUrl,
-              start: start.toString(),
-              end: end.toString(),
-              status: 'initiated',
-            }).returning();
-            logId = log?.id;
-            console.log(`📝 Logged ${source} generation request to database (logId: ${logId})`);
+            if (logId) {
+              // Update existing log
+              await db.update(generationLogs)
+                .set({ status: 'initiated' })
+                .where(eq(generationLogs.id, logId));
+              console.log(`📝 Updated log to 'initiated' (logId: ${logId})`);
+            } else {
+              // Fallback: create new log if somehow we don't have logId
+              const [log] = await db.insert(generationLogs).values({
+                userId: userId || null,
+                source,
+                videoUrl,
+                start: start.toString(),
+                end: end.toString(),
+                status: 'initiated',
+              }).returning();
+              logId = log?.id;
+              console.log(`📝 Created new log (logId: ${logId})`);
+            }
           } catch (error) {
-            console.error('Error logging to database:', error);
+            console.error('Error updating/creating log:', error);
             // Don't fail the request if logging fails
           }
         }
