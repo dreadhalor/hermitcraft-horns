@@ -61,7 +61,7 @@ jobs:
             # Create docker-compose.yml (no heredoc to avoid YAML parsing issues)
             echo "services:" > docker-compose.yml
             echo "  gluetun:" >> docker-compose.yml
-            echo "    image: qmcgaw/gluetun:v3" >> docker-compose.yml
+            echo "    image: qmcgaw/gluetun:v3.41.1" >> docker-compose.yml
             echo "    container_name: gluetun" >> docker-compose.yml
             echo "    cap_add:" >> docker-compose.yml
             echo "      - NET_ADMIN" >> docker-compose.yml
