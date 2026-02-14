@@ -134,7 +134,19 @@ jobs:
             echo "   YTDL_INTERNAL_API_KEY: ${YTDL_INTERNAL_API_KEY:0:8}***"
             echo "   DATABASE_URL: ${DATABASE_URL:0:20}***"
             
+            # Clean up old Docker resources BEFORE deploying
+            echo ""
+            echo "🗑️  Cleaning up old Docker resources..."
+            docker container prune -f
+            docker image prune -f
+            # Remove old ytdl images (keep current running, remove others)
+            docker images 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl --format "{{.ID}} {{.Tag}}" | grep -v "$IMAGE_TAG" | awk '{print $1}' | xargs -r docker rmi -f || true
+            docker volume prune -f
+            echo "✅ Cleanup complete"
+            
             # Log in to ECR and pull latest images
+            echo ""
+            echo "📥 Pulling fresh images..."
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
             docker-compose pull ytdl
             docker-compose pull gluetun
