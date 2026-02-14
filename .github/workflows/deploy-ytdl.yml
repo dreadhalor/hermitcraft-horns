@@ -58,55 +58,53 @@ jobs:
             echo "   • NORDVPN credentials (by load-secrets.sh)"
             echo ""
             
-            # Update docker-compose.yml to use ECR image
-            cat > docker-compose.yml << 'EOF'
-services:
-  gluetun:
-    image: qmcgaw/gluetun:latest
-    container_name: gluetun
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    ports:
-      - "3001:3001"
-    environment:
-      - VPN_SERVICE_PROVIDER=nordvpn
-      - OPENVPN_USER=${NORDVPN_USERNAME}
-      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
-      - SERVER_COUNTRIES=United States
-      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
-    volumes:
-      - ./gluetun:/gluetun
-    restart: unless-stopped
-    networks:
-      - ytdl-network
-
-  ytdl:
-    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
-    container_name: ytdl
-    network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-      - redis
-    environment:
-      - NODE_ENV=production
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - AWS_REGION=us-east-1
-    restart: unless-stopped
-
-  redis:
-    image: redis:alpine
-    container_name: redis
-    networks:
-      - ytdl-network
-    restart: unless-stopped
-
-networks:
-  ytdl-network:
-    driver: bridge
-EOF
+            # Create docker-compose.yml (no heredoc to avoid YAML parsing issues)
+            echo "services:" > docker-compose.yml
+            echo "  gluetun:" >> docker-compose.yml
+            echo "    image: qmcgaw/gluetun:latest" >> docker-compose.yml
+            echo "    container_name: gluetun" >> docker-compose.yml
+            echo "    cap_add:" >> docker-compose.yml
+            echo "      - NET_ADMIN" >> docker-compose.yml
+            echo "    devices:" >> docker-compose.yml
+            echo "      - /dev/net/tun:/dev/net/tun" >> docker-compose.yml
+            echo "    ports:" >> docker-compose.yml
+            echo "      - \"3001:3001\"" >> docker-compose.yml
+            echo "    environment:" >> docker-compose.yml
+            echo "      - VPN_SERVICE_PROVIDER=nordvpn" >> docker-compose.yml
+            echo "      - OPENVPN_USER=\${NORDVPN_USERNAME}" >> docker-compose.yml
+            echo "      - OPENVPN_PASSWORD=\${NORDVPN_PASSWORD}" >> docker-compose.yml
+            echo "      - SERVER_COUNTRIES=United States" >> docker-compose.yml
+            echo "      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16" >> docker-compose.yml
+            echo "    volumes:" >> docker-compose.yml
+            echo "      - ./gluetun:/gluetun" >> docker-compose.yml
+            echo "    restart: unless-stopped" >> docker-compose.yml
+            echo "    networks:" >> docker-compose.yml
+            echo "      - ytdl-network" >> docker-compose.yml
+            echo "" >> docker-compose.yml
+            echo "  ytdl:" >> docker-compose.yml
+            echo "    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest" >> docker-compose.yml
+            echo "    container_name: ytdl" >> docker-compose.yml
+            echo "    network_mode: \"service:gluetun\"" >> docker-compose.yml
+            echo "    depends_on:" >> docker-compose.yml
+            echo "      - gluetun" >> docker-compose.yml
+            echo "      - redis" >> docker-compose.yml
+            echo "    environment:" >> docker-compose.yml
+            echo "      - NODE_ENV=production" >> docker-compose.yml
+            echo "      - REDIS_HOST=redis" >> docker-compose.yml
+            echo "      - REDIS_PORT=6379" >> docker-compose.yml
+            echo "      - AWS_REGION=us-east-1" >> docker-compose.yml
+            echo "    restart: unless-stopped" >> docker-compose.yml
+            echo "" >> docker-compose.yml
+            echo "  redis:" >> docker-compose.yml
+            echo "    image: redis:alpine" >> docker-compose.yml
+            echo "    container_name: redis" >> docker-compose.yml
+            echo "    networks:" >> docker-compose.yml
+            echo "      - ytdl-network" >> docker-compose.yml
+            echo "    restart: unless-stopped" >> docker-compose.yml
+            echo "" >> docker-compose.yml
+            echo "networks:" >> docker-compose.yml
+            echo "  ytdl-network:" >> docker-compose.yml
+            echo "    driver: bridge" >> docker-compose.yml
             
             echo "✅ docker-compose.yml updated to use ECR image"
             
