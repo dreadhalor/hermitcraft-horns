@@ -66,14 +66,21 @@ The VPN setup is documented in `apps/ytdl/GLUETUN_SETUP.md` for when YouTube dec
 
 ## Recent Updates
 
+### AWS Secrets Manager Integration
+Migrated all sensitive credentials (API keys, database URLs, VPN credentials) from environment files to AWS Secrets Manager. The EC2 instance uses IAM roles to securely fetch secrets at deployment time, eliminating the need for `.env` files in production.
+
+### Improved Loading Experience
+Replaced complex progress tracking with a clean, simple loading overlay featuring:
+- Animated CSS spinner
+- 18 randomized Hermitcraft-themed messages that cycle without repeating
+- Elapsed time counter
+- No fake progress bars - just honest "generating your horn..." feedback
+
 ### VPN Integration for YouTube Downloads
 YouTube started blocking our EC2 IP address, causing clip generation to fail. The ytdl service now routes traffic through a Gluetun VPN container using Docker networking, which solved the issue completely. This is a "set it and forget it" solution that keeps the download service running smoothly.
 
 ### Error Tracking & Monitoring
 Integrated Sentry across the entire Next.js app (client, server, and edge runtimes) to catch and report errors automatically. When clip generation fails, users get friendly notifications and I get detailed error reports with context about what went wrong.
-
-### Hermit Profile Picture Management
-Created utility scripts to keep hermit profile pictures up-to-date when YouTube changes their CDN URLs or hermits update their avatars. Supports both YouTube Data API integration and fallback to the hermitcraft.com API.
 
 ## Getting Started
 
@@ -160,7 +167,10 @@ hermitcraft-horns/
 - Docker Compose orchestration with Gluetun VPN
 - Redis for job queue persistence
 - Application Load Balancer for SSL and subdomain routing
+- AWS Secrets Manager for secure credential management
+- IAM roles for instance-level secret access
 - Automated health checks and container restarts
+- GitHub Actions for CI/CD deployment
 
 ## Contributing
 
