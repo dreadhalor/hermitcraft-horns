@@ -1,0 +1,17 @@
+name: Get Raw Docker Logs
+on:
+  workflow_dispatch:
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get raw docker logs for gluetun
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "📋 Raw docker logs for gluetun (last 150 lines):"
+            docker logs gluetun --tail 150 2>&1
