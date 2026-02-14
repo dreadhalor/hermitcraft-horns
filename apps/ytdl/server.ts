@@ -83,15 +83,8 @@ const generationLogs = pgTable(
   }),
 );
 
-// Initialize database connection (only if DATABASE_URL is set)
+// Database connection - will be initialized after secrets are loaded
 let db: ReturnType<typeof drizzle> | null = null;
-if (process.env.DATABASE_URL) {
-  const queryClient = postgres(process.env.DATABASE_URL);
-  db = drizzle(queryClient);
-  console.log('✅ Connected to database for logging');
-} else {
-  console.warn('⚠️  DATABASE_URL not set - running without database logging');
-}
 
 const app = express();
 
@@ -641,9 +634,18 @@ videoProcessingQueue.process(async (job) => {
 (async () => {
   await loadSecretsFromAWS();
   
+  // Initialize database connection AFTER secrets are loaded
+  if (process.env.DATABASE_URL) {
+    const queryClient = postgres(process.env.DATABASE_URL);
+    db = drizzle(queryClient);
+    console.log('✅ Connected to database for logging');
+  } else {
+    console.warn('⚠️  DATABASE_URL not set - running without database logging');
+  }
+  
   const port = Number.parseInt(process.env.PORT || '3001');
   app.listen(port, '0.0.0.0', () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`🚀 Server is running on port ${port}`);
   });
 })().catch((error) => {
   console.error('❌ Failed to start server:', error);
