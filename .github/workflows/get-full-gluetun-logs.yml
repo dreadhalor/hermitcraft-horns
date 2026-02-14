@@ -1,0 +1,18 @@
+name: Get Full Gluetun Logs
+on:
+  workflow_dispatch:
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get complete gluetun logs
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "📋 Full gluetun logs (last 200 lines):"
+            cd /home/ec2-user
+            docker-compose logs --tail=200 gluetun 2>&1
