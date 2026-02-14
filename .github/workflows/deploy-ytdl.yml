@@ -52,16 +52,18 @@ jobs:
             cd /home/ec2-user/ytdl
             
             # Write .env file from GitHub Secrets
-            cat > .env << EOF
-            NORDVPN_USERNAME=${{ secrets.NORDVPN_USERNAME }}
-            NORDVPN_PASSWORD=${{ secrets.NORDVPN_PASSWORD }}
-            REDIS_HOST=redis
-            REDIS_PORT=6379
-            YTDL_INTERNAL_API_KEY=${{ secrets.YTDL_INTERNAL_API_KEY }}
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            EOF
+            cat > .env <<ENVEOF
+NORDVPN_USERNAME=${{ secrets.NORDVPN_USERNAME }}
+NORDVPN_PASSWORD=${{ secrets.NORDVPN_PASSWORD }}
+REDIS_HOST=redis
+REDIS_PORT=6379
+YTDL_INTERNAL_API_KEY=${{ secrets.YTDL_INTERNAL_API_KEY }}
+DATABASE_URL=${{ secrets.DATABASE_URL }}
+ENVEOF
             
-            echo "✅ Environment variables updated"
+            echo "✅ Environment variables written to .env"
+            echo "Verifying .env file (first 3 chars of API key):"
+            grep "YTDL_INTERNAL_API_KEY" .env | cut -c1-30
             
             # Update docker-compose.yml to use ECR image
             cat > docker-compose.yml << 'EOF'
