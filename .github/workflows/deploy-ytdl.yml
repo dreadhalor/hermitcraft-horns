@@ -111,7 +111,7 @@ services:
 networks:
   ytdl-network:
     driver: bridge
-            EOF
+EOF
             
             echo "✅ docker-compose.yml updated to use ECR image"
             
