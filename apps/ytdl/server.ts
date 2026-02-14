@@ -441,17 +441,20 @@ async function downloadAudioSlice(
     const endTime = formatTime(endMilliseconds);
     console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
 
+    // Convert milliseconds to ffmpeg time format
+    const startSeconds = (startMilliseconds / 1000).toFixed(3);
+    const duration = ((endMilliseconds - startMilliseconds) / 1000).toFixed(3);
+    
     const args = [
-      '--download-sections', `*${startTime}-${endTime}`,
-      '--force-keyframes-at-cuts',
       '-f', 'bestaudio',
       '-x',
       '--audio-format', 'mp3',
       '--audio-quality', '0',
-      '--postprocessor-args', '-af loudnorm=I=-16:LRA=11:TP=-1.5',
+      // Trim and normalize in post-processing (avoids YouTube IP blocking with --download-sections)
+      '--postprocessor-args', `ffmpeg:-ss ${startSeconds} -t ${duration} -af loudnorm=I=-16:LRA=11:TP=-1.5`,
       '--no-cache-dir',
       '--newline', // Force newline after each output line for easier parsing
-      '--extractor-args', 'youtube:player_client=ios', // Use iOS client to bypass SABR/JS runtime issues
+      '--extractor-args', 'youtube:player_client=ios', // Use iOS client to bypass JS runtime issues
       '-o', outputFilename,
       videoUrl,
     ];
