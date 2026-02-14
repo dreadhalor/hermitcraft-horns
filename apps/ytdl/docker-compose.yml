@@ -1,6 +1,6 @@
 services:
   gluetun:
-    image: qmcgaw/gluetun:latest
+    image: qmcgaw/gluetun:v3
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -12,11 +12,8 @@ services:
       - VPN_SERVICE_PROVIDER=nordvpn
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
-      - SERVER_CITIES=Dallas  # Try specific city instead of country
+      - SERVER_COUNTRIES=United States
       - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
-      - DOT=off  # Disable DNS over TLS to fix DNS resolution
-      - DNS_KEEP_NAMESERVER=on  # Keep original DNS settings
-      - HEALTH_VPN_DURATION_INITIAL=60s  # Give more time for initial connection
     volumes:
       - ./gluetun:/gluetun
     restart: unless-stopped

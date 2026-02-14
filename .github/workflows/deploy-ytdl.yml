@@ -61,7 +61,7 @@ jobs:
             # Create docker-compose.yml (no heredoc to avoid YAML parsing issues)
             echo "services:" > docker-compose.yml
             echo "  gluetun:" >> docker-compose.yml
-            echo "    image: qmcgaw/gluetun:latest" >> docker-compose.yml
+            echo "    image: qmcgaw/gluetun:v3" >> docker-compose.yml
             echo "    container_name: gluetun" >> docker-compose.yml
             echo "    cap_add:" >> docker-compose.yml
             echo "      - NET_ADMIN" >> docker-compose.yml
@@ -73,11 +73,8 @@ jobs:
             echo "      - VPN_SERVICE_PROVIDER=nordvpn" >> docker-compose.yml
             echo "      - OPENVPN_USER=\${NORDVPN_USERNAME}" >> docker-compose.yml
             echo "      - OPENVPN_PASSWORD=\${NORDVPN_PASSWORD}" >> docker-compose.yml
-            echo "      - SERVER_CITIES=Dallas" >> docker-compose.yml
+            echo "      - SERVER_COUNTRIES=United States" >> docker-compose.yml
             echo "      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16" >> docker-compose.yml
-            echo "      - DOT=off" >> docker-compose.yml
-            echo "      - DNS_KEEP_NAMESERVER=on" >> docker-compose.yml
-            echo "      - HEALTH_VPN_DURATION_INITIAL=60s" >> docker-compose.yml
             echo "    volumes:" >> docker-compose.yml
             echo "      - ./gluetun:/gluetun" >> docker-compose.yml
             echo "    restart: unless-stopped" >> docker-compose.yml
