@@ -462,26 +462,51 @@ async function downloadAudioSlice(
       
       let lastProgress = 0;
       
+      // Helper to update progress with stage-based fallback
+      const updateProgress = (newProgress: number, stage: string) => {
+        if (newProgress !== lastProgress) {
+          lastProgress = newProgress;
+          if (job) {
+            job.progress(newProgress);
+          }
+          console.log(`📊 Progress: ${newProgress}% - ${stage}`);
+        }
+      };
+      
       // Parse progress from stdout
       process.stdout.on('data', (data) => {
         const output = data.toString();
         console.log(output.trim());
         
-        // Parse progress: [download] 42.5% of 2.45MiB at 1.23MiB/s ETA 00:15
+        // Parse download progress: [download] 42.5% of 2.45MiB at 1.23MiB/s ETA 00:15
         const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (progressMatch && job) {
-          const progress = parseFloat(progressMatch[1]);
-          if (progress !== lastProgress) {
-            lastProgress = progress;
-            job.progress(progress);
-            console.log(`📊 Progress: ${progress}%`);
-          }
+        if (progressMatch) {
+          const progress = Math.min(parseFloat(progressMatch[1]), 50); // Cap download at 50%
+          updateProgress(progress, 'Downloading');
         }
         
-        // Also check for processing stage
-        if (output.includes('[ExtractAudio]') && job && lastProgress < 95) {
-          job.progress(95);
-          console.log('🎵 Extracting audio...');
+        // Detect post-processing stages (remaining 50% of progress)
+        if (output.includes('[download] 100%') || output.includes('has already been downloaded')) {
+          updateProgress(50, 'Download complete');
+        }
+        if (output.includes('[ExtractAudio]')) {
+          updateProgress(60, 'Extracting audio');
+        }
+        if (output.includes('[FixupM4a]') || output.includes('[FixupM3u8]')) {
+          updateProgress(70, 'Processing format');
+        }
+        if (output.includes('Destination:')) {
+          updateProgress(75, 'Preparing output');
+        }
+        if (output.includes('[Metadata]')) {
+          updateProgress(80, 'Adding metadata');
+        }
+        if (output.includes('Deleting original file')) {
+          updateProgress(90, 'Finalizing');
+        }
+        // ffmpeg progress patterns
+        if (output.includes('frame=') || output.includes('size=')) {
+          updateProgress(85, 'Encoding audio');
         }
       });
       
@@ -492,13 +517,9 @@ async function downloadAudioSlice(
         console.log(output.trim());
         
         const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (progressMatch && job) {
-          const progress = parseFloat(progressMatch[1]);
-          if (progress !== lastProgress) {
-            lastProgress = progress;
-            job.progress(progress);
-            console.log(`📊 Progress: ${progress}%`);
-          }
+        if (progressMatch) {
+          const progress = Math.min(parseFloat(progressMatch[1]), 50); // Cap download at 50%
+          updateProgress(progress, 'Downloading');
         }
       });
       
