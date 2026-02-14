@@ -577,7 +577,7 @@ export default function MetricsPage() {
                             {job.vpnLocation && (
                               <span className="text-muted-foreground">({job.vpnLocation})</span>
                             )}
-                            {job.vpnProxiesFailed?.length > 0 && (
+                            {(job.vpnProxiesFailed?.length ?? 0) > 0 && (
                               <Badge variant="outline" className="bg-red-50 text-red-700 text-xs">
                                 Failed: {job.vpnProxiesFailed.join(', ')}
                               </Badge>
@@ -798,7 +798,7 @@ export default function MetricsPage() {
                     )}
 
                     {/* Recent Requests */}
-                    {vpn.ipHistory.length > 0 && vpn.ipHistory[0]?.recentRequests?.length > 0 && (
+                    {vpn.ipHistory.length > 0 && (vpn.ipHistory[0]?.recentRequests?.length ?? 0) > 0 && (
                       <>
                         <Separator />
                         <div>
@@ -915,7 +915,7 @@ export default function MetricsPage() {
                 )}
 
                 {/* Completed Jobs */}
-                {metrics.queue.recentCompleted?.length > 0 && (
+                {(metrics.queue.recentCompleted?.length ?? 0) > 0 && (
                   <div>
                     <h3 className="font-semibold mb-2">🟢 Recently Completed ({metrics.queue.recentCompleted.length})</h3>
                     <div className="space-y-3">
@@ -945,7 +945,7 @@ export default function MetricsPage() {
                 )}
 
                 {/* Failed Jobs */}
-                {metrics.queue.recentFailed?.length > 0 && (
+                {(metrics.queue.recentFailed?.length ?? 0) > 0 && (
                   <div>
                     <h3 className="font-semibold mb-2">🔴 Recently Failed ({metrics.queue.recentFailed.length})</h3>
                     <div className="space-y-3">
