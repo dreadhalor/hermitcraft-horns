@@ -65,53 +65,53 @@ ENVEOF
             
             # Update docker-compose.yml to use ECR image
             cat > docker-compose.yml << 'EOF'
-            services:
-              gluetun:
-                image: qmcgaw/gluetun:latest
-                container_name: gluetun
-                cap_add:
-                  - NET_ADMIN
-                devices:
-                  - /dev/net/tun:/dev/net/tun
-                ports:
-                  - "3001:3001"
-                environment:
-                  - VPN_SERVICE_PROVIDER=nordvpn
-                  - OPENVPN_USER=${NORDVPN_USERNAME}
-                  - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
-                  - SERVER_COUNTRIES=United States
-                  - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
-                volumes:
-                  - ./gluetun:/gluetun
-                restart: unless-stopped
-                networks:
-                  - ytdl-network
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "3001:3001"
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - OPENVPN_USER=${NORDVPN_USERNAME}
+      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+      - SERVER_COUNTRIES=United States
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
+    volumes:
+      - ./gluetun:/gluetun
+    restart: unless-stopped
+    networks:
+      - ytdl-network
 
-              ytdl:
-                image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
-                container_name: ytdl
-                network_mode: "service:gluetun"
-                depends_on:
-                  - gluetun
-                  - redis
-                environment:
-                  - NODE_ENV=production
-                  - REDIS_HOST=redis
-                  - REDIS_PORT=6379
-                  - AWS_REGION=us-east-1
-                restart: unless-stopped
+  ytdl:
+    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
+    container_name: ytdl
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - redis
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - AWS_REGION=us-east-1
+    restart: unless-stopped
 
-              redis:
-                image: redis:alpine
-                container_name: redis
-                networks:
-                  - ytdl-network
-                restart: unless-stopped
+  redis:
+    image: redis:alpine
+    container_name: redis
+    networks:
+      - ytdl-network
+    restart: unless-stopped
 
-            networks:
-              ytdl-network:
-                driver: bridge
-            EOF
+networks:
+  ytdl-network:
+    driver: bridge
+EOF
             
             echo "✅ docker-compose.yml updated to use ECR image"
             
