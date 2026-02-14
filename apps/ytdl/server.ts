@@ -99,19 +99,29 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
     try {
       let requestData: any = {};
       
-      // tRPC batch format check
-      if (Array.isArray(req.body)) {
-        requestData = req.body[0] || {};
-      } else if (req.body) {
-        requestData = req.body;
+      // The Next.js app sends a raw JSON body (not standard tRPC format)
+      // Handle both direct JSON and tRPC formatted bodies
+      if (req.body) {
+        // Check if it's tRPC format with "json" wrapper
+        if (req.body.json) {
+          requestData = req.body.json;
+        }
+        // Check if it's tRPC batch format
+        else if (req.body['0']?.json) {
+          requestData = req.body['0'].json;
+        }
+        // Otherwise it's direct JSON
+        else {
+          requestData = req.body;
+        }
       }
 
-      // Extract videoUrl, start, end, userId, source from the request
-      const videoUrl = requestData.videoUrl || requestData.input?.videoUrl || 'N/A';
-      const start = requestData.start || requestData.input?.start || requestData.startTime || requestData.input?.startTime || 0;
-      const end = requestData.end || requestData.input?.end || requestData.endTime || requestData.input?.endTime || 0;
-      const userId = requestData.userId || requestData.input?.userId || null;
-      const source = requestData.source || requestData.input?.source || 'unknown';
+      // Extract fields - they should be at the top level since Next.js sends raw JSON
+      const videoUrl = requestData.videoUrl || 'N/A';
+      const start = requestData.start || requestData.startTime || 0;
+      const end = requestData.end || requestData.endTime || 0;
+      const userId = requestData.userId || null;
+      const source = requestData.source || 'unknown';
 
       // Log to database IMMEDIATELY with 'received' status
       const [log] = await db.insert(generationLogs).values({
@@ -129,7 +139,9 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
       console.log(`✅ Logged request to database (logId: ${log?.id}, source: ${source})`);
     } catch (error) {
       console.error('❌ Error logging request to database:', error);
-      // Don't fail the request if logging fails
+      console.error('   Error details:', error);
+      console.error('   Request body:', JSON.stringify(req.body).substring(0, 500));
+      // Don't fail the request if logging fails - continue anyway
     }
   }
 
