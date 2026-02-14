@@ -917,9 +917,9 @@ export default function MetricsPage() {
                 {/* Completed Jobs */}
                 {(metrics.queue.recentCompleted?.length ?? 0) > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-2">🟢 Recently Completed ({metrics.queue.recentCompleted.length})</h3>
+                    <h3 className="font-semibold mb-2">🟢 Recently Completed ({metrics.queue.recentCompleted!.length})</h3>
                     <div className="space-y-3">
-                      {metrics.queue.recentCompleted.map((job: any) => (
+                      {metrics.queue.recentCompleted!.map((job: any) => (
                         <div key={job.id} className="border rounded p-3 bg-green-50">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-mono font-semibold">Job #{job.id}</span>
@@ -947,9 +947,9 @@ export default function MetricsPage() {
                 {/* Failed Jobs */}
                 {(metrics.queue.recentFailed?.length ?? 0) > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-2">🔴 Recently Failed ({metrics.queue.recentFailed.length})</h3>
+                    <h3 className="font-semibold mb-2">🔴 Recently Failed ({metrics.queue.recentFailed!.length})</h3>
                     <div className="space-y-3">
-                      {metrics.queue.recentFailed.map((job: any) => (
+                      {metrics.queue.recentFailed!.map((job: any) => (
                         <div key={job.id} className="border rounded p-3 bg-red-50">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-mono font-semibold">Job #{job.id}</span>
