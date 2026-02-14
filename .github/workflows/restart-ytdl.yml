@@ -18,11 +18,15 @@ jobs:
           script: |
             cd /home/ec2-user/ytdl
             
-            echo "🔄 Restarting ytdl container..."
-            docker-compose restart ytdl
+            echo "📥 Pulling latest ytdl image from ECR..."
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
+            docker-compose pull ytdl
             
-            echo "⏰ Waiting 3 seconds for startup..."
-            sleep 3
+            echo "🔄 Restarting ytdl container with new image..."
+            docker-compose up -d ytdl
+            
+            echo "⏰ Waiting 5 seconds for startup..."
+            sleep 5
             
             echo ""
             echo "📝 STARTUP LOGS:"
