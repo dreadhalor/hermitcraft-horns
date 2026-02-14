@@ -1,0 +1,28 @@
+name: Cleanup ytdl Docker Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup Docker on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🧹 Cleaning up Docker..."
+            echo "Current disk usage:"
+            df -h
+            
+            echo ""
+            echo "🗑️  Removing unused Docker images, containers, and volumes..."
+            docker system prune -af --volumes
+            
+            echo ""
+            echo "✅ Cleanup complete!"
+            echo "New disk usage:"
+            df -h
