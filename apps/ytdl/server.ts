@@ -451,6 +451,8 @@ async function downloadAudioSlice(
       '--postprocessor-args', '-af loudnorm=I=-16:LRA=11:TP=-1.5',
       '--no-cache-dir',
       '--newline', // Force newline after each output line for easier parsing
+      '--js-runtimes', 'node', // Enable Node.js as JavaScript runtime
+      '--extractor-args', 'youtube:player_client=android,web', // Use Android/web clients to bypass bot detection
       '-o', outputFilename,
       videoUrl,
     ];
