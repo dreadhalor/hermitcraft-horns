@@ -1,0 +1,26 @@
+services:
+  ytdl:
+    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
+    container_name: ytdl-test
+    ports:
+      - "3002:3001"
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - YTDL_INTERNAL_API_KEY=test_key_12345
+      - DATABASE_URL=postgres://fake:fake@fake:5432/fake
+    depends_on:
+      - redis
+    networks:
+      - test-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis-test
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
