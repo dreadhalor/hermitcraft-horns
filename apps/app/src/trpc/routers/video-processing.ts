@@ -21,20 +21,25 @@ export const enqueueTask = publicProcedure
       const ytdlUrl = process.env.NEXT_PUBLIC_YTDL_URL;
       const apiKey = process.env.YTDL_INTERNAL_API_KEY;
       const fullUrl = `${ytdlUrl}trpc/enqueueTask`;
-      const requestBody = { 
-        videoUrl, 
-        start, 
+      const requestBody = {
+        videoUrl,
+        start,
         end,
         userId,
         source: 'web' as const,
       };
-      
+
       // Log the full outgoing request for debugging
       console.log('🚀 Outgoing Request to YTDL:');
       console.log('   URL:', fullUrl);
       console.log('   API Key Present:', !!apiKey);
       console.log('   API Key Length:', apiKey?.length || 0);
-      console.log('   API Key Preview:', apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'MISSING');
+      console.log(
+        '   API Key Preview:',
+        apiKey
+          ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`
+          : 'MISSING',
+      );
       console.log('   Request Body:', JSON.stringify(requestBody));
       console.log('   Full Headers:', {
         'Content-Type': 'application/json',
@@ -60,7 +65,7 @@ export const enqueueTask = publicProcedure
       if (!response.ok) {
         let errorDetails = `HTTP ${response.status} ${response.statusText}`;
         let responseText = '';
-        
+
         try {
           responseText = await response.text();
           console.error('❌ Response body:', responseText);
@@ -69,7 +74,7 @@ export const enqueueTask = publicProcedure
           console.error('❌ Could not read response body:', e);
           errorDetails += ' | Could not read response body';
         }
-        
+
         console.error('❌ Failed to enqueue task - Full error:', errorDetails);
         throw new Error(errorDetails);
       }
@@ -81,12 +86,18 @@ export const enqueueTask = publicProcedure
       return result.data as { taskId: string };
     } catch (error) {
       console.error('💥 EXCEPTION in enqueueTask:');
-      console.error('   Type:', error instanceof Error ? error.constructor.name : typeof error);
-      console.error('   Message:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '   Type:',
+        error instanceof Error ? error.constructor.name : typeof error,
+      );
+      console.error(
+        '   Message:',
+        error instanceof Error ? error.message : String(error),
+      );
       if (error instanceof Error && error.stack) {
         console.error('   Stack:', error.stack);
       }
-      
+
       throw error;
     }
   });

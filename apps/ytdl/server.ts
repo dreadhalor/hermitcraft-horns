@@ -11,12 +11,16 @@ import { z } from 'zod';
 import { spawn } from 'child_process';
 import cors from 'cors';
 import fs from 'fs';
+import http from 'http';
 import path from 'path';
 import Queue from 'bull';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { pgTable, uuid, text, numeric, timestamp, index } from 'drizzle-orm/pg-core';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
+import { VpnDownloadManager, DownloadResult } from './vpn-download-manager';
+import { extractVpnLogData, formatVpnSummary } from './vpn-logger';
+import { metricsTracker } from './metrics-tracker';
 
 // Database schema for generationLogs table
 const generationLogs = pgTable(
@@ -33,11 +37,19 @@ const generationLogs = pgTable(
     taskId: text('taskId'),
     createdAt: timestamp('createdAt').defaultNow().notNull(),
     completedAt: timestamp('completedAt'),
+    // VPN tracking fields
+    vpnAttempts: numeric('vpnAttempts').default('0'),
+    vpnProxiesTried: text('vpnProxiesTried').array(),
+    vpnProxiesFailed: text('vpnProxiesFailed').array(),
+    vpnProxySuccess: text('vpnProxySuccess'),
+    vpnIpAddress: text('vpnIpAddress'),
+    vpnLocation: text('vpnLocation'),
   },
   (logs) => ({
     userIdIndex: index('generation_logs_userId_idx').on(logs.userId),
     createdAtIndex: index('generation_logs_createdAt_idx').on(logs.createdAt),
     statusIndex: index('generation_logs_status_idx').on(logs.status),
+    vpnSuccessIndex: index('generation_logs_vpn_success_idx').on(logs.vpnProxySuccess),
   }),
 );
 
@@ -49,6 +61,71 @@ if (process.env.DATABASE_URL) {
   console.log('✅ Connected to database for logging');
 } else {
   console.warn('⚠️  DATABASE_URL not set - running without database logging');
+}
+
+// Initialize VPN Download Manager
+const VPN_PROXIES = process.env.VPN_PROXIES?.split(',').map(p => p.trim()).filter(Boolean) || [];
+const downloadManager = new VpnDownloadManager(VPN_PROXIES);
+
+/**
+ * Check live connection status for all VPN containers via their gluetun control servers.
+ * Returns an array with each VPN's proxy URL, connected status, public IP, and location.
+ */
+async function checkVpnConnectionStatus(): Promise<Array<{
+  proxy: string;
+  connected: boolean;
+  ip: string | null;
+  location: string | null;
+  responseTimeMs: number | null;
+  error?: string;
+}>> {
+  return Promise.all(
+    VPN_PROXIES.map(async (proxy) => {
+      const startTime = Date.now();
+      try {
+        const host = proxy.replace(/https?:\/\//, '').split(':')[0];
+        const controlUrl = `http://${host}:8000/v1/publicip/ip`;
+        const response = await fetch(controlUrl, {
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const ip = data.public_ip || null;
+          const location = data.country
+            ? `${data.country}, ${data.region || ''}, ${data.city || ''}`
+                .replace(/, ,/g, ',')
+                .replace(/,$/, '')
+            : null;
+          return {
+            proxy,
+            connected: !!ip,
+            ip,
+            location,
+            responseTimeMs: Date.now() - startTime,
+          };
+        }
+
+        return {
+          proxy,
+          connected: false,
+          ip: null,
+          location: null,
+          responseTimeMs: Date.now() - startTime,
+          error: `Control server returned ${response.status}`,
+        };
+      } catch (error) {
+        return {
+          proxy,
+          connected: false,
+          ip: null,
+          location: null,
+          responseTimeMs: Date.now() - startTime,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    })
+  );
 }
 
 const app = express();
@@ -258,20 +335,39 @@ type Context = inferAsyncReturnType<typeof createContext>;
 const t = initTRPC.context<Context>().create();
 
 // Create a queue for video processing tasks
+console.log('🔧 Creating Bull queue...');
 const videoProcessingQueue = new Queue('video-processing', {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
   },
+  defaultJobOptions: {
+    removeOnComplete: false, // Keep completed jobs so frontend can retrieve results
+    removeOnFail: false, // Keep failed jobs for debugging
+    attempts: 1, // Don't retry failed jobs (VPN retry logic is inside the job)
+  },
 });
+console.log('✅ Bull queue created');
 
 // Output a success or failure message on connecting to Redis
 videoProcessingQueue.on('error', (error) => {
-  console.error('Error connecting to Redis:', error);
+  console.error('❌ Queue error:', error);
 });
 
 videoProcessingQueue.on('ready', () => {
-  console.log('Connected to Redis');
+  console.log('✅ Queue connected to Redis');
+});
+
+videoProcessingQueue.on('active', (job) => {
+  console.log(`🔄 Job ${job.id} became active`);
+});
+
+videoProcessingQueue.on('completed', (job) => {
+  console.log(`✅ Job ${job.id} completed`);
+});
+
+videoProcessingQueue.on('failed', (job, err) => {
+  console.log(`❌ Job ${job?.id} failed:`, err?.message);
 });
 
 const appRouter = t.router({
@@ -322,7 +418,7 @@ const appRouter = t.router({
         }
 
         console.log('Enqueueing task...');
-        const taskId = await videoProcessingQueue.add({ videoUrl, start, end });
+        const taskId = await videoProcessingQueue.add({ videoUrl, start, end, userId: userId || null, source });
         console.log('Task enqueued with taskId:', taskId);
 
         // Update log with taskId
@@ -387,6 +483,19 @@ const appRouter = t.router({
 
       return { status, progress };
     }),
+  
+  vpnStatus: t.procedure.query(() => {
+    const stats = downloadManager.getStats();
+    return {
+      enabled: stats.length > 0,
+      mode: stats.length > 0 ? 'multi-vpn' : 'single-vpn',
+      vpns: stats.map(stat => ({
+        proxy: stat.proxy,
+        successRate: Math.round(stat.successRate * 100),
+        totalAttempts: stat.total,
+      })),
+    };
+  }),
 });
 
 export type AppRouter = typeof appRouter;
@@ -408,6 +517,485 @@ app.use(
   })
 );
 
+// ============================================================================
+// COMPREHENSIVE METRICS ENDPOINT
+// ============================================================================
+// Clear queue endpoint for testing
+app.post('/admin/clear-queue', async (req, res) => {
+  try {
+    console.log('🗑️  Clearing all jobs from queue...');
+    
+    // Clear all job states
+    await videoProcessingQueue.empty(); // Remove waiting jobs
+    await videoProcessingQueue.clean(0, 'completed'); // Remove completed jobs
+    await videoProcessingQueue.clean(0, 'failed'); // Remove failed jobs
+    await videoProcessingQueue.clean(0, 'delayed'); // Remove delayed jobs
+    
+    console.log('✅ Queue cleared successfully');
+    
+    res.json({
+      success: true,
+      message: 'Queue cleared successfully',
+    });
+  } catch (error) {
+    console.error('❌ Error clearing queue:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// VPN restart endpoint - supports soft (OpenVPN toggle) and hard (Docker container restart) modes
+app.post('/admin/vpn/restart', async (req, res) => {
+  const { proxy, mode = 'soft' } = req.body;
+  if (!proxy || !VPN_PROXIES.includes(proxy)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid proxy. Available: ${VPN_PROXIES.join(', ')}`,
+    });
+  }
+
+  const host = proxy.replace(/https?:\/\//, '').split(':')[0];
+
+  if (mode === 'hard') {
+    // Hard restart: restart the Docker container via Docker Engine API
+    const possibleNames = [
+      `${host.replace('gluetun-', 'gluetun-local-')}`, // local: gluetun-local-1
+      host,                                              // prod: gluetun-1
+      `${host.replace('gluetun-', 'gluetun_')}`,        // alternate: gluetun_1
+    ];
+
+    console.log(`🔄 Hard restarting container for ${proxy} (trying: ${possibleNames.join(', ')})...`);
+
+    for (const containerName of possibleNames) {
+      try {
+        await restartDockerContainer(containerName);
+        console.log(`   ✅ Container ${containerName} restarted successfully`);
+        return res.json({
+          success: true,
+          message: `Container ${containerName} restarted. VPN will reconnect with a new server in 15-45 seconds.`,
+          mode: 'hard',
+          container: containerName,
+        });
+      } catch (error) {
+        // Try next name
+        continue;
+      }
+    }
+
+    return res.status(404).json({
+      success: false,
+      error: `Could not find Docker container for ${proxy}. Tried: ${possibleNames.join(', ')}. Make sure Docker socket is mounted.`,
+    });
+  }
+
+  // Soft restart: toggle OpenVPN via gluetun's control API
+  const controlBase = `http://${host}:8000`;
+
+  try {
+    console.log(`🔄 Soft restarting VPN connection for ${proxy} (${host})...`);
+
+    // Stop VPN
+    const stopRes = await fetch(`${controlBase}/v1/openvpn/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'stopped' }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!stopRes.ok) {
+      throw new Error(`Failed to stop VPN: ${stopRes.status} ${await stopRes.text()}`);
+    }
+    console.log(`   ⏹️  VPN stopped for ${host}`);
+
+    // Wait for clean shutdown
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Start VPN
+    const startRes = await fetch(`${controlBase}/v1/openvpn/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'running' }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!startRes.ok) {
+      throw new Error(`Failed to start VPN: ${startRes.status} ${await startRes.text()}`);
+    }
+    console.log(`   ▶️  VPN started for ${host}`);
+
+    res.json({
+      success: true,
+      message: `VPN connection restarted for ${proxy}. It may take 10-30 seconds to fully reconnect.`,
+      mode: 'soft',
+    });
+  } catch (error) {
+    console.error(`❌ Error restarting VPN for ${proxy}:`, error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// VPN logs endpoint - fetches container logs via Docker socket API
+app.get('/admin/vpn/logs', async (req, res) => {
+  const { proxy, tail = '100' } = req.query;
+
+  if (!proxy || typeof proxy !== 'string' || !VPN_PROXIES.includes(proxy)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid proxy. Available: ${VPN_PROXIES.join(', ')}`,
+    });
+  }
+
+  // Derive the Docker container name from the proxy hostname
+  // In docker-compose, service "gluetun-1" → container_name "gluetun-local-1" (local) or "gluetun-1" (prod)
+  // We'll try both naming conventions
+  const host = proxy.replace(/https?:\/\//, '').split(':')[0];
+  const possibleNames = [
+    `${host.replace('gluetun-', 'gluetun-local-')}`, // local: gluetun-local-1
+    host,                                              // prod: gluetun-1
+    `${host.replace('gluetun-', 'gluetun_')}`,        // alternate: gluetun_1
+  ];
+
+  const tailLines = Math.min(Math.max(parseInt(tail as string) || 100, 10), 500);
+
+  // Try each possible container name
+  for (const containerName of possibleNames) {
+    try {
+      const logs = await fetchDockerLogs(containerName, tailLines);
+      return res.json({
+        success: true,
+        container: containerName,
+        proxy,
+        lines: tailLines,
+        logs,
+      });
+    } catch (error) {
+      // Try next name
+      continue;
+    }
+  }
+
+  res.status(404).json({
+    success: false,
+    error: `Could not find Docker container for ${proxy}. Tried: ${possibleNames.join(', ')}. Make sure Docker socket is mounted.`,
+  });
+});
+
+/**
+ * Fetch container logs via the Docker Engine API over the Unix socket.
+ * Docker uses a multiplexed stream format with 8-byte headers per frame.
+ */
+function fetchDockerLogs(containerName: string, tail: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const options: http.RequestOptions = {
+      socketPath: '/var/run/docker.sock',
+      path: `/v1.47/containers/${containerName}/logs?stdout=true&stderr=true&tail=${tail}&timestamps=true`,
+      method: 'GET',
+    };
+
+    const req = http.request(options, (res) => {
+      if (res.statusCode !== 200) {
+        let body = '';
+        res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        res.on('end', () => reject(new Error(`Docker API returned ${res.statusCode}: ${body}`)));
+        return;
+      }
+
+      const chunks: Uint8Array[] = [];
+      res.on('data', (chunk: Buffer) => chunks.push(new Uint8Array(chunk)));
+      res.on('end', () => {
+        const data = Buffer.concat(chunks);
+
+        // Parse Docker multiplexed stream format
+        // Each frame: [stream_type (1 byte)][0 0 0 (3 bytes)][size (4 bytes BE)][payload (size bytes)]
+        let output = '';
+        let offset = 0;
+        while (offset + 8 <= data.length) {
+          const size = data.readUInt32BE(offset + 4);
+          if (offset + 8 + size > data.length) break;
+          output += data.subarray(offset + 8, offset + 8 + size).toString('utf8');
+          offset += 8 + size;
+        }
+
+        // If parsing produced nothing, fall back to raw text (some Docker setups don't use multiplexing)
+        resolve(output || data.toString('utf8'));
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(new Error(`Docker socket error: ${error.message}. Is /var/run/docker.sock mounted?`));
+    });
+    req.end();
+  });
+}
+
+/**
+ * Restart a Docker container via the Docker Engine API over the Unix socket.
+ * This is a "hard restart" that forces gluetun to go through its full startup
+ * sequence, including fresh VPN server selection — reliably fixing AUTH_FAILED loops.
+ */
+function restartDockerContainer(containerName: string, timeoutSeconds: number = 30): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const options: http.RequestOptions = {
+      socketPath: '/var/run/docker.sock',
+      path: `/v1.47/containers/${containerName}/restart?t=${timeoutSeconds}`,
+      method: 'POST',
+    };
+
+    const req = http.request(options, (res) => {
+      let body = '';
+      res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      res.on('end', () => {
+        if (res.statusCode === 204) {
+          resolve();
+        } else {
+          reject(new Error(`Docker API returned ${res.statusCode}: ${body}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(new Error(`Docker socket error: ${error.message}. Is /var/run/docker.sock mounted?`));
+    });
+    req.end();
+  });
+}
+
+// Simple REST endpoint for testing (bypasses tRPC complexity)
+app.post('/test/enqueue', async (req, res) => {
+  try {
+    const { videoUrl, start, end, userId, source } = req.body;
+    if (!videoUrl || start == null || end == null) {
+      return res.status(400).json({ error: 'Missing videoUrl, start, or end' });
+    }
+    const job = await videoProcessingQueue.add({ videoUrl, start, end, userId: userId || null, source: source || 'web' });
+    res.json({ success: true, taskId: String(job.id) });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+app.get('/metrics', async (req, res) => {
+  try {
+    // VPN Metrics
+    const vpnMetrics = metricsTracker.getAllVpnMetrics();
+    const vpnSummary = metricsTracker.getSummary();
+    const recentIpChanges = metricsTracker.getRecentIpChanges(20);
+    
+    // Live VPN connection status
+    const vpnConnectionStatus = await checkVpnConnectionStatus();
+    
+    // Redis/Queue Metrics
+    const queueStats = {
+      waiting: await videoProcessingQueue.getWaitingCount(),
+      active: await videoProcessingQueue.getActiveCount(),
+      completed: await videoProcessingQueue.getCompletedCount(),
+      failed: await videoProcessingQueue.getFailedCount(),
+      delayed: await videoProcessingQueue.getDelayedCount(),
+      paused: await videoProcessingQueue.getPausedCount(),
+    };
+    
+    // Get active jobs (currently processing)
+    const activeJobs = await videoProcessingQueue.getActive();
+    const activeJobsDetails = await Promise.all(
+      activeJobs.map(async (job) => ({
+        id: job.id,
+        taskId: String(job.id),
+        data: job.data,
+        progress: await job.progress(),
+        attemptsMade: job.attemptsMade,
+        timestamp: job.timestamp,
+        processedOn: job.processedOn,
+      }))
+    );
+    
+    // Get waiting jobs (in queue)
+    const waitingJobs = await videoProcessingQueue.getWaiting();
+    const waitingJobsDetails = waitingJobs.slice(0, 50).map((job) => ({
+      id: job.id,
+      taskId: String(job.id),
+      data: job.data,
+      timestamp: job.timestamp,
+    }));
+    
+    // Get recent completed jobs
+    const completedJobs = await videoProcessingQueue.getCompleted(0, 49);
+    const completedJobsDetails = completedJobs.map((job) => ({
+      id: job.id,
+      taskId: String(job.id),
+      data: job.data,
+      finishedOn: job.finishedOn,
+      processedOn: job.processedOn,
+      returnvalue: job.returnvalue,
+    }));
+    
+    // Get recent failed jobs
+    const failedJobs = await videoProcessingQueue.getFailed(0, 49);
+    const failedJobsDetails = failedJobs.map((job) => ({
+      id: job.id,
+      taskId: String(job.id),
+      data: job.data,
+      failedReason: job.failedReason,
+      finishedOn: job.finishedOn,
+      attemptsMade: job.attemptsMade,
+    }));
+    
+    // Database Metrics - Recent Generation Logs (skip if schema not migrated)
+    let recentLogs: any[] = [];
+    
+    // Combined Jobs List - All jobs with VPN attempts chronologically
+    const allJobs = [
+      ...activeJobsDetails.map(job => ({ ...job, status: 'active' as const })),
+      ...waitingJobsDetails.map(job => ({ ...job, status: 'waiting' as const })),
+      ...completedJobsDetails.map(job => ({ ...job, status: 'completed' as const })),
+      ...failedJobsDetails.map(job => ({ ...job, status: 'failed' as const })),
+    ];
+
+    // Enrich jobs with VPN attempt data
+    const enrichedJobs = allJobs.map(job => {
+      const taskId = String(job.id);
+      const vpnAttempts = metricsTracker.getVpnAttemptsForTask(taskId);
+      const jobAny = job as any;
+      
+      // Derive rolled-up VPN summary fields
+      const vpnProxiesTried = [...new Set(vpnAttempts.map(a => a.proxy))];
+      const vpnProxiesFailed = [...new Set(vpnAttempts.filter(a => !a.success).map(a => a.proxy))];
+      const successfulAttempt = vpnAttempts.find(a => a.success);
+
+      return {
+        id: job.id,
+        taskId,
+        userId: job.data?.userId || null,
+        source: job.data?.source || 'web',
+        videoUrl: job.data?.videoUrl || 'unknown',
+        startMs: job.data?.start || 0,
+        endMs: job.data?.end || 0,
+        status: job.status,
+        errorMessage: jobAny.failedReason || null,
+        timestamp: jobAny.timestamp || jobAny.processedOn || jobAny.finishedOn || Date.now(),
+        processedOn: jobAny.processedOn || null,
+        finishedOn: jobAny.finishedOn || null,
+        progress: jobAny.progress || 0,
+        attemptsMade: jobAny.attemptsMade || 0,
+        failedReason: jobAny.failedReason,
+        // Detailed VPN attempt log
+        vpnAttempts: vpnAttempts.map(attempt => ({
+          proxy: attempt.proxy,
+          ip: attempt.ip || 'unknown',
+          location: attempt.location || 'unknown',
+          timestamp: attempt.timestamp,
+          success: attempt.success,
+          error: attempt.error,
+        })),
+        // Rolled-up VPN summary fields (mirrors DB schema shape)
+        vpnAttemptsCount: vpnAttempts.length,
+        vpnProxiesTried,
+        vpnProxiesFailed,
+        vpnProxySuccess: successfulAttempt?.proxy || null,
+        vpnIpAddress: successfulAttempt?.ip || null,
+        vpnLocation: successfulAttempt?.location || null,
+        vpnSuccessful: vpnAttempts.some(a => a.success),
+      };
+    });
+
+    // Sort by timestamp (most recent first)
+    const sortedJobs = enrichedJobs.sort((a, b) => (b.timestamp as number) - (a.timestamp as number));
+    
+    // System Metrics
+    const systemMetrics = {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      nodeVersion: process.version,
+      platform: process.platform,
+      pid: process.pid,
+    };
+    
+    res.json({
+      timestamp: new Date().toISOString(),
+      system: systemMetrics,
+      jobs: sortedJobs,
+      vpnConnectionStatus,
+      
+      vpn: {
+        summary: vpnSummary,
+        proxies: vpnMetrics.map(m => ({
+          proxy: m.proxy,
+          currentIp: m.currentIp,
+          currentLocation: m.currentLocation,
+          ipLastChecked: m.ipLastChecked,
+          stats: {
+            total: {
+              requests: m.totalRequests,
+              success: m.totalSuccess,
+              failures: m.totalFailures,
+              successRate: m.totalRequests > 0 ? (m.totalSuccess / m.totalRequests * 100).toFixed(2) + '%' : 'N/A',
+            },
+            currentIp: {
+              requests: m.currentIpRequests,
+              success: m.currentIpSuccess,
+              failures: m.currentIpFailures,
+              successRate: m.currentIpRequests > 0 ? (m.currentIpSuccess / m.currentIpRequests * 100).toFixed(2) + '%' : 'N/A',
+            },
+          },
+          lastIpChange: m.lastIpChange,
+          ipChangeCount: m.ipChanges.length,
+          ipChanges: m.ipChanges,
+          ipHistory: m.ipHistory.map(h => ({
+            ip: h.ip,
+            location: h.location,
+            firstSeen: h.firstSeen,
+            lastSeen: h.lastSeen,
+            requests: h.requestCount,
+            success: h.successCount,
+            failures: h.failureCount,
+            successRate: h.requestCount > 0 ? (h.successCount / h.requestCount * 100).toFixed(2) + '%' : 'N/A',
+            recentRequests: h.requests.slice(-10), // Last 10 requests for this IP
+          })),
+        })),
+        recentIpChanges,
+      },
+      
+      queue: {
+        stats: queueStats,
+        activeJobs: activeJobsDetails,
+        waitingJobs: waitingJobsDetails,
+        recentCompleted: completedJobsDetails,
+        recentFailed: failedJobsDetails,
+      },
+      
+      database: {
+        connected: db !== null,
+        recentLogs: recentLogs.slice(0, 50).map(log => ({
+          id: log.id,
+          userId: log.userId,
+          source: log.source,
+          videoUrl: log.videoUrl,
+          status: log.status,
+          errorMessage: log.errorMessage,
+          taskId: log.taskId,
+          createdAt: log.createdAt,
+          completedAt: log.completedAt,
+          vpnAttempts: log.vpnAttempts,
+          vpnProxiesTried: log.vpnProxiesTried,
+          vpnProxiesFailed: log.vpnProxiesFailed,
+          vpnProxySuccess: log.vpnProxySuccess,
+          vpnIpAddress: log.vpnIpAddress,
+          vpnLocation: log.vpnLocation,
+        })),
+      },
+    });
+    
+  } catch (error) {
+    console.error('Error generating metrics:', error);
+    res.status(500).json({
+      error: 'Failed to generate metrics',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 function formatTime(milliseconds: number): string {
   const totalSeconds = Math.floor(milliseconds / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -427,155 +1015,109 @@ async function downloadAudioSlice(
   videoUrl: string,
   startMilliseconds: number,
   endMilliseconds: number,
+  taskId?: string,
   job?: any // Bull job for progress updates
-): Promise<string> {
-  try {
-    // Create the media-output folder if it doesn't exist
-    const dir = 'media-output';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-    }
-
-    const outputFilename = `${dir}/audio_slice_${Date.now()}.mp3`;
-    const startTime = formatTime(startMilliseconds);
-    const endTime = formatTime(endMilliseconds);
-    console.log(`Downloading audio slice from ${startTime} to ${endTime}`);
-
-    const args = [
-      '--download-sections', `*${startTime}-${endTime}`,
-      '--force-keyframes-at-cuts',
-      '-f', 'bestaudio',
-      '-x',
-      '--audio-format', 'mp3',
-      '--audio-quality', '0',
-      '--postprocessor-args', '-af loudnorm=I=-16:LRA=11:TP=-1.5',
-      '--no-cache-dir',
-      '--newline', // Force newline after each output line for easier parsing
-      '-o', outputFilename,
-      videoUrl,
-    ];
-
-    console.log(`Executing: yt-dlp ${args.join(' ')}`);
-
-    await new Promise<void>((resolve, reject) => {
-      const process = spawn('yt-dlp', args);
-      
-      let lastProgress = 0;
-      
-      // Helper to update progress with stage-based fallback
-      const updateProgress = (newProgress: number, stage: string) => {
-        if (newProgress !== lastProgress) {
-          lastProgress = newProgress;
-          if (job) {
-            job.progress(newProgress);
-          }
-          console.log(`📊 Progress: ${newProgress}% - ${stage}`);
-        }
-      };
-      
-      // Parse progress from stdout
-      process.stdout.on('data', (data) => {
-        const output = data.toString();
-        console.log(output.trim());
-        
-        // Parse download progress: [download] 42.5% of 2.45MiB at 1.23MiB/s ETA 00:15
-        const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = Math.min(parseFloat(progressMatch[1]), 50); // Cap download at 50%
-          updateProgress(progress, 'Downloading');
-        }
-        
-        // Detect post-processing stages (remaining 50% of progress)
-        if (output.includes('[download] 100%') || output.includes('has already been downloaded')) {
-          updateProgress(50, 'Download complete');
-        }
-        if (output.includes('[ExtractAudio]')) {
-          updateProgress(60, 'Extracting audio');
-        }
-        if (output.includes('[FixupM4a]') || output.includes('[FixupM3u8]')) {
-          updateProgress(70, 'Processing format');
-        }
-        if (output.includes('Destination:')) {
-          updateProgress(75, 'Preparing output');
-        }
-        if (output.includes('[Metadata]')) {
-          updateProgress(80, 'Adding metadata');
-        }
-        if (output.includes('Deleting original file')) {
-          updateProgress(90, 'Finalizing');
-        }
-        // ffmpeg progress patterns
-        if (output.includes('frame=') || output.includes('size=')) {
-          updateProgress(85, 'Encoding audio');
-        }
-      });
-      
-      // Log errors but don't necessarily fail
-      process.stderr.on('data', (data) => {
-        const output = data.toString();
-        // yt-dlp outputs progress to stderr too sometimes
-        console.log(output.trim());
-        
-        const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = Math.min(parseFloat(progressMatch[1]), 50); // Cap download at 50%
-          updateProgress(progress, 'Downloading');
-        }
-      });
-      
-      process.on('close', (code) => {
-        if (code !== 0) {
-          console.error(`yt-dlp exited with code ${code}`);
-          reject(new Error(`yt-dlp exited with code ${code}`));
-          return;
-        }
-        
-        // Set to 100% when complete
-        if (job) {
-          job.progress(100);
-        }
-        
-        console.log('✅ Download complete');
-        resolve();
-      });
-      
-      process.on('error', (error) => {
-        console.error('Error spawning yt-dlp:', error);
-        reject(error);
-      });
-    });
-
-    console.log(`Audio slice saved to ${outputFilename}`);
-    return outputFilename;
-  } catch (error) {
-    console.error('Error downloading audio:', error);
-    throw error;
-  }
+): Promise<DownloadResult> {
+  process.stdout.write(`[downloadAudioSlice] Called for taskId ${taskId}\n`);
+  return await downloadManager.downloadAudio({
+    videoUrl,
+    startMs: startMilliseconds,
+    endMs: endMilliseconds,
+    taskId,
+    onProgress: (progress) => {
+      if (job) {
+        job.progress(progress.percent);
+      }
+    },
+  });
 }
 
-videoProcessingQueue.process(async (job) => {
-  const { videoUrl, start, end } = job.data;
-  const taskId = String(job.id);
+// Job data validation
+interface ValidJobData {
+  videoUrl: string;
+  start: number;
+  end: number;
+}
+
+function validateJobData(data: any, jobId: string | number): ValidJobData {
+  process.stdout.write(`[VALIDATE] Job ${jobId} data: ${JSON.stringify(data)}\n`);
   
-  // Update log status to 'active' when processing starts
+  if (!data) {
+    throw new Error(`Job ${jobId}: data is null or undefined`);
+  }
+  
+  if (!data.videoUrl || typeof data.videoUrl !== 'string') {
+    throw new Error(`Job ${jobId}: Missing or invalid videoUrl (got: ${typeof data.videoUrl})`);
+  }
+  
+  if (typeof data.start !== 'number' || data.start < 0) {
+    throw new Error(`Job ${jobId}: Invalid start time (got: ${data.start})`);
+  }
+  
+  if (typeof data.end !== 'number' || data.end <= data.start) {
+    throw new Error(`Job ${jobId}: Invalid end time (got: ${data.end}, start: ${data.start})`);
+  }
+  
+  process.stdout.write(`[VALIDATE] ✅ Job ${jobId} data is valid\n`);
+  return { videoUrl: data.videoUrl, start: data.start, end: data.end };
+}
+
+console.log('🔧 Registering queue processor...');
+const processor = videoProcessingQueue.process(async (job) => {
+  // Force immediate log flushing
+  process.stdout.write(`\n🎬 [START] Processing job ${job.id} at ${new Date().toISOString()}\n`);
+  
+  let validData: ValidJobData;
+  let taskId: string;
+  
+  // Stage 1: Validate job data
+  try {
+    validData = validateJobData(job.data, job.id);
+    taskId = String(job.id);
+    
+    process.stdout.write(`   Video: ${validData.videoUrl}\n`);
+    process.stdout.write(`   Range: ${validData.start}ms - ${validData.end}ms\n`);
+  } catch (validationError) {
+    process.stdout.write(`❌ [VALIDATION ERROR] Job ${job.id}: ${validationError}\n`);
+    throw validationError;
+  }
+  
+  const { videoUrl, start, end } = validData;
+  
+  // Stage 2: Update database status
   if (db) {
     try {
       await db
         .update(generationLogs)
         .set({ status: 'active' })
         .where(eq(generationLogs.taskId, taskId));
-      console.log(`📝 Updated log to active (taskId: ${taskId})`);
-    } catch (error) {
-      console.error('Error updating log to active:', error);
+      process.stdout.write(`📝 [DB] Updated log to active (taskId: ${taskId})\n`);
+    } catch (dbError) {
+      process.stdout.write(`⚠️  [DB ERROR] Failed to update log: ${dbError}\n`);
       // Don't fail the job if logging fails
     }
   }
   
+  // Stage 3: Download with VPN retry
+  let downloadResult: DownloadResult;
   try {
-    // Pass job for progress updates
-    const outputFilename = await downloadAudioSlice(videoUrl, start, end, job);
+    process.stdout.write(`   [CALLING] downloadAudioSlice...\n`);
+    downloadResult = await downloadAudioSlice(videoUrl, start, end, taskId, job);
+    process.stdout.write(`   [RETURNED] downloadAudioSlice completed successfully\n`);
+  } catch (downloadError) {
+    process.stdout.write(`❌ [DOWNLOAD ERROR] Job ${job.id}: ${downloadError}\n`);
+    if (downloadError instanceof Error) {
+      process.stdout.write(`   Stack: ${downloadError.stack}\n`);
+    }
+    throw downloadError;
+  }
+  
+  // Stage 4: Log results
+  try {
+    console.log(formatVpnSummary(downloadResult));
+    const vpnData = extractVpnLogData(downloadResult);
     
-    // Update log to completed
+    // Stage 5: Update database with completion
     if (db) {
       try {
         await db
@@ -583,38 +1125,59 @@ videoProcessingQueue.process(async (job) => {
           .set({
             status: 'completed',
             completedAt: new Date(),
+            vpnAttempts: vpnData.vpnAttempts.toString(),
+            vpnProxiesTried: vpnData.vpnProxiesTried,
+            vpnProxiesFailed: vpnData.vpnProxiesFailed,
+            vpnProxySuccess: vpnData.vpnProxySuccess,
+            vpnIpAddress: vpnData.vpnIpAddress,
+            vpnLocation: vpnData.vpnLocation,
           })
           .where(eq(generationLogs.taskId, taskId));
-        console.log(`✅ Updated log to completed (taskId: ${taskId})`);
-      } catch (error) {
-        console.error('Error updating log:', error);
+        process.stdout.write(`✅ [DB] Updated log to completed (taskId: ${taskId})\n`);
+        process.stdout.write(`   VPN: ${vpnData.vpnProxySuccess || 'none'} (${vpnData.vpnLocation || vpnData.vpnIpAddress || 'unknown'})\n`);
+        process.stdout.write(`   Attempts: ${vpnData.vpnAttempts} (${vpnData.vpnProxiesFailed.length} failed)\n`);
+      } catch (dbError) {
+        process.stdout.write(`⚠️  [DB ERROR] Failed to update completion log: ${dbError}\n`);
       }
     }
     
-    return outputFilename;
-  } catch (error) {
-    console.error('Error processing video:', error);
-    
-    // Update log to failed
-    if (db) {
-      try {
-        await db
-          .update(generationLogs)
-          .set({
-            status: 'failed',
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            completedAt: new Date(),
-          })
-          .where(eq(generationLogs.taskId, taskId));
-        console.log(`❌ Updated log to failed (taskId: ${taskId})`);
-      } catch (logError) {
-        console.error('Error updating log:', logError);
-      }
-    }
-    
-    throw error;
+    return downloadResult.filename;
+  } catch (loggingError) {
+    process.stdout.write(`⚠️  [LOGGING ERROR] Job ${job.id}: ${loggingError}\n`);
+    // Still return the result even if logging fails
+    return downloadResult.filename;
   }
 });
+
+// Global error handler for uncaught errors in processor
+processor.catch((error: Error) => {
+  process.stdout.write(`❌ [PROCESSOR UNCAUGHT ERROR]: ${error}\n`);
+  process.stdout.write(`   Stack: ${error.stack}\n`);
+});
+
+// Separate catch block for the entire processor moved above
+videoProcessingQueue.on('failed', async (job, err) => {
+  const taskId = job ? String(job.id) : 'unknown';
+  process.stdout.write(`❌ [FAILED EVENT] Job ${taskId}: ${err.message}\n`);
+  
+  // Update log to failed
+  if (db && job) {
+    try {
+      await db
+        .update(generationLogs)
+        .set({
+          status: 'failed',
+          errorMessage: err instanceof Error ? err.message : 'Unknown error',
+          completedAt: new Date(),
+        })
+        .where(eq(generationLogs.taskId, taskId));
+      process.stdout.write(`❌ [DB] Updated log to failed (taskId: ${taskId})\n`);
+    } catch (logError) {
+      process.stdout.write(`⚠️  [DB ERROR] Failed to update failure log: ${logError}\n`);
+    }
+  }
+});
+console.log('✅ Queue processor registered');
 
 // Start server (all secrets come from environment variables now)
 const port = Number.parseInt(process.env.PORT || '3001');

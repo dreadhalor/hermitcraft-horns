@@ -1,26 +1,47 @@
 services:
-  ytdl:
-    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
-    container_name: ytdl-test
+  gluetun:
+    image: qmcgaw/gluetun:v3
+    container_name: gluetun-test
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
     ports:
-      - "3002:3001"
+      - "3002:3001"  # Use different port for local testing
     environment:
-      - NODE_ENV=production
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - OPENVPN_USER=${NORDVPN_USERNAME}
+      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+      - SERVER_COUNTRIES=United States
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
+    volumes:
+      - ./gluetun-test:/gluetun
+    networks:
+      - ytdl-test-network
+
+  ytdl:
+    image: ytdl-test
+    pull_policy: never
+    container_name: ytdl-test
+    network_mode: "service:gluetun"  # Route all traffic through gluetun
+    depends_on:
+      - gluetun
+      - redis
+    environment:
+      - NODE_ENV=development
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - YTDL_INTERNAL_API_KEY=test_key_12345
-      - DATABASE_URL=postgres://fake:fake@fake:5432/fake
-    depends_on:
-      - redis
-    networks:
-      - test-network
+      - YTDL_INTERNAL_API_KEY=test-api-key
+      - DATABASE_URL=${DATABASE_URL}
 
   redis:
     image: redis:alpine
     container_name: redis-test
+    ports:
+      - "6380:6379"  # Use different port for local testing
     networks:
-      - test-network
+      - ytdl-test-network
 
 networks:
-  test-network:
+  ytdl-test-network:
     driver: bridge

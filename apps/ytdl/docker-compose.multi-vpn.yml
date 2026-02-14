@@ -1,5 +1,5 @@
 services:
-  # VPN Pool - 3 containers with different US cities
+  # VPN Pool - 3 containers with different servers
   gluetun-1:
     image: qmcgaw/gluetun:v3.41.1
     container_name: gluetun-1
@@ -12,11 +12,14 @@ services:
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=New York
-      - LOG_LEVEL=info
-      - HTTPPROXY=on
     volumes:
-      - ./gluetun-1-data:/gluetun
+      - ./gluetun-1:/gluetun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - ytdl-network
 
@@ -32,11 +35,14 @@ services:
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=Los Angeles
-      - LOG_LEVEL=info
-      - HTTPPROXY=on
     volumes:
-      - ./gluetun-2-data:/gluetun
+      - ./gluetun-2:/gluetun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - ytdl-network
 
@@ -52,13 +58,19 @@ services:
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=Miami
-      - LOG_LEVEL=info
-      - HTTPPROXY=on
     volumes:
-      - ./gluetun-3-data:/gluetun
+      - ./gluetun-3:/gluetun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - ytdl-network
+
+  # HTTP proxies for each gluetun (gluetun has built-in HTTP proxy on port 8888)
+  # This allows ytdl to dynamically choose which VPN to use per request
 
   ytdl:
     image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
@@ -76,9 +88,8 @@ services:
       - REDIS_PORT=6379
       - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
+      # VPN proxy endpoints
       - VPN_PROXIES=http://gluetun-1:8888,http://gluetun-2:8888,http://gluetun-3:8888
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
       - ytdl-network
@@ -86,9 +97,9 @@ services:
   redis:
     image: redis:alpine
     container_name: redis
-    restart: unless-stopped
     networks:
       - ytdl-network
+    restart: unless-stopped
 
 networks:
   ytdl-network:

@@ -1,8 +1,8 @@
 services:
-  # VPN Pool - 3 containers with different US cities
+  # VPN Pool - 3 containers with different servers
   gluetun-1:
     image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-1
+    container_name: gluetun-local-1
     cap_add:
       - NET_ADMIN
     devices:
@@ -17,12 +17,17 @@ services:
     volumes:
       - ./gluetun-1-data:/gluetun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - ytdl-network
+      - ytdl-local
 
   gluetun-2:
     image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-2
+    container_name: gluetun-local-2
     cap_add:
       - NET_ADMIN
     devices:
@@ -37,12 +42,17 @@ services:
     volumes:
       - ./gluetun-2-data:/gluetun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - ytdl-network
+      - ytdl-local
 
   gluetun-3:
     image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-3
+    container_name: gluetun-local-3
     cap_add:
       - NET_ADMIN
     devices:
@@ -57,12 +67,19 @@ services:
     volumes:
       - ./gluetun-3-data:/gluetun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - ytdl-network
+      - ytdl-local
 
   ytdl:
-    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
-    container_name: ytdl
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ytdl-local
     depends_on:
       - gluetun-1
       - gluetun-2
@@ -71,25 +88,29 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3001
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
+      # DATABASE_URL intentionally not set for local testing (no database persistence)
+      # VPN proxy endpoints
       - VPN_PROXIES=http://gluetun-1:8888,http://gluetun-2:8888,http://gluetun-3:8888
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
-      - ytdl-network
+      - ytdl-local
 
   redis:
     image: redis:alpine
-    container_name: redis
-    restart: unless-stopped
+    container_name: redis-local
+    ports:
+      - "6379:6379"
     networks:
-      - ytdl-network
+      - ytdl-local
+    restart: unless-stopped
 
 networks:
-  ytdl-network:
+  ytdl-local:
     driver: bridge

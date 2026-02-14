@@ -10,3 +10,4 @@ cache
 
 # Gluetun data
 gluetun/
+gluetun-*-data/

@@ -126,7 +126,15 @@ export default function AdminPage() {
 
   return (
     <div className='container mx-auto w-full max-w-[1600px] p-6'>
-      <h1 className='mb-6 text-3xl font-bold'>Admin Dashboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className='text-3xl font-bold'>Admin Dashboard</h1>
+        <Button 
+          onClick={() => router.push('/admin/metrics')}
+          variant="outline"
+        >
+          🌐 VPN Metrics
+        </Button>
+      </div>
 
       {/* Time Range Filter */}
       <div className='mb-6 flex gap-2'>
