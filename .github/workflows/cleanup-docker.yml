@@ -1,0 +1,42 @@
+name: Cleanup Docker Disk Space
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up Docker on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "📊 Disk usage before cleanup:"
+            df -h /
+            
+            echo ""
+            echo "🗑️  Removing stopped containers..."
+            docker container prune -f
+            
+            echo "🗑️  Removing dangling images..."
+            docker image prune -f
+            
+            echo "🗑️  Removing unused images (keep last 3 tags)..."
+            docker images 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl --format "{{.ID}} {{.Tag}}" | tail -n +4 | awk '{print $1}' | xargs -r docker rmi -f || true
+            
+            echo "🗑️  Removing unused volumes..."
+            docker volume prune -f
+            
+            echo "🗑️  Removing build cache..."
+            docker builder prune -f
+            
+            echo ""
+            echo "📊 Disk usage after cleanup:"
+            df -h /
+            
+            echo ""
+            echo "🐳 Remaining Docker images:"
+            docker images
