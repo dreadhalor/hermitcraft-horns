@@ -1,0 +1,49 @@
+name: Force Clean Restart
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clean-restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force clean restart on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/ytdl
+            
+            echo "🛑 Stopping all containers..."
+            docker compose down
+            
+            echo "🗑️  Removing gluetun data and volumes..."
+            sudo rm -rf ./gluetun/*
+            docker volume prune -f
+            
+            echo "📥 Forcing pull of fresh gluetun:v3.41.1 image..."
+            docker pull qmcgaw/gluetun:v3.41.1
+            
+            echo "🔐 Loading secrets from AWS Secrets Manager..."
+            export NORDVPN_USERNAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-username --query SecretString --output text)
+            export NORDVPN_PASSWORD=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-password --query SecretString --output text)
+            export YTDL_INTERNAL_API_KEY=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/api-key --query SecretString --output text)
+            export DATABASE_URL=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/database-url --query SecretString --output text)
+            
+            echo "✅ Secrets loaded"
+            
+            echo "🚀 Starting containers with fresh state..."
+            docker compose up -d
+            
+            echo "⏳ Waiting 40 seconds for VPN connection..."
+            sleep 40
+            
+            echo ""
+            echo "📋 Container Status:"
+            docker ps --filter name=gluetun --filter name=ytdl
+            
+            echo ""
+            echo "🔥 Gluetun VPN Status:"
+            docker logs gluetun 2>&1 | grep -E "Public IP|AUTH|ERROR|Initialization Sequence Completed" | tail -15
