@@ -1,0 +1,37 @@
+name: Reset Gluetun VPN
+on:
+  workflow_dispatch:
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset Gluetun on EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🧹 Stopping containers..."
+            cd /home/ec2-user
+            docker-compose down
+            
+            echo "🗑️  Removing gluetun volume and cached data..."
+            sudo rm -rf ./gluetun/*
+            docker volume prune -f
+            
+            echo "📦 Loading fresh secrets..."
+            export YTDL_INTERNAL_API_KEY=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/api-key --query SecretString --output text)
+            export DATABASE_URL=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/database-url --query SecretString --output text)
+            export NORDVPN_USERNAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-username --query SecretString --output text)
+            export NORDVPN_PASSWORD=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-password --query SecretString --output text)
+            
+            echo "🚀 Starting containers with fresh state..."
+            docker-compose up -d
+            
+            echo "⏳ Waiting 30 seconds for VPN connection..."
+            sleep 30
+            
+            echo "📋 Checking VPN status..."
+            docker-compose logs gluetun | grep -E "Public IP|AUTH|ERROR" | tail -20
