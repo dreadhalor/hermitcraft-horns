@@ -51,17 +51,12 @@ jobs:
           script: |
             cd /home/ec2-user/ytdl
             
-            # Write .env file with only VPN credentials (for gluetun container)
-            # API key and database URL are now fetched from AWS Secrets Manager by the ytdl container
-            cat > .env <<ENVEOF
-NORDVPN_USERNAME=${{ secrets.NORDVPN_USERNAME }}
-NORDVPN_PASSWORD=${{ secrets.NORDVPN_PASSWORD }}
-REDIS_HOST=redis
-REDIS_PORT=6379
-ENVEOF
-            
-            echo "✅ Environment variables written to .env (VPN credentials only)"
-            echo "📦 ytdl container will fetch secrets from AWS Secrets Manager"
+            echo "🎉 NO MORE .env FILE MANIPULATION!"
+            echo "📦 ALL secrets fetched from AWS Secrets Manager"
+            echo "   • YTDL_INTERNAL_API_KEY (by ytdl container)"
+            echo "   • DATABASE_URL (by ytdl container)"
+            echo "   • NORDVPN credentials (by load-secrets.sh)"
+            echo ""
             
             # Update docker-compose.yml to use ECR image
             cat > docker-compose.yml << 'EOF'
@@ -118,9 +113,19 @@ EOF
             # Log in to ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
             
-            # Pull and restart services
+            # Pull latest image
             docker-compose pull ytdl
             docker-compose down
+            
+            # Load secrets from AWS and start containers
+            echo "🔐 Loading secrets from AWS Secrets Manager..."
+            export NORDVPN_USERNAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-username --query SecretString --output text)
+            export NORDVPN_PASSWORD=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-password --query SecretString --output text)
+            
+            echo "✅ Secrets loaded from AWS!"
+            echo "   NORDVPN_USERNAME: ${NORDVPN_USERNAME:0:3}***"
+            
+            # Start containers with secrets from environment
             docker-compose up -d
             
             echo "Deployment complete! Checking logs..."
