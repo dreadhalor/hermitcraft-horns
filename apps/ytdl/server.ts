@@ -17,6 +17,53 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { pgTable, uuid, text, numeric, timestamp, index } from 'drizzle-orm/pg-core';
 import { eq } from 'drizzle-orm';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+
+// Function to load secrets from AWS Secrets Manager
+async function loadSecretsFromAWS() {
+  const region = process.env.AWS_REGION || 'us-east-1';
+  const client = new SecretsManagerClient({ region });
+
+  try {
+    console.log('🔐 Loading secrets from AWS Secrets Manager...');
+
+    // Fetch YTDL_INTERNAL_API_KEY
+    try {
+      const apiKeyResponse = await client.send(
+        new GetSecretValueCommand({ SecretId: 'hermitcraft-horns/ytdl/api-key' })
+      );
+      if (apiKeyResponse.SecretString) {
+        process.env.YTDL_INTERNAL_API_KEY = apiKeyResponse.SecretString;
+        console.log('✅ Loaded YTDL_INTERNAL_API_KEY from AWS Secrets Manager');
+      }
+    } catch (error) {
+      console.warn('⚠️  Could not load YTDL_INTERNAL_API_KEY from AWS:', error);
+    }
+
+    // Fetch DATABASE_URL
+    try {
+      const dbUrlResponse = await client.send(
+        new GetSecretValueCommand({ SecretId: 'hermitcraft-horns/ytdl/database-url' })
+      );
+      if (dbUrlResponse.SecretString) {
+        process.env.DATABASE_URL = dbUrlResponse.SecretString;
+        console.log('✅ Loaded DATABASE_URL from AWS Secrets Manager');
+      }
+    } catch (error) {
+      console.warn('⚠️  Could not load DATABASE_URL from AWS:', error);
+    }
+
+    console.log('🎉 AWS Secrets Manager initialization complete!');
+  } catch (error) {
+    console.error('❌ Error loading secrets from AWS:', error);
+    console.log('⚠️  Falling back to environment variables...');
+  }
+}
+
+// Wrap server initialization in async function
+async function startServer() {
+  // Load secrets before starting the server
+  await loadSecretsFromAWS();
 
 // Database schema for generationLogs table
 const generationLogs = pgTable(
@@ -598,4 +645,11 @@ videoProcessingQueue.process(async (job) => {
 const port = Number.parseInt(process.env.PORT || '3001');
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
+});
+}
+
+// Start the server
+startServer().catch((error) => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
 });
