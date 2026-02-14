@@ -32,6 +32,7 @@ const LOADING_MESSAGES = [
 export const NextStepButton = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
+  const [messageQueue, setMessageQueue] = useState<number[]>([]);
   const {
     clipStart,
     clipEnd,
@@ -143,22 +144,35 @@ export const NextStepButton = () => {
     return () => clearInterval(interval);
   }, [isGenerating]);
 
-  // Cycle through loading messages with randomization
+  // Cycle through loading messages with shuffle-based randomization
   useEffect(() => {
     if (!isGenerating) {
-      // Start with a random message
-      setMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+      // Create and shuffle initial queue
+      const shuffled = [...Array(LOADING_MESSAGES.length).keys()]
+        .sort(() => Math.random() - 0.5);
+      setMessageQueue(shuffled);
+      setMessageIndex(shuffled[0]);
       return;
     }
     
+    let currentQueueIndex = 0;
+    
     const interval = setInterval(() => {
-      setMessageIndex(prev => {
-        // Pick a random message that's different from the current one
-        let newIndex;
-        do {
-          newIndex = Math.floor(Math.random() * LOADING_MESSAGES.length);
-        } while (newIndex === prev && LOADING_MESSAGES.length > 1);
-        return newIndex;
+      setMessageQueue(prevQueue => {
+        currentQueueIndex++;
+        
+        // If we've shown all messages, create a new shuffled queue
+        if (currentQueueIndex >= prevQueue.length) {
+          const newQueue = [...Array(LOADING_MESSAGES.length).keys()]
+            .sort(() => Math.random() - 0.5);
+          currentQueueIndex = 0;
+          setMessageIndex(newQueue[0]);
+          return newQueue;
+        }
+        
+        // Otherwise, show next message from queue
+        setMessageIndex(prevQueue[currentQueueIndex]);
+        return prevQueue;
       });
     }, 3000);
     
