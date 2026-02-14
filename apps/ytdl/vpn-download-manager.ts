@@ -202,7 +202,7 @@ export class VpnDownloadManager {
     onProgress?: (progress: DownloadProgress) => void,
   ): Promise<DownloadResult> {
     const vpns = this.vpnPool!.getVpnsSortedByPerformance();
-    const outputFilename = args[args.length - 2]; // Second to last arg
+    const outputFilename = args[args.length - 2]!; // Second to last arg
     const vpnAttempts: VpnAttempt[] = [];
     let successfulProxy: string | null = null;
 
@@ -211,7 +211,7 @@ export class VpnDownloadManager {
     );
 
     for (let i = 0; i < vpns.length; i++) {
-      const proxy = vpns[i];
+      const proxy = vpns[i]!;
       const attempt: VpnAttempt = {
         proxy,
         success: false,
@@ -389,7 +389,7 @@ export class VpnDownloadManager {
         const progressMatch = output.match(/(\d+)%/);
 
         if (progressMatch) {
-          const progress = parseInt(progressMatch[1], 10);
+          const progress = parseInt(progressMatch[1]!, 10);
           if (progress !== lastProgress && progress % 10 === 0) {
             lastProgress = progress;
 
