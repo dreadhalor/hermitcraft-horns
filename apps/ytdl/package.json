@@ -17,7 +17,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.990.0",
     "@dotenvx/dotenvx": "^0.37.1",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@trpc/server": "^10.45.2",
