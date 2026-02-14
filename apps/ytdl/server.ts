@@ -83,7 +83,7 @@ async function checkVpnConnectionStatus(): Promise<Array<{
     VPN_PROXIES.map(async (proxy) => {
       const startTime = Date.now();
       try {
-        const host = proxy.replace(/https?:\/\//, '').split(':')[0];
+        const host = proxy.replace(/https?:\/\//, '').split(':')[0] ?? '';
         const controlUrl = `http://${host}:8000/v1/publicip/ip`;
         const response = await fetch(controlUrl, {
           signal: AbortSignal.timeout(5000),
@@ -556,7 +556,7 @@ app.post('/admin/vpn/restart', async (req, res) => {
     });
   }
 
-  const host = proxy.replace(/https?:\/\//, '').split(':')[0];
+  const host = proxy.replace(/https?:\/\//, '').split(':')[0] ?? '';
 
   if (mode === 'hard') {
     // Hard restart: restart the Docker container via Docker Engine API
@@ -651,7 +651,7 @@ app.get('/admin/vpn/logs', async (req, res) => {
   // Derive the Docker container name from the proxy hostname
   // In docker-compose, service "gluetun-1" → container_name "gluetun-local-1" (local) or "gluetun-1" (prod)
   // We'll try both naming conventions
-  const host = proxy.replace(/https?:\/\//, '').split(':')[0];
+  const host = proxy.replace(/https?:\/\//, '').split(':')[0] ?? '';
   const possibleNames = [
     `${host.replace('gluetun-', 'gluetun-local-')}`, // local: gluetun-local-1
     host,                                              // prod: gluetun-1
