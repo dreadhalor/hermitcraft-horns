@@ -17,6 +17,16 @@ const LOADING_MESSAGES = [
   "Consulting the Voidlings...",
   "Calibrating the boatem...",
   "Feeding Jellie...",
+  "Building another mega base...",
+  "Asking Mumbo if it's chuffed to bits...",
+  "Checking if Grian is AFK...",
+  "Stealing Scar's diamonds...",
+  "Organizing Tango's redstone...",
+  "Cleaning up Bdubs' moss...",
+  "Wrangling Doc's goats...",
+  "Finding Etho's base...",
+  "Helping Impulse with his farm...",
+  "Avoiding Cub's experiments...",
 ];
 
 export const NextStepButton = () => {
@@ -156,7 +166,7 @@ export const NextStepButton = () => {
 
   const getButtonText = () => {
     if (isErrored) return getErrorMessage();
-    if (isGenerating) return `${LOADING_MESSAGES[messageIndex]} (${elapsedTime}s)`;
+    if (isGenerating) return 'Generating...';
     switch (activeTab) {
       case 'clip-builder':
         return 'Next →';
@@ -180,29 +190,28 @@ export const NextStepButton = () => {
     <>
       {/* Loading Overlay */}
       {isGenerating && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4'>
-          <div className='w-full max-w-sm rounded-lg bg-card p-6 sm:p-8 shadow-2xl border border-border'>
-            <div className='flex flex-col items-center gap-4 text-center'>
-              <div className='text-xl sm:text-2xl font-bold text-foreground animate-pulse break-words'>
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
+          <div className='w-full max-w-md rounded-xl bg-card p-8 shadow-2xl border-2 border-border'>
+            <div className='flex flex-col items-center gap-6 text-center'>
+              {/* Spinner */}
+              <div className='relative w-16 h-16'>
+                <div className='absolute inset-0 border-4 border-muted rounded-full'></div>
+                <div className='absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin'></div>
+              </div>
+              
+              {/* Rotating Message */}
+              <div className='text-2xl font-bold text-foreground min-h-[4rem] flex items-center justify-center break-words transition-opacity duration-300'>
                 {LOADING_MESSAGES[messageIndex]}
               </div>
-              <div className='text-base sm:text-lg text-muted-foreground'>
+              
+              {/* Elapsed Time */}
+              <div className='text-lg text-muted-foreground'>
                 {elapsedTime}s elapsed
               </div>
-              {/* Progress bar */}
-              <div className='w-full h-2 bg-muted rounded-full overflow-hidden'>
-                <div 
-                  className='h-full bg-primary transition-all duration-300 rounded-full'
-                  style={{ width: `${progress || Math.min((elapsedTime / 30) * 100, 95)}%` }}
-                />
-              </div>
-              {progress > 0 && (
-                <div className='text-xs text-muted-foreground'>
-                  {progress.toFixed(1)}% complete
-                </div>
-              )}
-              <div className='text-xs sm:text-sm text-muted-foreground'>
-                This usually takes 10-30 seconds
+              
+              {/* Info Text */}
+              <div className='text-sm text-muted-foreground max-w-xs'>
+                Generating your horn... This usually takes 10-30 seconds
               </div>
             </div>
           </div>
