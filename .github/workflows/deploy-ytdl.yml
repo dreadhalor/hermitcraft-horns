@@ -79,7 +79,7 @@ jobs:
             echo "      - OPENVPN_USER=\${NORDVPN_USERNAME}" >> docker-compose.yml
             echo "      - OPENVPN_PASSWORD=\${NORDVPN_PASSWORD}" >> docker-compose.yml
             echo "      - SERVER_COUNTRIES=United States" >> docker-compose.yml
-            echo "      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16" >> docker-compose.yml
+            # Firewall outbound subnets removed to allow database connections
             echo "    volumes:" >> docker-compose.yml
             echo "      - ./gluetun:/gluetun" >> docker-compose.yml
             echo "    restart: unless-stopped" >> docker-compose.yml

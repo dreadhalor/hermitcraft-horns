@@ -13,7 +13,7 @@ services:
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_COUNTRIES=United States
-      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16
+      # Removed FIREWALL_OUTBOUND_SUBNETS to allow database connections
     volumes:
       - ./gluetun:/gluetun
     restart: unless-stopped
