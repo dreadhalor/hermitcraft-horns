@@ -1,0 +1,30 @@
+name: Restart ytdl and Capture Startup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    name: Restart Container
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Restart and capture logs
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/ytdl
+            
+            echo "🔄 Restarting ytdl container..."
+            docker-compose restart ytdl
+            
+            echo "⏰ Waiting 3 seconds for startup..."
+            sleep 3
+            
+            echo ""
+            echo "📝 STARTUP LOGS:"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            docker logs ytdl --tail=50
