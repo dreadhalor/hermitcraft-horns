@@ -151,7 +151,7 @@ export const NextStepButton = () => {
       const shuffled = [...Array(LOADING_MESSAGES.length).keys()]
         .sort(() => Math.random() - 0.5);
       setMessageQueue(shuffled);
-      setMessageIndex(shuffled[0]);
+      setMessageIndex(shuffled[0] ?? 0);
       return;
     }
     
@@ -166,12 +166,12 @@ export const NextStepButton = () => {
           const newQueue = [...Array(LOADING_MESSAGES.length).keys()]
             .sort(() => Math.random() - 0.5);
           currentQueueIndex = 0;
-          setMessageIndex(newQueue[0]);
+          setMessageIndex(newQueue[0] ?? 0);
           return newQueue;
         }
         
         // Otherwise, show next message from queue
-        setMessageIndex(prevQueue[currentQueueIndex]);
+        setMessageIndex(prevQueue[currentQueueIndex] ?? 0);
         return prevQueue;
       });
     }, 3000);
