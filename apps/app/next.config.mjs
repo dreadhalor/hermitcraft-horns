@@ -1,7 +1,24 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import { execSync } from 'child_process';
+
+const getGitHash = () => {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) {
+    return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7);
+  }
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'dev';
+  }
+};
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_GIT_HASH: getGitHash(),
+    NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+  },
+
   webpack(config) {
     // Grab the existing rule that handles SVG imports
     const fileLoaderRule = config.module.rules.find((rule) =>

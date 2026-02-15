@@ -9,23 +9,23 @@ import { useGenerateClip } from '@/hooks/use-generate-clip';
 import { useAudioContext } from '@repo/audio-editor';
 
 const LOADING_MESSAGES = [
-  "Summoning the Hermits...",
-  "Downloading from the YouTube dimension...",
-  "Extracting pure audio essence...",
-  "Adding extra hermit-y goodness...",
-  "Polishing your horn...",
-  "Consulting the Voidlings...",
-  "Calibrating the boatem...",
-  "Feeding Jellie...",
-  "Building another mega base...",
+  'Summoning the Hermits...',
+  'Downloading from the YouTube dimension...',
+  'Extracting pure audio essence...',
+  'Adding extra hermit-y goodness...',
+  'Polishing your horn...',
+  'Consulting the Voidlings...',
+  'Calibrating the boatem...',
+  'Feeding Jellie...',
+  'Building another mega base...',
   "Asking Mumbo if it's chuffed to bits...",
-  "Checking if Grian is AFK...",
+  'Checking if Grian is AFK...',
   "Stealing Scar's diamonds...",
   "Organizing Tango's redstone...",
   "Cleaning up Bdubs' moss...",
   "Wrangling Doc's goats...",
   "Finding Etho's base...",
-  "Helping Impulse with his farm...",
+  'Helping Impulse with his farm...',
   "Avoiding Cub's experiments...",
 ];
 
@@ -49,7 +49,12 @@ export const NextStepButton = () => {
     isPublishing,
   } = useClipBuilder();
   const { exportFile, exportingFile } = useAudioContext();
-  const { file, generateClip, isLoading: isGenerating, progress } = useGenerateClip();
+  const {
+    file,
+    generateClip,
+    isLoading: isGenerating,
+    progress,
+  } = useGenerateClip();
   const { user } = useHHUser();
 
   const clipLength = ((clipEnd ?? 0) - (clipStart ?? 0)) / 1000;
@@ -71,7 +76,7 @@ export const NextStepButton = () => {
 
   const handleExport = async () => {
     if (playerRef.current) {
-      if (!clipStart || !clipEnd || !user) return;
+      if (clipStart == null || !clipEnd || !user) return;
       const duration = playerRef.current.getDuration() * 1000;
       if ((clipEnd ?? 0) <= duration) {
         console.log(
@@ -107,7 +112,7 @@ export const NextStepButton = () => {
         setActiveTab('final-confirm');
         break;
       case 'final-confirm':
-        if (!clipStart || !clipEnd) return;
+        if (clipStart == null || clipEnd == null) return;
         const result = await exportFile();
         if (!result) {
           toast.error('Failed to export audio');
@@ -136,11 +141,11 @@ export const NextStepButton = () => {
       setElapsedTime(0);
       return;
     }
-    
+
     const interval = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+      setElapsedTime((prev) => prev + 1);
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [isGenerating]);
 
@@ -148,34 +153,36 @@ export const NextStepButton = () => {
   useEffect(() => {
     if (!isGenerating) {
       // Create and shuffle initial queue
-      const shuffled = [...Array(LOADING_MESSAGES.length).keys()]
-        .sort(() => Math.random() - 0.5);
+      const shuffled = [...Array(LOADING_MESSAGES.length).keys()].sort(
+        () => Math.random() - 0.5,
+      );
       setMessageQueue(shuffled);
       setMessageIndex(shuffled[0] ?? 0);
       return;
     }
-    
+
     let currentQueueIndex = 0;
-    
+
     const interval = setInterval(() => {
-      setMessageQueue(prevQueue => {
+      setMessageQueue((prevQueue) => {
         currentQueueIndex++;
-        
+
         // If we've shown all messages, create a new shuffled queue
         if (currentQueueIndex >= prevQueue.length) {
-          const newQueue = [...Array(LOADING_MESSAGES.length).keys()]
-            .sort(() => Math.random() - 0.5);
+          const newQueue = [...Array(LOADING_MESSAGES.length).keys()].sort(
+            () => Math.random() - 0.5,
+          );
           currentQueueIndex = 0;
           setMessageIndex(newQueue[0] ?? 0);
           return newQueue;
         }
-        
+
         // Otherwise, show next message from queue
         setMessageIndex(prevQueue[currentQueueIndex] ?? 0);
         return prevQueue;
       });
     }, 3000);
-    
+
     return () => clearInterval(interval);
   }, [isGenerating]);
 
@@ -212,34 +219,34 @@ export const NextStepButton = () => {
     <>
       {/* Loading Overlay */}
       {isGenerating && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
-          <div className='w-full max-w-md rounded-xl bg-card p-8 shadow-2xl border-2 border-border'>
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'>
+          <div className='w-full max-w-md rounded-xl border-2 border-border bg-card p-8 shadow-2xl'>
             <div className='flex flex-col items-center gap-6 text-center'>
               {/* Spinner */}
-              <div className='relative w-16 h-16'>
-                <div className='absolute inset-0 border-4 border-muted rounded-full'></div>
-                <div className='absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin'></div>
+              <div className='relative h-16 w-16'>
+                <div className='absolute inset-0 rounded-full border-4 border-muted'></div>
+                <div className='absolute inset-0 animate-spin rounded-full border-4 border-primary border-t-transparent'></div>
               </div>
-              
+
               {/* Rotating Message */}
-              <div className='text-2xl font-bold text-foreground min-h-[4rem] flex items-center justify-center break-words transition-opacity duration-300'>
+              <div className='flex min-h-[4rem] items-center justify-center break-words text-2xl font-bold text-foreground transition-opacity duration-300'>
                 {LOADING_MESSAGES[messageIndex]}
               </div>
-              
+
               {/* Elapsed Time */}
               <div className='text-lg text-muted-foreground'>
                 {elapsedTime}s elapsed
               </div>
-              
+
               {/* Info Text */}
-              <div className='text-sm text-muted-foreground max-w-xs'>
+              <div className='max-w-xs text-sm text-muted-foreground'>
                 Generating your horn... This usually takes 10-30 seconds
               </div>
             </div>
           </div>
         </div>
       )}
-      
+
       <div className='flex w-full items-center gap-2'>
         <Button
           className='flex-1'

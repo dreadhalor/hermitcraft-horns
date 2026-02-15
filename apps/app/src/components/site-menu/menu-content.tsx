@@ -22,6 +22,7 @@ import Link from 'next/link';
 import GoatHornSVG from '@/assets/goat-horn-icon.svg';
 import { usePathname, useRouter } from 'next/navigation';
 import { SheetClose } from '@ui/sheet';
+import { BuildBadge } from './build-badge';
 
 const hermitClockFont = Noto_Sans({
   subsets: ['latin'],
@@ -223,7 +224,7 @@ export const MenuContent = () => {
         Buy Me A Coffee
       </MenuExternalLinkItem>
       <div className='flex w-full flex-col px-5'>
-        <span className='mt-4 text-[14px] font-medium'>
+        <span className='mt-4 text-[13px] font-medium'>
           Hermitcraft Horns is built and maintained by Scott Hetrick, a software
           engineer & avid viewer of HermitCraft. This site is not affiliated
           with HermitCraft.
@@ -250,6 +251,7 @@ export const MenuContent = () => {
           , for helping me with the design of this menu.
         </span>
       </div>
+      <BuildBadge />
     </div>
   );
 };
