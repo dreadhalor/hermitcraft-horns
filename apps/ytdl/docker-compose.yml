@@ -1,87 +1,57 @@
 services:
-  # VPN Pool - 3 containers with different US cities
-  gluetun-1:
+  gluetun:
     image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-1
+    container_name: gluetun
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    ports:
+      # Expose ytdl's port on gluetun (since ytdl shares gluetun's network)
+      - "3001:3001"
     environment:
       - VPN_SERVICE_PROVIDER=nordvpn
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=New York
       - LOG_LEVEL=info
-      - HTTPPROXY=on
+      # Allow ytdl to reach Redis and Docker internal network (bypass VPN for internal traffic)
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      # Allow incoming connections to ytdl on port 3001 (safety net for gluetun's firewall)
+      - FIREWALL_INPUT_PORTS=3001
     volumes:
-      - ./gluetun-1-data:/gluetun
+      - ./gluetun-data:/gluetun
     restart: unless-stopped
-    networks:
-      - ytdl-network
-
-  gluetun-2:
-    image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-2
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      - VPN_SERVICE_PROVIDER=nordvpn
-      - OPENVPN_USER=${NORDVPN_USERNAME}
-      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
-      - SERVER_CITIES=Los Angeles
-      - LOG_LEVEL=info
-      - HTTPPROXY=on
-    volumes:
-      - ./gluetun-2-data:/gluetun
-    restart: unless-stopped
-    networks:
-      - ytdl-network
-
-  gluetun-3:
-    image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-3
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      - VPN_SERVICE_PROVIDER=nordvpn
-      - OPENVPN_USER=${NORDVPN_USERNAME}
-      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
-      - SERVER_CITIES=Miami
-      - LOG_LEVEL=info
-      - HTTPPROXY=on
-    volumes:
-      - ./gluetun-3-data:/gluetun
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - ytdl-network
 
   ytdl:
     image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:latest
     container_name: ytdl
+    # Share gluetun's network -- ALL traffic goes through VPN automatically
+    network_mode: "service:gluetun"
     depends_on:
-      - gluetun-1
-      - gluetun-2
-      - gluetun-3
-      - redis
-    ports:
-      - "3001:3001"
+      gluetun:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - NODE_ENV=production
+      - PORT=3001
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
-      - VPN_PROXIES=http://gluetun-1:8888,http://gluetun-2:8888,http://gluetun-3:8888
+      # Gluetun container name for Docker socket operations (logs, restart)
+      - GLUETUN_CONTAINER=gluetun
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    networks:
-      - ytdl-network
 
   redis:
     image: redis:alpine

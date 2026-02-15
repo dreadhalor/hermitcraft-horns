@@ -56,126 +56,81 @@ jobs:
             export IMAGE_TAG="${{ github.sha }}"
             echo "📦 Deploying image tag: $IMAGE_TAG"
             
-            echo "🎉 NO MORE .env FILE MANIPULATION!"
+            echo "🔒 Architecture: network_mode VPN (all traffic through gluetun)"
             echo "📦 ALL secrets fetched from AWS Secrets Manager"
-            echo "   • YTDL_INTERNAL_API_KEY (by ytdl container)"
-            echo "   • DATABASE_URL (by ytdl container)"
-            echo "   • NORDVPN credentials (by load-secrets.sh)"
             echo ""
             
-            # Create multi-VPN docker-compose.yml
-            # gluetun-1: New York
-            echo "services:" > docker-compose.yml
-            echo "  gluetun-1:" >> docker-compose.yml
-            echo "    image: qmcgaw/gluetun:v3.41.1" >> docker-compose.yml
-            echo "    container_name: gluetun-1" >> docker-compose.yml
-            echo "    cap_add:" >> docker-compose.yml
-            echo "      - NET_ADMIN" >> docker-compose.yml
-            echo "    devices:" >> docker-compose.yml
-            echo "      - /dev/net/tun:/dev/net/tun" >> docker-compose.yml
-            echo "    environment:" >> docker-compose.yml
-            echo "      - VPN_SERVICE_PROVIDER=nordvpn" >> docker-compose.yml
-            echo "      - OPENVPN_USER=\${NORDVPN_USERNAME}" >> docker-compose.yml
-            echo "      - OPENVPN_PASSWORD=\${NORDVPN_PASSWORD}" >> docker-compose.yml
-            echo "      - SERVER_CITIES=New York" >> docker-compose.yml
-            echo "      - LOG_LEVEL=info" >> docker-compose.yml
-            echo "      - HTTPPROXY=on" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - ./gluetun-1-data:/gluetun" >> docker-compose.yml
-            echo "    restart: unless-stopped" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - ytdl-network" >> docker-compose.yml
-            echo "" >> docker-compose.yml
-            # gluetun-2: Los Angeles
-            echo "  gluetun-2:" >> docker-compose.yml
-            echo "    image: qmcgaw/gluetun:v3.41.1" >> docker-compose.yml
-            echo "    container_name: gluetun-2" >> docker-compose.yml
-            echo "    cap_add:" >> docker-compose.yml
-            echo "      - NET_ADMIN" >> docker-compose.yml
-            echo "    devices:" >> docker-compose.yml
-            echo "      - /dev/net/tun:/dev/net/tun" >> docker-compose.yml
-            echo "    environment:" >> docker-compose.yml
-            echo "      - VPN_SERVICE_PROVIDER=nordvpn" >> docker-compose.yml
-            echo "      - OPENVPN_USER=\${NORDVPN_USERNAME}" >> docker-compose.yml
-            echo "      - OPENVPN_PASSWORD=\${NORDVPN_PASSWORD}" >> docker-compose.yml
-            echo "      - SERVER_CITIES=Los Angeles" >> docker-compose.yml
-            echo "      - LOG_LEVEL=info" >> docker-compose.yml
-            echo "      - HTTPPROXY=on" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - ./gluetun-2-data:/gluetun" >> docker-compose.yml
-            echo "    restart: unless-stopped" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - ytdl-network" >> docker-compose.yml
-            echo "" >> docker-compose.yml
-            # gluetun-3: Miami
-            echo "  gluetun-3:" >> docker-compose.yml
-            echo "    image: qmcgaw/gluetun:v3.41.1" >> docker-compose.yml
-            echo "    container_name: gluetun-3" >> docker-compose.yml
-            echo "    cap_add:" >> docker-compose.yml
-            echo "      - NET_ADMIN" >> docker-compose.yml
-            echo "    devices:" >> docker-compose.yml
-            echo "      - /dev/net/tun:/dev/net/tun" >> docker-compose.yml
-            echo "    environment:" >> docker-compose.yml
-            echo "      - VPN_SERVICE_PROVIDER=nordvpn" >> docker-compose.yml
-            echo "      - OPENVPN_USER=\${NORDVPN_USERNAME}" >> docker-compose.yml
-            echo "      - OPENVPN_PASSWORD=\${NORDVPN_PASSWORD}" >> docker-compose.yml
-            echo "      - SERVER_CITIES=Miami" >> docker-compose.yml
-            echo "      - LOG_LEVEL=info" >> docker-compose.yml
-            echo "      - HTTPPROXY=on" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - ./gluetun-3-data:/gluetun" >> docker-compose.yml
-            echo "    restart: unless-stopped" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - ytdl-network" >> docker-compose.yml
-            echo "" >> docker-compose.yml
-            # ytdl service
-            echo "  ytdl:" >> docker-compose.yml
-            echo "    image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:$IMAGE_TAG" >> docker-compose.yml
-            echo "    container_name: ytdl" >> docker-compose.yml
-            echo "    depends_on:" >> docker-compose.yml
-            echo "      - gluetun-1" >> docker-compose.yml
-            echo "      - gluetun-2" >> docker-compose.yml
-            echo "      - gluetun-3" >> docker-compose.yml
-            echo "      - redis" >> docker-compose.yml
-            echo "    ports:" >> docker-compose.yml
-            echo "      - \"3001:3001\"" >> docker-compose.yml
-            echo "    environment:" >> docker-compose.yml
-            echo "      - NODE_ENV=production" >> docker-compose.yml
-            echo "      - REDIS_HOST=redis" >> docker-compose.yml
-            echo "      - REDIS_PORT=6379" >> docker-compose.yml
-            echo "      - YTDL_INTERNAL_API_KEY=\${YTDL_INTERNAL_API_KEY}" >> docker-compose.yml
-            echo "      - DATABASE_URL=\${DATABASE_URL}" >> docker-compose.yml
-            echo "      - VPN_PROXIES=http://gluetun-1:8888,http://gluetun-2:8888,http://gluetun-3:8888" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - /var/run/docker.sock:/var/run/docker.sock" >> docker-compose.yml
-            echo "    restart: unless-stopped" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - ytdl-network" >> docker-compose.yml
-            echo "" >> docker-compose.yml
-            # redis
-            echo "  redis:" >> docker-compose.yml
-            echo "    image: redis:alpine" >> docker-compose.yml
-            echo "    container_name: redis" >> docker-compose.yml
-            echo "    restart: unless-stopped" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - ytdl-network" >> docker-compose.yml
-            echo "" >> docker-compose.yml
-            echo "networks:" >> docker-compose.yml
-            echo "  ytdl-network:" >> docker-compose.yml
-            echo "    driver: bridge" >> docker-compose.yml
+            # Generate docker-compose.yml with single gluetun + network_mode architecture
+            cat > docker-compose.yml << 'COMPOSE_EOF'
+            services:
+              gluetun:
+                image: qmcgaw/gluetun:v3.41.1
+                container_name: gluetun
+                cap_add:
+                  - NET_ADMIN
+                devices:
+                  - /dev/net/tun:/dev/net/tun
+                ports:
+                  - "3001:3001"
+                environment:
+                  - VPN_SERVICE_PROVIDER=nordvpn
+                  - OPENVPN_USER=${NORDVPN_USERNAME}
+                  - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+                  - SERVER_CITIES=New York
+                  - LOG_LEVEL=info
+                  - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+                  - FIREWALL_INPUT_PORTS=3001
+                volumes:
+                  - ./gluetun-data:/gluetun
+                restart: unless-stopped
+                healthcheck:
+                  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                networks:
+                  - ytdl-network
+
+              ytdl:
+                image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:IMAGE_TAG_PLACEHOLDER
+                container_name: ytdl
+                network_mode: "service:gluetun"
+                depends_on:
+                  gluetun:
+                    condition: service_healthy
+                  redis:
+                    condition: service_started
+                environment:
+                  - NODE_ENV=production
+                  - PORT=3001
+                  - REDIS_HOST=redis
+                  - REDIS_PORT=6379
+                  - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
+                  - DATABASE_URL=${DATABASE_URL}
+                  - GLUETUN_CONTAINER=gluetun
+                volumes:
+                  - /var/run/docker.sock:/var/run/docker.sock
+                restart: unless-stopped
+
+              redis:
+                image: redis:alpine
+                container_name: redis
+                restart: unless-stopped
+                networks:
+                  - ytdl-network
+
+            networks:
+              ytdl-network:
+                driver: bridge
+            COMPOSE_EOF
             
-            echo "✅ Multi-VPN docker-compose.yml generated"
+            # Replace image tag placeholder
+            sed -i "s|IMAGE_TAG_PLACEHOLDER|$IMAGE_TAG|g" docker-compose.yml
             
-            # Log in to ECR
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
+            echo "✅ docker-compose.yml generated (network_mode VPN architecture)"
             
-            # Pull latest ytdl image and bring down old containers (remove orphans from architecture change)
-            docker-compose pull ytdl
-            docker-compose down --remove-orphans
-            
-            # Load ALL secrets from AWS Secrets Manager on the HOST (where IAM works)
-            # Then pass them as environment variables to the container
-            echo "🔐 Loading ALL secrets from AWS Secrets Manager on EC2 host..."
+            # Load ALL secrets from AWS Secrets Manager on the HOST
+            echo "🔐 Loading secrets from AWS Secrets Manager..."
             export NORDVPN_USERNAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-username --query SecretString --output text)
             export NORDVPN_PASSWORD=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/nordvpn-password --query SecretString --output text)
             export YTDL_INTERNAL_API_KEY=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id hermitcraft-horns/ytdl/api-key --query SecretString --output text)
@@ -186,12 +141,11 @@ jobs:
             echo "   YTDL_INTERNAL_API_KEY: ${YTDL_INTERNAL_API_KEY:0:8}***"
             echo "   DATABASE_URL: ${DATABASE_URL:0:20}***"
             
-            # Clean up old Docker resources BEFORE deploying
+            # Clean up old Docker resources
             echo ""
             echo "🗑️  Cleaning up old Docker resources..."
             docker container prune -f
             docker image prune -f
-            # Remove old ytdl images (keep current running, remove others)
             docker images 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl --format "{{.ID}} {{.Tag}}" | grep -v "$IMAGE_TAG" | awk '{print $1}' | xargs -r docker rmi -f || true
             docker volume prune -f
             echo "✅ Cleanup complete"
@@ -201,20 +155,27 @@ jobs:
             echo "📥 Pulling fresh images..."
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725492026.dkr.ecr.us-east-1.amazonaws.com
             docker-compose pull ytdl
-            docker-compose pull gluetun-1 gluetun-2 gluetun-3
+            docker-compose pull gluetun
             
-            # Start containers with ALL secrets from environment (--force-recreate ensures fresh start, --remove-orphans cleans old single-VPN gluetun)
+            # Bring down old containers (--remove-orphans removes old gluetun-1/2/3)
+            docker-compose down --remove-orphans
+            
+            # Start containers
             docker-compose up -d --force-recreate --remove-orphans
             
-            echo "Deployment complete! Waiting for VPN connections..."
-            sleep 15
+            echo ""
+            echo "⏳ Waiting for VPN to connect and healthcheck to pass..."
+            sleep 20
+            
+            echo ""
+            echo "=== gluetun VPN status ==="
+            docker-compose logs --tail=10 gluetun | grep -E "Public IP|AUTH|healthy|openvpn" || true
+            echo ""
             echo "=== ytdl logs ==="
             docker-compose logs --tail=30 ytdl
             echo ""
-            echo "=== VPN connection status ==="
-            docker-compose logs --tail=5 gluetun-1 | grep -E "Public IP|AUTH|openvpn.*Initialization" || true
-            docker-compose logs --tail=5 gluetun-2 | grep -E "Public IP|AUTH|openvpn.*Initialization" || true
-            docker-compose logs --tail=5 gluetun-3 | grep -E "Public IP|AUTH|openvpn.*Initialization" || true
+            echo "=== Container status ==="
+            docker-compose ps
 
       - name: Notify deployment status
         if: always()

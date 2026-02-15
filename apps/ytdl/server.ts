@@ -64,12 +64,14 @@ if (process.env.DATABASE_URL) {
 }
 
 // Initialize VPN Download Manager
+// In network_mode setup, VPN_PROXIES is empty -- all traffic routes through gluetun automatically
 const VPN_PROXIES = process.env.VPN_PROXIES?.split(',').map(p => p.trim()).filter(Boolean) || [];
+const GLUETUN_CONTAINER = process.env.GLUETUN_CONTAINER || 'gluetun-local';
 const downloadManager = new VpnDownloadManager(VPN_PROXIES);
 
 /**
- * Check live connection status for all VPN containers via their gluetun control servers.
- * Returns an array with each VPN's proxy URL, connected status, public IP, and location.
+ * Check VPN connection status via gluetun's control server.
+ * With network_mode: "service:gluetun", the control server is at localhost:8000.
  */
 async function checkVpnConnectionStatus(): Promise<Array<{
   proxy: string;
@@ -79,53 +81,49 @@ async function checkVpnConnectionStatus(): Promise<Array<{
   responseTimeMs: number | null;
   error?: string;
 }>> {
-  return Promise.all(
-    VPN_PROXIES.map(async (proxy) => {
-      const startTime = Date.now();
-      try {
-        const host = proxy.replace(/https?:\/\//, '').split(':')[0] ?? '';
-        const controlUrl = `http://${host}:8000/v1/publicip/ip`;
-        const response = await fetch(controlUrl, {
-          signal: AbortSignal.timeout(5000),
-        });
+  // Network-mode: gluetun control server is at localhost:8000
+  const startTime = Date.now();
+  try {
+    const controlUrl = 'http://localhost:8000/v1/publicip/ip';
+    const response = await fetch(controlUrl, {
+      signal: AbortSignal.timeout(5000),
+    });
 
-        if (response.ok) {
-          const data = await response.json();
-          const ip = data.public_ip || null;
-          const location = data.country
-            ? `${data.country}, ${data.region || ''}, ${data.city || ''}`
-                .replace(/, ,/g, ',')
-                .replace(/,$/, '')
-            : null;
-          return {
-            proxy,
-            connected: !!ip,
-            ip,
-            location,
-            responseTimeMs: Date.now() - startTime,
-          };
-        }
+    if (response.ok) {
+      const data = await response.json();
+      const ip = data.public_ip || null;
+      const location = data.country
+        ? `${data.country}, ${data.region || ''}, ${data.city || ''}`
+            .replace(/, ,/g, ',')
+            .replace(/,$/, '')
+        : null;
+      return [{
+        proxy: `network-level (${GLUETUN_CONTAINER})`,
+        connected: !!ip,
+        ip,
+        location,
+        responseTimeMs: Date.now() - startTime,
+      }];
+    }
 
-        return {
-          proxy,
-          connected: false,
-          ip: null,
-          location: null,
-          responseTimeMs: Date.now() - startTime,
-          error: `Control server returned ${response.status}`,
-        };
-      } catch (error) {
-        return {
-          proxy,
-          connected: false,
-          ip: null,
-          location: null,
-          responseTimeMs: Date.now() - startTime,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
-      }
-    })
-  );
+    return [{
+      proxy: `network-level (${GLUETUN_CONTAINER})`,
+      connected: false,
+      ip: null,
+      location: null,
+      responseTimeMs: Date.now() - startTime,
+      error: `Control server returned ${response.status}`,
+    }];
+  } catch (error) {
+    return [{
+      proxy: `network-level (${GLUETUN_CONTAINER})`,
+      connected: false,
+      ip: null,
+      location: null,
+      responseTimeMs: Date.now() - startTime,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }];
+  }
 }
 
 const app = express();
@@ -547,54 +545,36 @@ app.post('/admin/clear-queue', async (req, res) => {
 });
 
 // VPN restart endpoint - supports soft (OpenVPN toggle) and hard (Docker container restart) modes
+// With network_mode, gluetun control server is at localhost:8000
 app.post('/admin/vpn/restart', async (req, res) => {
-  const { proxy, mode = 'soft' } = req.body;
-  if (!proxy || !VPN_PROXIES.includes(proxy)) {
-    return res.status(400).json({
-      success: false,
-      error: `Invalid proxy. Available: ${VPN_PROXIES.join(', ')}`,
-    });
-  }
-
-  const host = proxy.replace(/https?:\/\//, '').split(':')[0] ?? '';
+  const { mode = 'soft' } = req.body;
 
   if (mode === 'hard') {
-    // Hard restart: restart the Docker container via Docker Engine API
-    const possibleNames = [
-      `${host.replace('gluetun-', 'gluetun-local-')}`, // local: gluetun-local-1
-      host,                                              // prod: gluetun-1
-      `${host.replace('gluetun-', 'gluetun_')}`,        // alternate: gluetun_1
-    ];
+    // Hard restart: restart the gluetun Docker container via Docker Engine API
+    console.log(`🔄 Hard restarting container ${GLUETUN_CONTAINER}...`);
 
-    console.log(`🔄 Hard restarting container for ${proxy} (trying: ${possibleNames.join(', ')})...`);
-
-    for (const containerName of possibleNames) {
-      try {
-        await restartDockerContainer(containerName);
-        console.log(`   ✅ Container ${containerName} restarted successfully`);
-        return res.json({
-          success: true,
-          message: `Container ${containerName} restarted. VPN will reconnect with a new server in 15-45 seconds.`,
-          mode: 'hard',
-          container: containerName,
-        });
-      } catch (error) {
-        // Try next name
-        continue;
-      }
+    try {
+      await restartDockerContainer(GLUETUN_CONTAINER);
+      console.log(`   ✅ Container ${GLUETUN_CONTAINER} restarted successfully`);
+      return res.json({
+        success: true,
+        message: `Container ${GLUETUN_CONTAINER} restarted. VPN will reconnect with a new server in 15-45 seconds.`,
+        mode: 'hard',
+        container: GLUETUN_CONTAINER,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: `Failed to restart ${GLUETUN_CONTAINER}: ${error instanceof Error ? error.message : String(error)}`,
+      });
     }
-
-    return res.status(404).json({
-      success: false,
-      error: `Could not find Docker container for ${proxy}. Tried: ${possibleNames.join(', ')}. Make sure Docker socket is mounted.`,
-    });
   }
 
-  // Soft restart: toggle OpenVPN via gluetun's control API
-  const controlBase = `http://${host}:8000`;
+  // Soft restart: toggle OpenVPN via gluetun's control API (at localhost:8000 via network_mode)
+  const controlBase = 'http://localhost:8000';
 
   try {
-    console.log(`🔄 Soft restarting VPN connection for ${proxy} (${host})...`);
+    console.log(`🔄 Soft restarting VPN connection via ${controlBase}...`);
 
     // Stop VPN
     const stopRes = await fetch(`${controlBase}/v1/openvpn/status`, {
@@ -606,7 +586,7 @@ app.post('/admin/vpn/restart', async (req, res) => {
     if (!stopRes.ok) {
       throw new Error(`Failed to stop VPN: ${stopRes.status} ${await stopRes.text()}`);
     }
-    console.log(`   ⏹️  VPN stopped for ${host}`);
+    console.log(`   ⏹️  VPN stopped`);
 
     // Wait for clean shutdown
     await new Promise(r => setTimeout(r, 2000));
@@ -621,15 +601,15 @@ app.post('/admin/vpn/restart', async (req, res) => {
     if (!startRes.ok) {
       throw new Error(`Failed to start VPN: ${startRes.status} ${await startRes.text()}`);
     }
-    console.log(`   ▶️  VPN started for ${host}`);
+    console.log(`   ▶️  VPN started`);
 
     res.json({
       success: true,
-      message: `VPN connection restarted for ${proxy}. It may take 10-30 seconds to fully reconnect.`,
+      message: `VPN connection restarted. It may take 10-30 seconds to fully reconnect.`,
       mode: 'soft',
     });
   } catch (error) {
-    console.error(`❌ Error restarting VPN for ${proxy}:`, error);
+    console.error(`❌ Error restarting VPN:`, error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -637,52 +617,26 @@ app.post('/admin/vpn/restart', async (req, res) => {
   }
 });
 
-// VPN logs endpoint - fetches container logs via Docker socket API
+// VPN logs endpoint - fetches gluetun container logs via Docker socket API
 app.get('/admin/vpn/logs', async (req, res) => {
-  const { proxy, tail = '100' } = req.query;
-
-  if (!proxy || typeof proxy !== 'string' || !VPN_PROXIES.includes(proxy)) {
-    return res.status(400).json({
-      success: false,
-      error: `Invalid proxy. Available: ${VPN_PROXIES.join(', ')}`,
-    });
-  }
-
-  // Derive the Docker container name from the proxy hostname
-  // In docker-compose, service "gluetun-1" → container_name "gluetun-local-1" (local) or "gluetun-1" (prod)
-  // We'll try both naming conventions
-  const host = proxy.replace(/https?:\/\//, '').split(':')[0] ?? '';
-  const possibleNames = [
-    `${host.replace('gluetun-', 'gluetun-local-')}`, // local: gluetun-local-1
-    host,                                              // prod: gluetun-1
-    `${host.replace('gluetun-', 'gluetun_')}`,        // alternate: gluetun_1
-  ];
-
+  const { tail = '100' } = req.query;
   const tailLines = Math.min(Math.max(parseInt(tail as string) || 100, 10), 500);
 
-  // Try each possible container name
-  const errors: string[] = [];
-  for (const containerName of possibleNames) {
-    try {
-      const logs = await fetchDockerLogs(containerName, tailLines);
-      return res.json({
-        success: true,
-        container: containerName,
-        proxy,
-        lines: tailLines,
-        logs,
-      });
-    } catch (error) {
-      errors.push(`${containerName}: ${error instanceof Error ? error.message : String(error)}`);
-      continue;
-    }
+  try {
+    const logs = await fetchDockerLogs(GLUETUN_CONTAINER, tailLines);
+    return res.json({
+      success: true,
+      container: GLUETUN_CONTAINER,
+      lines: tailLines,
+      logs,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: `Could not fetch logs from ${GLUETUN_CONTAINER}: ${error instanceof Error ? error.message : String(error)}`,
+      hint: 'Is /var/run/docker.sock mounted and GLUETUN_CONTAINER set correctly?',
+    });
   }
-
-  res.status(404).json({
-    success: false,
-    error: `Could not find Docker container for ${proxy}. Tried: ${possibleNames.join(', ')}. Make sure Docker socket is mounted.`,
-    details: errors,
-  });
 });
 
 /**
@@ -809,33 +763,51 @@ app.get('/admin/docker/status', async (_req, res) => {
   }
 });
 
-// Verify yt-dlp proxy routing by checking what IP yt-dlp sees through each VPN
-app.get('/admin/vpn/verify-proxy', async (_req, res) => {
+// Verify VPN routing: all traffic should go through gluetun's VPN tunnel
+// With network_mode: "service:gluetun", curl from this container goes through the VPN
+app.get('/admin/vpn/verify', async (_req, res) => {
   const { execSync } = require('child_process');
-  const results: any[] = [];
+  const results: any = {};
 
-  // Check the container's direct IP first (no proxy)
+  // 1. Check what IP our outbound traffic uses (should be VPN IP)
   try {
-    const directIp = execSync('curl -s --max-time 5 https://api.ipify.org', { encoding: 'utf8' }).trim();
-    results.push({ source: 'direct (no proxy)', ip: directIp, note: 'Server real IP - should NOT match VPN IPs' });
-  } catch {
-    results.push({ source: 'direct (no proxy)', error: 'Could not fetch' });
+    const outboundIp = execSync('curl -s --max-time 10 https://api.ipify.org', { encoding: 'utf8' }).trim();
+    results.outboundIp = outboundIp;
+  } catch (e) {
+    results.outboundIp = null;
+    results.outboundError = 'Could not fetch (is VPN connected?)';
   }
 
-  // Check each VPN proxy via curl --proxy (same mechanism yt-dlp --proxy uses)
-  for (const proxy of VPN_PROXIES) {
-    try {
-      const proxyIp = execSync(
-        `curl -s --max-time 10 --proxy ${proxy} https://api.ipify.org`,
-        { encoding: 'utf8', timeout: 15000 },
-      ).trim();
-      results.push({ source: `curl --proxy ${proxy}`, ip: proxyIp });
-    } catch {
-      results.push({ source: proxy, error: 'Could not verify' });
+  // 2. Check what gluetun reports as the VPN IP (via its control server at localhost:8000)
+  try {
+    const controlRes = await fetch('http://localhost:8000/v1/publicip/ip', {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (controlRes.ok) {
+      const data = await controlRes.json();
+      results.gluetunIp = data.public_ip || null;
+      results.gluetunCountry = data.country || null;
+      results.gluetunRegion = data.region || null;
+      results.gluetunCity = data.city || null;
+    } else {
+      results.gluetunIp = null;
+      results.gluetunError = `Control server returned ${controlRes.status}`;
     }
+  } catch (e) {
+    results.gluetunIp = null;
+    results.gluetunError = e instanceof Error ? e.message : 'Unknown error';
   }
 
-  res.json({ success: true, proxyVerification: results });
+  // 3. Compare: if both IPs match, traffic is correctly routed through VPN
+  const match = results.outboundIp && results.gluetunIp && results.outboundIp === results.gluetunIp;
+  results.vpnRoutingVerified = match;
+  results.summary = match
+    ? `✅ VPN routing confirmed! All traffic exits via ${results.outboundIp} (${results.gluetunCity || 'unknown'}, ${results.gluetunRegion || ''}, ${results.gluetunCountry || ''})`
+    : results.outboundIp && results.gluetunIp
+      ? `⚠️ IP mismatch: outbound=${results.outboundIp}, gluetun=${results.gluetunIp}`
+      : `❌ Could not verify (outbound: ${results.outboundIp || 'failed'}, gluetun: ${results.gluetunIp || 'failed'})`;
+
+  res.json({ success: true, ...results });
 });
 
 // Simple REST endpoint for testing (bypasses tRPC complexity)
