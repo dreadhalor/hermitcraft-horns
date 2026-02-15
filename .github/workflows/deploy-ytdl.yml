@@ -97,7 +97,7 @@ jobs:
                 network_mode: "service:gluetun"
                 depends_on:
                   gluetun:
-                    condition: service_healthy
+                    condition: service_started
                   redis:
                     condition: service_started
                 environment:
@@ -164,17 +164,29 @@ jobs:
             docker-compose up -d --force-recreate --remove-orphans
             
             echo ""
-            echo "⏳ Waiting for VPN to connect and healthcheck to pass..."
-            sleep 20
+            echo "⏳ Waiting for services to start..."
+            sleep 10
+            
+            echo ""
+            echo "=== Container status ==="
+            docker-compose ps
+            
+            # Ensure ytdl is running (it should be, with service_started dependency)
+            YTDL_STATUS=$(docker inspect -f '{{.State.Running}}' ytdl 2>/dev/null || echo "false")
+            if [ "$YTDL_STATUS" != "true" ]; then
+              echo "⚠️  ytdl not running, starting manually..."
+              docker start ytdl || docker-compose up -d ytdl
+              sleep 5
+            fi
             
             echo ""
             echo "=== gluetun VPN status ==="
-            docker-compose logs --tail=10 gluetun | grep -E "Public IP|AUTH|healthy|openvpn" || true
+            docker-compose logs --tail=15 gluetun | grep -E "Public IP|AUTH|healthy|openvpn|FIREWALL" || true
             echo ""
             echo "=== ytdl logs ==="
             docker-compose logs --tail=30 ytdl
             echo ""
-            echo "=== Container status ==="
+            echo "=== Final container status ==="
             docker-compose ps
 
       - name: Notify deployment status

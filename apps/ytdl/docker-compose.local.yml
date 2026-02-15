@@ -37,7 +37,7 @@ services:
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_started
     environment:
