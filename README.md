@@ -36,7 +36,7 @@ A Node.js/Express server that handles YouTube audio extraction and processing.
 - **Name Origin**: Originally used `ytdl` package, switched to `yt-dlp` but kept the name
 - **Stack**: Express.js + Bull (Redis-backed job queue) + FFmpeg
 - **Deployment**: AWS EC2 instance
-- **VPN**: Runs behind Gluetun (OpenVPN) to avoid YouTube's IP-based rate limiting
+- **VPN**: Runs behind Gluetun (OpenVPN) via `network_mode` to transparently route all traffic through the VPN
 - **Access**: Exposed via Application Load Balancer with SSL at `ytdl.hermitcraft-horns.com`
 
 **What it does:**
@@ -45,7 +45,7 @@ A Node.js/Express server that handles YouTube audio extraction and processing.
 - Returns processed audio buffers to the frontend
 - Handles multiple concurrent clip generation jobs
 
-The VPN setup is documented in `apps/ytdl/GLUETUN_SETUP.md` for when YouTube decides to get cranky about download requests.
+The VPN setup uses Docker's `network_mode: "service:gluetun"` so all outbound traffic (yt-dlp, ffmpeg, curl) transparently routes through the VPN tunnel.
 
 ### Supporting Infrastructure
 
@@ -77,7 +77,7 @@ Replaced complex progress tracking with a clean, simple loading overlay featurin
 - No fake progress bars - just honest "generating your horn..." feedback
 
 ### VPN Integration for YouTube Downloads
-YouTube started blocking our EC2 IP address, causing clip generation to fail. The ytdl service now routes traffic through a Gluetun VPN container using Docker networking, which solved the issue completely. This is a "set it and forget it" solution that keeps the download service running smoothly.
+YouTube blocks datacenter IP addresses, causing clip generation to fail. The ytdl service now runs behind Gluetun using `network_mode: "service:gluetun"`, which transparently routes all traffic (yt-dlp metadata requests, ffmpeg stream downloads, etc.) through a NordVPN tunnel. No per-application proxy configuration needed.
 
 ### Error Tracking & Monitoring
 Integrated Sentry across the entire Next.js app (client, server, and edge runtimes) to catch and report errors automatically. When clip generation fails, users get friendly notifications and I get detailed error reports with context about what went wrong.
@@ -111,12 +111,12 @@ pnpm dev
 **Run the ytdl service:**
 ```bash
 cd apps/ytdl
-docker-compose up
+docker compose -f docker-compose.local.yml up
 ```
 
 Check the individual app READMEs for detailed setup instructions:
 - `apps/app/README.md` - Frontend setup, environment variables, scripts
-- `apps/ytdl/GLUETUN_SETUP.md` - VPN configuration, Docker setup, troubleshooting
+- `apps/ytdl/README.md` - Backend setup, Docker/VPN configuration, troubleshooting
 
 ## Monorepo Structure
 

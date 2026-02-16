@@ -74,8 +74,6 @@ SENTRY_PROJECT="your_project"
 YOUTUBE_API_KEY="your_youtube_api_key"
 ```
 
-Check out `SENTRY_SETUP.md` for detailed Sentry setup instructions.
-
 ### Running the Dev Server
 
 ```bash

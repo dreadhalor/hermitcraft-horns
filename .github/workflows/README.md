@@ -7,20 +7,28 @@ Automated deployment workflows for Hermitcraft Horns.
 ### 1. `deploy-ytdl.yml` - Deploy ytdl Service to EC2
 
 **Triggers:**
-- Push to `main` branch with changes in `apps/ytdl/`
+- Push to `main` branch with changes in `apps/ytdl/` or the workflow file itself
 - Manual workflow dispatch
 
 **What it does:**
 1. Builds Docker image for amd64 (EC2 architecture)
 2. Pushes to AWS ECR
-3. SSHs to EC2 and restarts docker-compose
-4. Shows deployment logs
+3. SSHs to EC2 and generates `docker-compose.yml`
+4. Fetches secrets from AWS Secrets Manager
+5. Pulls latest image from ECR
+6. Restarts containers with `--force-recreate --remove-orphans`
 
-**Required Secrets:**
+**Required GitHub Secrets:**
 - `AWS_ACCESS_KEY_ID` - AWS access key for ECR
 - `AWS_SECRET_ACCESS_KEY` - AWS secret key
 - `EC2_HOST` - EC2 instance IP or hostname
 - `EC2_SSH_KEY` - Private SSH key for EC2 access
+
+**AWS Secrets Manager keys** (fetched at deploy time on EC2, not stored in GitHub):
+- `hermitcraft-horns/ytdl/nordvpn-username`
+- `hermitcraft-horns/ytdl/nordvpn-password`
+- `hermitcraft-horns/ytdl/api-key`
+- `hermitcraft-horns/ytdl/database-url`
 
 ### 2. Next.js Deployment - Handled by Vercel
 
@@ -32,7 +40,7 @@ Vercel automatically deploys the Next.js app via its built-in GitHub integration
 - Manages its own build and deployment
 - View deployment status at: https://vercel.com/dashboard
 
-**Environment variables** are managed via Vercel Dashboard or CLI.
+**Environment variables** are managed via Vercel Dashboard.
 
 ## Setup Instructions
 
@@ -42,7 +50,6 @@ Go to your GitHub repo → Settings → Secrets and variables → Actions → Ne
 
 Add each of these:
 
-**For ytdl deployment:**
 ```
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
@@ -50,93 +57,19 @@ EC2_HOST=your-ec2-ip-or-hostname
 EC2_SSH_KEY=paste_your_private_key_here
 ```
 
-**For Next.js deployment:**
-```
-VERCEL_TOKEN=your_vercel_token
-```
+### Step 2: Ensure AWS Secrets Manager is configured
 
-### Step 2: Get Vercel Token
+All sensitive credentials live in AWS Secrets Manager, not in GitHub or `.env` files. The EC2 instance uses IAM roles to fetch them at deployment time.
 
-```bash
-# Install Vercel CLI if needed
-npm i -g vercel
-
-# Login and generate token
-vercel login
-
-# Get token from: https://vercel.com/account/tokens
-# Create a new token with scope: "Full Access"
-```
-
-### Step 3: Get EC2 SSH Key
-
-Your existing EC2 private key (the `.pem` file you use to SSH).
-
-```bash
-# Copy the entire contents
-cat your-key.pem
-
-# Paste into GitHub secret EC2_SSH_KEY
-```
-
-### Step 4: Test Workflows
+### Step 3: Test Workflows
 
 **Test ytdl deployment:**
 ```bash
-git add .
-git commit -m "Test ytdl deployment"
+# Push a change to apps/ytdl/
 git push
 ```
 
-Or manually trigger from GitHub Actions tab.
-
-**Test Next.js deployment:**
-```bash
-# Make a change in apps/app
-git add .
-git commit -m "Test Next.js deployment"
-git push
-```
-
-### Step 5: Monitor Deployments
-
-Go to GitHub → Actions tab to see workflow runs and logs.
-
-## Environment Variables on EC2
-
-Make sure your EC2 `.env` file has:
-
-```bash
-NORDVPN_USERNAME=your_username
-NORDVPN_PASSWORD=your_password
-YTDL_INTERNAL_API_KEY=813cea9e25ae531d76d928946ed221dfdded747edd2900f24164ec22f2d56f73
-DATABASE_URL=postgres://default:WE78TkdNVexL@ep-raspy-art-a4kaeean-pooler.us-east-1.aws.neon.tech/verceldb?sslmode=require
-```
-
-## Environment Variables on Vercel
-
-Add via Vercel Dashboard or CLI:
-
-```bash
-YTDL_INTERNAL_API_KEY=813cea9e25ae531d76d928946ed221dfdded747edd2900f24164ec22f2d56f73
-ADMIN_USER_ID=your_clerk_user_id
-```
-
-## Manual Deployment
-
-You can still deploy manually if needed:
-
-**ytdl:**
-```bash
-cd apps/ytdl
-./deploy.sh  # (create this script if you want)
-```
-
-**Next.js:**
-```bash
-cd apps/app
-vercel --prod
-```
+Or manually trigger from the GitHub Actions tab.
 
 ## Troubleshooting
 
@@ -148,11 +81,6 @@ vercel --prod
 - Verify EC2_HOST is correct (public IP or hostname)
 - Check EC2_SSH_KEY is the complete private key with headers/footers
 - Ensure EC2 security group allows SSH from GitHub Actions IPs
-
-### Next.js deployment fails
-- Check VERCEL_TOKEN is valid
-- Run `vercel link` locally first to connect project
-- Verify environment variables are set on Vercel
 
 ### Changes not deploying
 - Check workflow triggers in `.yml` files

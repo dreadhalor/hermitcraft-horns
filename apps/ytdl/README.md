@@ -36,14 +36,12 @@ This Express.js server processes audio clips from YouTube videos using `yt-dlp` 
 ### Quick Start
 
 ```bash
-# Start Redis
-docker compose up -d redis
+# Start all services (gluetun VPN + ytdl + redis)
+docker compose -f docker-compose.local.yml up -d
 
-# Install dependencies
-pnpm install
-
-# Run in development mode
-pnpm start:dev
+# Or rebuild after code changes
+docker compose -f docker-compose.local.yml build ytdl
+docker compose -f docker-compose.local.yml up -d
 ```
 
 The server will be available at `http://localhost:3001`
@@ -63,8 +61,8 @@ REDIS_PORT=6379
 ### Architecture
 
 The service runs on AWS EC2 with:
-- **Gluetun** container for VPN connectivity
-- **ytdl** container for audio processing
+- **Gluetun** container for VPN connectivity (ytdl uses `network_mode: "service:gluetun"` so all traffic routes through the VPN)
+- **ytdl** container for audio processing (shares gluetun's network stack)
 - **Redis** container for job queue
 
 All secrets are managed via **AWS Secrets Manager** and fetched at deployment time using IAM roles.
@@ -90,14 +88,13 @@ gh workflow run deploy-ytdl.yml
 ### Container Management
 
 ```bash
-# SSH to EC2 instance
-ssh -i ~/.ssh/ytdl-key.pem ec2-user@13.218.90.35
-
 # Check logs
 docker logs ytdl --tail 100
+docker logs gluetun --tail 100
 
 # Restart containers
 docker compose restart ytdl
+docker compose restart gluetun
 
 # Pull and restart with new image
 docker compose pull ytdl
@@ -160,8 +157,8 @@ docker compose ps
 # View real-time logs
 docker logs ytdl -f
 
-# Check VPN connection
-docker exec gluetun wget -qO- https://ipinfo.io
+# Check VPN connection (from inside ytdl, which shares gluetun's network)
+docker exec ytdl curl -s https://api.ipify.org
 
 # Restart specific container
 docker compose restart ytdl
@@ -172,13 +169,16 @@ docker compose up -d --build ytdl
 
 ## VPN Configuration
 
-The service uses Gluetun for VPN connectivity. See `GLUETUN_SETUP.md` for detailed configuration.
+The service uses Gluetun for VPN connectivity via Docker's `network_mode: "service:gluetun"`.
 
 **Key points:**
-- Uses NordVPN
+- Uses NordVPN (New York server)
 - Credentials stored in AWS Secrets Manager
-- Container shares network with ytdl service
+- ytdl shares gluetun's network stack -- all traffic transparently routes through the VPN
+- `FIREWALL_OUTBOUND_SUBNETS` whitelists private Docker subnets for internal traffic (Redis, etc.)
+- `FIREWALL_INPUT_PORTS=3001` allows incoming connections to ytdl
 - Auto-reconnects on connection drops
+- Verify VPN routing at `/admin/vpn/verify`
 
 ## Database Schema
 
@@ -188,12 +188,21 @@ Generation logs are stored in the `generationLogs` table:
 {
   id: string;
   userId: string;
+  source: 'web' | 'cli';
   videoUrl: string;
   start: string;
   end: string;
-  status: 'received' | 'active' | 'completed' | 'failed';
+  status: 'received' | 'initiated' | 'active' | 'completed' | 'failed';
   errorMessage?: string;
+  taskId?: string;
   createdAt: Date;
+  completedAt?: Date;
+  vpnAttempts?: number;
+  vpnProxiesTried?: string[];
+  vpnProxiesFailed?: string[];
+  vpnProxySuccess?: string;
+  vpnIpAddress?: string;
+  vpnLocation?: string;
 }
 ```
 
