@@ -1,22 +1,70 @@
 services:
-  gluetun:
+  manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: manager-local
+    command: ["npx", "ts-node", "manager.ts"]
+    ports:
+      - "3001:3001"
+    environment:
+      - MANAGER_PORT=3001
+      - YTDL_HOST=ytdl-local
+      - YTDL_PORT=3001
+      - GLUETUN_CONTAINERS=gluetun-1-local,gluetun-2-local,gluetun-3-local
+      - WORKER_CONTAINERS=worker-1-local,worker-2-local,worker-3-local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      gluetun-1:
+        condition: service_started
+      gluetun-2:
+        condition: service_started
+      gluetun-3:
+        condition: service_started
+    networks:
+      - ytdl-local
+    restart: unless-stopped
+
+  # ---- Primary ytdl server (API, tRPC, Bull queue, DB) ----
+  # Runs on the bridge network directly -- does NOT need VPN.
+  # Downloads are delegated to workers via WORKER_ENDPOINTS.
+  ytdl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ytdl-local
+    networks:
+      - ytdl-local
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
+      - WORKER_ENDPOINTS=gluetun-1-local:3001,gluetun-2-local:3001,gluetun-3-local:3001
+    restart: unless-stopped
+
+  # ---- VPN containers (one per location) ----
+
+  gluetun-1:
     image: qmcgaw/gluetun:v3.41.1
-    container_name: gluetun-local
+    container_name: gluetun-1-local
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
-    ports:
-      # Expose ytdl's port on gluetun (since ytdl shares gluetun's network)
-      - "3001:3001"
     environment:
       - VPN_SERVICE_PROVIDER=nordvpn
       - OPENVPN_USER=${NORDVPN_USERNAME}
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=New York
       - LOG_LEVEL=info
-      # Allow ytdl to reach Redis and the Docker network directly (bypass VPN for internal traffic)
       - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      - FIREWALL_INPUT_PORTS=3001
     volumes:
       - ./gluetun-1-data:/gluetun
     restart: unless-stopped
@@ -28,30 +76,106 @@ services:
     networks:
       - ytdl-local
 
-  ytdl:
+  gluetun-2:
+    image: qmcgaw/gluetun:v3.41.1
+    container_name: gluetun-2-local
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - OPENVPN_USER=${NORDVPN_USERNAME}
+      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+      - SERVER_CITIES=Chicago
+      - LOG_LEVEL=info
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      - FIREWALL_INPUT_PORTS=3001
+    volumes:
+      - ./gluetun-2-data:/gluetun
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ytdl-local
+
+  gluetun-3:
+    image: qmcgaw/gluetun:v3.41.1
+    container_name: gluetun-3-local
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - OPENVPN_USER=${NORDVPN_USERNAME}
+      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+      - SERVER_CITIES=Los Angeles
+      - LOG_LEVEL=info
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      - FIREWALL_INPUT_PORTS=3001
+    volumes:
+      - ./gluetun-3-data:/gluetun
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ytdl-local
+
+  # ---- Download workers (one per gluetun, sharing its network namespace) ----
+
+  worker-1:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ytdl-local
-    # Share gluetun's network -- ALL traffic goes through VPN automatically
-    network_mode: "service:gluetun"
+    container_name: worker-1-local
+    command: ["npx", "ts-node", "worker.ts"]
+    network_mode: "service:gluetun-1"
     depends_on:
-      gluetun:
-        condition: service_started
-      redis:
+      gluetun-1:
         condition: service_started
     environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
-      # Gluetun container name for Docker socket operations (logs, restart)
-      - GLUETUN_CONTAINER=gluetun-local
-      # No VPN_PROXIES needed -- all traffic routes through gluetun's VPN at network level
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - WORKER_ID=worker-1
+      - WORKER_PORT=3001
     restart: unless-stopped
+
+  worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: worker-2-local
+    command: ["npx", "ts-node", "worker.ts"]
+    network_mode: "service:gluetun-2"
+    depends_on:
+      gluetun-2:
+        condition: service_started
+    environment:
+      - WORKER_ID=worker-2
+      - WORKER_PORT=3001
+    restart: unless-stopped
+
+  worker-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: worker-3-local
+    command: ["npx", "ts-node", "worker.ts"]
+    network_mode: "service:gluetun-3"
+    depends_on:
+      gluetun-3:
+        condition: service_started
+    environment:
+      - WORKER_ID=worker-3
+      - WORKER_PORT=3001
+    restart: unless-stopped
+
+  # ---- Redis ----
 
   redis:
     image: redis:alpine

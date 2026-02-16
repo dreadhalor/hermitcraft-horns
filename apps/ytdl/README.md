@@ -4,17 +4,62 @@ Audio processing microservice for Hermitcraft Horns. Handles YouTube audio extra
 
 ## Overview
 
-This Express.js server processes audio clips from YouTube videos using `yt-dlp` and FFmpeg. It runs behind a VPN (Gluetun) to avoid YouTube's IP-based rate limiting and uses a Redis-backed job queue (Bull) to handle concurrent requests.
+This service processes audio clips from YouTube videos using `yt-dlp` and FFmpeg. It uses a **multi-worker VPN architecture** with 3 parallel gluetun/worker pairs for redundancy and automatic failover if a worker gets blocked by YouTube. A centralized manager service handles request proxying and provides a control plane for all containers.
+
+## Architecture
+
+```
+                    ┌─────────────────┐
+                    │    Manager      │  ← Always reachable, proxies to ytdl
+                    │   (port 3001)   │    Controls gluetun/worker containers
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │      ytdl       │  ← Primary API, job queue, orchestration
+                    │   (Bull queue)  │
+                    └────────┬────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              │              │              │
+     ┌────────▼──────┐ ┌────▼────────┐ ┌──▼──────────┐
+     │  gluetun-1    │ │  gluetun-2  │ │  gluetun-3  │
+     │  (New York)   │ │  (Chicago)  │ │ (Los Angeles)│
+     │  ┌──────────┐ │ │ ┌──────────┐│ │ ┌──────────┐│
+     │  │ worker-1 │ │ │ │ worker-2 ││ │ │ worker-3 ││
+     │  └──────────┘ │ │ └──────────┘│ │ └──────────┘│
+     └───────────────┘ └─────────────┘ └─────────────┘
+              │
+     ┌────────▼────────┐
+     │     Redis        │  ← Job queue persistence
+     └─────────────────┘
+```
+
+**Key components:**
+- **Manager** (`manager.ts`) — Always-reachable proxy that forwards requests to ytdl and provides container management (status, restart, logs) via the Docker socket and Gluetun control API
+- **ytdl** (`server.ts`) — Primary API server, manages the Bull job queue and orchestrates downloads across workers
+- **Workers** (`worker.ts`) — Lightweight Express servers that run `yt-dlp`/`ffmpeg`. Each shares its paired gluetun's network via `network_mode: "service:gluetun-N"`
+- **Gluetun** — VPN client containers (NordVPN/OpenVPN), each configured to a different city
+- **Redis** — Powers the Bull job queue
+
+### How Downloads Work
+
+1. A job is dequeued and assigned to a worker (round-robin rotation)
+2. The download manager checks the worker's VPN status before attempting — if VPN is down, it skips immediately
+3. If the worker succeeds, the job completes
+4. If the worker fails (blocked by YouTube, VPN down, etc.), the failure is recorded and the job is passed to the next worker
+5. All attempts (success and failure) are tracked with VPN IP, location, and timestamps
 
 ## Features
 
-- **YouTube Audio Extraction**: Downloads audio from any YouTube video
-- **Precise Trimming**: Extracts specific time ranges (millisecond precision)
+- **Multi-worker VPN Redundancy**: 3 parallel workers on different VPN locations with automatic failover
+- **YouTube Audio Extraction**: Downloads audio from any YouTube video via `yt-dlp`
+- **Precise Trimming**: Extracts specific time ranges (millisecond precision) with FFmpeg
 - **Audio Normalization**: Applies loudnorm filter for consistent volume
 - **Job Queue**: Bull + Redis for reliable async processing
-- **VPN Integration**: Routes through Gluetun to avoid IP blocking
-- **Database Logging**: Tracks generation attempts and failures
-- **Health Checks**: Monitoring endpoints for production
+- **Admin Dashboard**: Real-time monitoring, logs, and control at `/admin/metrics`
+- **Container Management**: Soft/hard restart, stop VPN, stop container — all from the UI
+- **Database Logging**: Tracks generation attempts, VPN routing, and failures
+- **Simulate Block**: Test failover by simulating YouTube IP blocks on individual workers
 
 ## Tech Stack
 
@@ -22,8 +67,9 @@ This Express.js server processes audio clips from YouTube videos using `yt-dlp` 
 - **Framework**: Express.js + tRPC
 - **Job Queue**: Bull (Redis-backed)
 - **Audio Tools**: yt-dlp + FFmpeg
-- **VPN**: Gluetun (OpenVPN)
+- **VPN**: Gluetun (OpenVPN) with NordVPN
 - **Database**: PostgreSQL via Drizzle ORM
+- **Container Orchestration**: Docker Compose
 
 ## Local Development
 
@@ -31,79 +77,80 @@ This Express.js server processes audio clips from YouTube videos using `yt-dlp` 
 
 - Docker & Docker Compose
 - pnpm
-- Redis (via Docker)
+- NordVPN credentials (set in `.env`)
 
 ### Quick Start
 
 ```bash
-# Start all services (gluetun VPN + ytdl + redis)
+# Start all services (3 gluetun + 3 workers + manager + ytdl + redis)
 docker compose -f docker-compose.local.yml up -d
 
 # Or rebuild after code changes
-docker compose -f docker-compose.local.yml build ytdl
+docker compose -f docker-compose.local.yml build
 docker compose -f docker-compose.local.yml up -d
 ```
 
-The server will be available at `http://localhost:3001`
+The manager will be available at `http://localhost:3001` (this is what the frontend talks to).
 
 ### Environment Variables
 
-Required in `.env`:
+Required in `.env` (in `apps/ytdl/`):
 ```bash
 YTDL_INTERNAL_API_KEY=your-api-key-here
 DATABASE_URL=postgresql://...
-REDIS_HOST=localhost
-REDIS_PORT=6379
+NORDVPN_USERNAME=your-nordvpn-email
+NORDVPN_PASSWORD=your-nordvpn-password
 ```
+
+Redis is handled internally by Docker Compose — no external config needed.
 
 ## Production Deployment
 
-### Architecture
-
-The service runs on AWS EC2 with:
-- **Gluetun** container for VPN connectivity (ytdl uses `network_mode: "service:gluetun"` so all traffic routes through the VPN)
-- **ytdl** container for audio processing (shares gluetun's network stack)
-- **Redis** container for job queue
-
-All secrets are managed via **AWS Secrets Manager** and fetched at deployment time using IAM roles.
-
 ### Deployment Process
 
-Automated via GitHub Actions (`.github/workflows/deploy-ytdl.yml`):
+Manual trigger via GitHub Actions (`.github/workflows/deploy-ytdl.yml`):
 
-1. Build Docker image
+1. Build Docker image for amd64
 2. Push to AWS ECR
-3. SSH to EC2 instance
+3. SSH to EC2 and generate `docker-compose.yml`
 4. Fetch secrets from AWS Secrets Manager
-5. Pull latest image from ECR
-6. Restart containers with new secrets
+5. Pull latest images from ECR
+6. Restart all containers with `--force-recreate --remove-orphans`
 
-### Manual Deployment
+### Deploy
 
 ```bash
-# From project root
+# From the GitHub Actions tab, or:
 gh workflow run deploy-ytdl.yml
 ```
 
+Deployments are **manual only** — pushing to `main` does not auto-deploy.
+
 ### Container Management
 
+Most container management is done through the `/admin/metrics` UI:
+- View real-time status of all workers, VPN connections, and infrastructure
+- Soft restart (reconnect VPN) or hard restart (recreate container) individual workers
+- Stop VPN or stop container for individual workers
+- View container logs with noise filtering
+- Simulate YouTube IP blocks for testing failover
+- Monitor job processing, VPN attempts, and download stats
+
+For direct SSH access:
 ```bash
-# Check logs
-docker logs ytdl --tail 100
-docker logs gluetun --tail 100
+# Check all container statuses
+docker compose ps
 
-# Restart containers
-docker compose restart ytdl
-docker compose restart gluetun
-
-# Pull and restart with new image
-docker compose pull ytdl
-docker compose up -d ytdl
+# View logs for a specific service
+docker compose logs --tail 100 manager
+docker compose logs --tail 100 ytdl
+docker compose logs --tail 100 gluetun-1
+docker compose logs --tail 100 worker-1
 ```
 
 ## API Endpoints
 
-### tRPC Endpoints
+### tRPC Endpoints (via manager proxy)
 
 **`enqueueTask`**
 ```typescript
@@ -129,56 +176,29 @@ docker compose up -d ytdl
 
 All requests require the `x-api-key` header with the internal API key.
 
-## Troubleshooting
-
-### Common Issues
-
-**YouTube Download Failures**
-- Ensure VPN (Gluetun) is running and connected
-- Check EC2 security group allows outbound traffic
-- Verify yt-dlp is up to date
-
-**Redis Connection Errors**
-- Verify Redis container is running
-- Check Redis host/port in environment variables
-- Ensure network connectivity between containers
-
-**Out of Disk Space**
-- Run `docker system prune -af --volumes` to clean up
-- Use `df -h` to check disk usage
-- Old Docker images accumulate quickly
-
-### Useful Commands
-
-```bash
-# Check container status
-docker compose ps
-
-# View real-time logs
-docker logs ytdl -f
-
-# Check VPN connection (from inside ytdl, which shares gluetun's network)
-docker exec ytdl curl -s https://api.ipify.org
-
-# Restart specific container
-docker compose restart ytdl
-
-# Force rebuild and restart
-docker compose up -d --build ytdl
-```
-
 ## VPN Configuration
 
-The service uses Gluetun for VPN connectivity via Docker's `network_mode: "service:gluetun"`.
+Each worker runs inside its paired gluetun container's network via `network_mode: "service:gluetun-N"`, so all outbound traffic (yt-dlp, ffmpeg, curl) transparently routes through the VPN.
 
-**Key points:**
-- Uses NordVPN (New York server)
-- Credentials stored in AWS Secrets Manager
-- ytdl shares gluetun's network stack -- all traffic transparently routes through the VPN
-- `FIREWALL_OUTBOUND_SUBNETS` whitelists private Docker subnets for internal traffic (Redis, etc.)
-- `FIREWALL_INPUT_PORTS=3001` allows incoming connections to ytdl
+**Current VPN locations:**
+- **gluetun-1**: New York
+- **gluetun-2**: Chicago
+- **gluetun-3**: Los Angeles
+
+**Key settings:**
+- Provider: NordVPN (OpenVPN)
+- Credentials: AWS Secrets Manager (prod) or `.env` (local)
+- `FIREWALL_OUTBOUND_SUBNETS`: Whitelists private Docker subnets for internal traffic
+- `FIREWALL_INPUT_PORTS=3001`: Allows incoming connections to the worker
 - Auto-reconnects on connection drops
-- Verify VPN routing at `/admin/vpn/verify`
+
+### Switching VPN IPs
+
+If a worker's IP gets blocked frequently:
+
+- **Soft restart** (from `/admin/metrics`) reconnects the VPN, usually assigning a different server/IP within the same city
+- **Hard restart** recreates the container, also resulting in a new IP
+- **Change city**: Edit `SERVER_CITIES` for the relevant gluetun in `deploy-ytdl.yml` and redeploy. Gluetun does not support changing the server location at runtime — it requires a restart with new environment variables
 
 ## Database Schema
 
@@ -209,27 +229,49 @@ Generation logs are stored in the `generationLogs` table:
 ## Security
 
 - **API Key**: Required for all requests
-- **AWS Secrets Manager**: All credentials stored securely
+- **AWS Secrets Manager**: All production credentials stored securely
 - **IAM Roles**: EC2 instance uses role-based access (no hardcoded credentials)
-- **VPN**: All YouTube traffic routed through VPN
-- **Network Isolation**: Container runs in isolated Docker network
+- **VPN**: All YouTube traffic routed through VPN tunnels
+- **Network Isolation**: Services run in isolated Docker networks
+- **Docker Socket**: Only the manager has access (for container management)
 
 ## Monitoring
 
-- **Health Checks**: AWS ELB monitors container health
-- **Database Logs**: All generation attempts tracked
-- **Sentry**: Error tracking (frontend only)
-- **CloudWatch**: EC2 metrics and logs
+- **`/admin/metrics`**: Real-time dashboard with worker status, job tracking, VPN attempts, download stats, and infrastructure health
+- **AWS ELB**: Health checks on the manager service
+- **Database Logs**: All generation attempts tracked with VPN routing details
+- **Sentry**: Error tracking (frontend)
+
+## Troubleshooting
+
+### YouTube Download Failures
+- Check `/admin/metrics` for worker status — are VPNs connected?
+- Try soft restarting the affected worker
+- If a city's IPs are consistently blocked, change `SERVER_CITIES` and redeploy
+- Use "Simulate Block" to test failover behavior
+
+### Redis Connection Errors
+- Verify Redis container is running: `docker compose ps redis`
+- Check network connectivity between ytdl and redis
+
+### All Workers Down
+- Check if gluetun containers are running and healthy
+- VPN auth failures (rate limiting) can cause all workers to fail — try hard restarting one at a time
+- If persistent, wait a few minutes and redeploy
+
+### Out of Disk Space
+- The deploy workflow prunes old images automatically
+- For manual cleanup: `docker system prune -af --volumes`
 
 ## Contributing
 
 When making changes:
 
-1. Test locally with `pnpm start:dev`
-2. Commit changes
-3. Push to trigger GitHub Actions deployment
-4. Monitor deployment logs
-5. Test production endpoint
+1. Test locally with `docker compose -f docker-compose.local.yml up -d`
+2. Verify changes work via `/admin/metrics` and test clip generation
+3. Commit and push
+4. Manually trigger the deploy workflow from GitHub Actions
+5. Verify production at `/admin/metrics`
 
 ---
 

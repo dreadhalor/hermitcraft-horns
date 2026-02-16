@@ -1,22 +1,20 @@
 # GitHub Actions Workflows
 
-Automated deployment workflows for Hermitcraft Horns.
+Deployment and maintenance workflows for Hermitcraft Horns.
 
 ## Workflows
 
 ### 1. `deploy-ytdl.yml` - Deploy ytdl Service to EC2
 
-**Triggers:**
-- Push to `main` branch with changes in `apps/ytdl/` or the workflow file itself
-- Manual workflow dispatch
+**Trigger:** Manual only (`workflow_dispatch`)
 
 **What it does:**
 1. Builds Docker image for amd64 (EC2 architecture)
 2. Pushes to AWS ECR
-3. SSHs to EC2 and generates `docker-compose.yml`
+3. SSHs to EC2 and generates `docker-compose.yml` with multi-worker VPN architecture (3 gluetun + 3 workers + manager + ytdl + redis)
 4. Fetches secrets from AWS Secrets Manager
-5. Pulls latest image from ECR
-6. Restarts containers with `--force-recreate --remove-orphans`
+5. Pulls latest images from ECR
+6. Restarts all containers with `--force-recreate --remove-orphans`
 
 **Required GitHub Secrets:**
 - `AWS_ACCESS_KEY_ID` - AWS access key for ECR
@@ -36,17 +34,20 @@ Automated deployment workflows for Hermitcraft Horns.
 
 Vercel automatically deploys the Next.js app via its built-in GitHub integration:
 - Triggers on every push to `main` branch
-- No manual configuration needed
 - Manages its own build and deployment
 - View deployment status at: https://vercel.com/dashboard
 
 **Environment variables** are managed via Vercel Dashboard.
 
+## Operational Notes
+
+Most diagnostic and troubleshooting tasks (container logs, VPN status, soft/hard restarts, simulate blocks) are handled through the `/admin/metrics` UI via the manager service. GitHub Actions are only needed for full deployments and disk cleanup.
+
 ## Setup Instructions
 
 ### Step 1: Add GitHub Secrets
 
-Go to your GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+Go to your GitHub repo > Settings > Secrets and variables > Actions > New repository secret
 
 Add each of these:
 
@@ -61,15 +62,9 @@ EC2_SSH_KEY=paste_your_private_key_here
 
 All sensitive credentials live in AWS Secrets Manager, not in GitHub or `.env` files. The EC2 instance uses IAM roles to fetch them at deployment time.
 
-### Step 3: Test Workflows
+### Step 3: Deploy
 
-**Test ytdl deployment:**
-```bash
-# Push a change to apps/ytdl/
-git push
-```
-
-Or manually trigger from the GitHub Actions tab.
+Trigger the `Deploy ytdl Service` workflow manually from the GitHub Actions tab.
 
 ## Troubleshooting
 
@@ -82,10 +77,10 @@ Or manually trigger from the GitHub Actions tab.
 - Check EC2_SSH_KEY is the complete private key with headers/footers
 - Ensure EC2 security group allows SSH from GitHub Actions IPs
 
-### Changes not deploying
-- Check workflow triggers in `.yml` files
-- Verify changes are in the correct paths (`apps/ytdl/` or `apps/app/`)
-- Check GitHub Actions tab for workflow status
+### VPN issues after deployment
+- Use the `/admin/metrics` page to check worker status
+- Use soft/hard restart buttons on individual workers
+- If all workers are down, try triggering the deploy workflow again
 
 ---
 

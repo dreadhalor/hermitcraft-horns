@@ -31,21 +31,22 @@ The primary Next.js application that users interact with.
 Check out `apps/app/README.md` for detailed setup instructions, environment variables, and troubleshooting.
 
 #### 2. **Audio Processing Microservice** (`apps/ytdl`)
-A Node.js/Express server that handles YouTube audio extraction and processing.
+A multi-worker Node.js/Express service that handles YouTube audio extraction and processing with VPN redundancy.
 
 - **Name Origin**: Originally used `ytdl` package, switched to `yt-dlp` but kept the name
 - **Stack**: Express.js + Bull (Redis-backed job queue) + FFmpeg
-- **Deployment**: AWS EC2 instance
-- **VPN**: Runs behind Gluetun (OpenVPN) via `network_mode` to transparently route all traffic through the VPN
+- **Deployment**: AWS EC2 instance (manual deploy via GitHub Actions)
+- **VPN**: 3 parallel Gluetun containers (New York, Chicago, Los Angeles) with automatic failover
 - **Access**: Exposed via Application Load Balancer with SSL at `ytdl.hermitcraft-horns.com`
 
 **What it does:**
-- Downloads audio from YouTube videos
+- Downloads audio from YouTube videos through VPN-tunneled workers
 - Trims clips to specified timestamps
 - Returns processed audio buffers to the frontend
-- Handles multiple concurrent clip generation jobs
+- Automatically fails over to another worker if one gets blocked by YouTube
+- Provides a real-time admin dashboard at `/admin/metrics` for monitoring and control
 
-The VPN setup uses Docker's `network_mode: "service:gluetun"` so all outbound traffic (yt-dlp, ffmpeg, curl) transparently routes through the VPN tunnel.
+The architecture uses a **manager** (always-reachable proxy), a **primary API** (job queue orchestration), 3 **gluetun/worker pairs** (each on a different VPN city via `network_mode`), and **Redis** for the job queue.
 
 ### Supporting Infrastructure
 
@@ -66,6 +67,9 @@ The VPN setup uses Docker's `network_mode: "service:gluetun"` so all outbound tr
 
 ## Recent Updates
 
+### Multi-Worker VPN Architecture
+Expanded from a single VPN tunnel to 3 parallel gluetun/worker pairs (New York, Chicago, Los Angeles) with automatic failover. If one worker's IP gets blocked by YouTube, the job is transparently passed to the next worker. A dedicated manager service provides a real-time admin dashboard at `/admin/metrics` with container control (restart, stop, logs), download stats, and simulate-block testing.
+
 ### AWS Secrets Manager Integration
 Migrated all sensitive credentials (API keys, database URLs, VPN credentials) from environment files to AWS Secrets Manager. The EC2 instance uses IAM roles to securely fetch secrets at deployment time, eliminating the need for `.env` files in production.
 
@@ -75,9 +79,6 @@ Replaced complex progress tracking with a clean, simple loading overlay featurin
 - 18 randomized Hermitcraft-themed messages that cycle without repeating
 - Elapsed time counter
 - No fake progress bars - just honest "generating your horn..." feedback
-
-### VPN Integration for YouTube Downloads
-YouTube blocks datacenter IP addresses, causing clip generation to fail. The ytdl service now runs behind Gluetun using `network_mode: "service:gluetun"`, which transparently routes all traffic (yt-dlp metadata requests, ffmpeg stream downloads, etc.) through a NordVPN tunnel. No per-application proxy configuration needed.
 
 ### Error Tracking & Monitoring
 Integrated Sentry across the entire Next.js app (client, server, and edge runtimes) to catch and report errors automatically. When clip generation fails, users get friendly notifications and I get detailed error reports with context about what went wrong.
@@ -134,9 +135,10 @@ hermitcraft-horns/
 
 ## Key Features
 
-**Smart Error Handling**
+**Smart Error Handling & Redundancy**
 - 3-minute timeout on clip generation
-- Automatic retry logic for transient failures
+- Automatic failover across 3 VPN workers if one gets blocked
+- Round-robin load distribution across workers
 - User-friendly error messages with admin notifications
 - Detailed error tracking in Sentry with custom tags
 
@@ -164,13 +166,13 @@ hermitcraft-horns/
 - Environment variables managed in Vercel dashboard
 
 **Backend (AWS EC2)**
-- Docker Compose orchestration with Gluetun VPN
-- Redis for job queue persistence
+- Multi-worker Docker Compose orchestration (3 gluetun + 3 workers + manager + ytdl + redis)
+- Automatic failover across VPN workers
 - Application Load Balancer for SSL and subdomain routing
 - AWS Secrets Manager for secure credential management
 - IAM roles for instance-level secret access
-- Automated health checks and container restarts
-- GitHub Actions for CI/CD deployment
+- Real-time admin dashboard at `/admin/metrics`
+- Manual deployment via GitHub Actions
 
 ## Contributing
 
