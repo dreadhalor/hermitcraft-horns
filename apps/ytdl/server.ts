@@ -16,7 +16,14 @@ import path from 'path';
 import Queue from 'bull';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { pgTable, uuid, text, numeric, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  numeric,
+  timestamp,
+  index,
+} from 'drizzle-orm/pg-core';
 import { eq, desc } from 'drizzle-orm';
 import { VpnDownloadManager, DownloadResult } from './vpn-download-manager';
 import { extractVpnLogData, formatVpnSummary } from './vpn-logger';
@@ -49,7 +56,9 @@ const generationLogs = pgTable(
     userIdIndex: index('generation_logs_userId_idx').on(logs.userId),
     createdAtIndex: index('generation_logs_createdAt_idx').on(logs.createdAt),
     statusIndex: index('generation_logs_status_idx').on(logs.status),
-    vpnSuccessIndex: index('generation_logs_vpn_success_idx').on(logs.vpnProxySuccess),
+    vpnSuccessIndex: index('generation_logs_vpn_success_idx').on(
+      logs.vpnProxySuccess,
+    ),
   }),
 );
 
@@ -65,7 +74,10 @@ if (process.env.DATABASE_URL) {
 
 // Initialize VPN Download Manager
 // In network_mode setup, VPN_PROXIES is empty -- all traffic routes through gluetun automatically
-const VPN_PROXIES = process.env.VPN_PROXIES?.split(',').map(p => p.trim()).filter(Boolean) || [];
+const VPN_PROXIES =
+  process.env.VPN_PROXIES?.split(',')
+    .map((p) => p.trim())
+    .filter(Boolean) || [];
 const GLUETUN_CONTAINER = process.env.GLUETUN_CONTAINER || 'gluetun-local';
 const downloadManager = new VpnDownloadManager(VPN_PROXIES);
 
@@ -73,14 +85,16 @@ const downloadManager = new VpnDownloadManager(VPN_PROXIES);
  * Check VPN connection status via gluetun's control server.
  * With network_mode: "service:gluetun", the control server is at localhost:8000.
  */
-async function checkVpnConnectionStatus(): Promise<Array<{
-  proxy: string;
-  connected: boolean;
-  ip: string | null;
-  location: string | null;
-  responseTimeMs: number | null;
-  error?: string;
-}>> {
+async function checkVpnConnectionStatus(): Promise<
+  Array<{
+    proxy: string;
+    connected: boolean;
+    ip: string | null;
+    location: string | null;
+    responseTimeMs: number | null;
+    error?: string;
+  }>
+> {
   // Network-mode: gluetun control server is at localhost:8000
   const startTime = Date.now();
   try {
@@ -97,32 +111,38 @@ async function checkVpnConnectionStatus(): Promise<Array<{
             .replace(/, ,/g, ',')
             .replace(/,$/, '')
         : null;
-      return [{
-        proxy: `network-level (${GLUETUN_CONTAINER})`,
-        connected: !!ip,
-        ip,
-        location,
-        responseTimeMs: Date.now() - startTime,
-      }];
+      return [
+        {
+          proxy: `network-level (${GLUETUN_CONTAINER})`,
+          connected: !!ip,
+          ip,
+          location,
+          responseTimeMs: Date.now() - startTime,
+        },
+      ];
     }
 
-    return [{
-      proxy: `network-level (${GLUETUN_CONTAINER})`,
-      connected: false,
-      ip: null,
-      location: null,
-      responseTimeMs: Date.now() - startTime,
-      error: `Control server returned ${response.status}`,
-    }];
+    return [
+      {
+        proxy: `network-level (${GLUETUN_CONTAINER})`,
+        connected: false,
+        ip: null,
+        location: null,
+        responseTimeMs: Date.now() - startTime,
+        error: `Control server returned ${response.status}`,
+      },
+    ];
   } catch (error) {
-    return [{
-      proxy: `network-level (${GLUETUN_CONTAINER})`,
-      connected: false,
-      ip: null,
-      location: null,
-      responseTimeMs: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }];
+    return [
+      {
+        proxy: `network-level (${GLUETUN_CONTAINER})`,
+        connected: false,
+        ip: null,
+        location: null,
+        responseTimeMs: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+    ];
   }
 }
 
@@ -143,7 +163,7 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -152,83 +172,104 @@ app.use(
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 // CRITICAL: Log EVERY request FIRST, before auth, before anything
-app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  // Only log tRPC requests (skip health checks, static files, etc.)
-  if (!req.path.startsWith('/trpc/')) {
-    return next();
-  }
-
-  console.log('📨 INCOMING REQUEST:');
-  console.log('   Path:', req.path);
-  console.log('   Method:', req.method);
-  console.log('   Origin:', req.headers['origin'] || 'none');
-  console.log('   User-Agent:', req.headers['user-agent'] || 'none');
-  console.log('   Body:', JSON.stringify(req.body).substring(0, 500)); // Limit body log length
-
-  // Try to extract tRPC input and log to database immediately
-  if (db && req.path.includes('/enqueueTask')) {
-    try {
-      let requestData: any = {};
-      
-      // The Next.js app sends a raw JSON body (not standard tRPC format)
-      // Handle both direct JSON and tRPC formatted bodies
-      if (req.body) {
-        // Check if it's tRPC format with "json" wrapper
-        if (req.body.json) {
-          requestData = req.body.json;
-        }
-        // Check if it's tRPC batch format
-        else if (req.body['0']?.json) {
-          requestData = req.body['0'].json;
-        }
-        // Otherwise it's direct JSON
-        else {
-          requestData = req.body;
-        }
-      }
-
-      // Extract fields - they should be at the top level since Next.js sends raw JSON
-      const videoUrl = requestData.videoUrl || 'N/A';
-      const start = requestData.start || requestData.startTime || 0;
-      const end = requestData.end || requestData.endTime || 0;
-      const userId = requestData.userId || null;
-      const source = requestData.source || 'unknown';
-
-      // Log to database IMMEDIATELY with 'received' status
-      const [log] = await db.insert(generationLogs).values({
-        userId,
-        source,
-        videoUrl,
-        start: start.toString(),
-        end: end.toString(),
-        status: 'received', // New status to indicate we received the request
-      }).returning();
-
-      // Store log ID in request object for later updates
-      (req as any).logId = log?.id;
-      
-      console.log(`✅ Logged request to database (logId: ${log?.id}, source: ${source})`);
-    } catch (error) {
-      console.error('❌ Error logging request to database:', error);
-      console.error('   Error details:', error);
-      console.error('   Request body:', JSON.stringify(req.body).substring(0, 500));
-      // Don't fail the request if logging fails - continue anyway
+app.use(
+  async (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    // Only log tRPC requests (skip health checks, static files, etc.)
+    if (!req.path.startsWith('/trpc/')) {
+      return next();
     }
-  }
 
-  next();
-});
+    console.log('📨 INCOMING REQUEST:');
+    console.log('   Path:', req.path);
+    console.log('   Method:', req.method);
+    console.log('   Origin:', req.headers['origin'] || 'none');
+    console.log('   User-Agent:', req.headers['user-agent'] || 'none');
+    console.log('   Body:', JSON.stringify(req.body).substring(0, 500)); // Limit body log length
+
+    // Try to extract tRPC input and log to database immediately
+    if (db && req.path.includes('/enqueueTask')) {
+      try {
+        let requestData: any = {};
+
+        // The Next.js app sends a raw JSON body (not standard tRPC format)
+        // Handle both direct JSON and tRPC formatted bodies
+        if (req.body) {
+          // Check if it's tRPC format with "json" wrapper
+          if (req.body.json) {
+            requestData = req.body.json;
+          }
+          // Check if it's tRPC batch format
+          else if (req.body['0']?.json) {
+            requestData = req.body['0'].json;
+          }
+          // Otherwise it's direct JSON
+          else {
+            requestData = req.body;
+          }
+        }
+
+        // Extract fields - they should be at the top level since Next.js sends raw JSON
+        const videoUrl = requestData.videoUrl || 'N/A';
+        const start = requestData.start || requestData.startTime || 0;
+        const end = requestData.end || requestData.endTime || 0;
+        const userId = requestData.userId || null;
+        const source = requestData.source || 'unknown';
+
+        // Log to database IMMEDIATELY with 'received' status
+        const [log] = await db
+          .insert(generationLogs)
+          .values({
+            userId,
+            source,
+            videoUrl,
+            start: start.toString(),
+            end: end.toString(),
+            status: 'received', // New status to indicate we received the request
+          })
+          .returning();
+
+        // Store log ID in request object for later updates
+        (req as any).logId = log?.id;
+
+        console.log(
+          `✅ Logged request to database (logId: ${log?.id}, source: ${source})`,
+        );
+      } catch (error) {
+        console.error('❌ Error logging request to database:', error);
+        console.error('   Error details:', error);
+        console.error(
+          '   Request body:',
+          JSON.stringify(req.body).substring(0, 500),
+        );
+        // Don't fail the request if logging fails - continue anyway
+      }
+    }
+
+    next();
+  },
+);
 
 // API Key authentication middleware
-const authenticateApiKey = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const authenticateApiKey = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) => {
   const rawApiKey = req.headers['x-api-key'] || req.headers['authorization'];
-  const apiKey = typeof rawApiKey === 'string' 
-    ? (rawApiKey.startsWith('Bearer ') ? rawApiKey.replace('Bearer ', '') : rawApiKey)
-    : undefined;
+  const apiKey =
+    typeof rawApiKey === 'string'
+      ? rawApiKey.startsWith('Bearer ')
+        ? rawApiKey.replace('Bearer ', '')
+        : rawApiKey
+      : undefined;
   const validApiKey = process.env.YTDL_INTERNAL_API_KEY;
 
   // Log ALL incoming requests for debugging
@@ -237,34 +278,59 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
   console.log('   Method:', req.method);
   console.log('   API Key Provided:', !!apiKey);
   console.log('   API Key Length:', apiKey?.length || 0);
-  console.log('   API Key Preview:', apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'NONE');
-  console.log('   Valid Key Expected:', validApiKey ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}` : 'NOT SET');
+  console.log(
+    '   API Key Preview:',
+    apiKey
+      ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`
+      : 'NONE',
+  );
+  console.log(
+    '   Valid Key Expected:',
+    validApiKey
+      ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}`
+      : 'NOT SET',
+  );
   console.log('   Keys Match:', apiKey === validApiKey);
-  
-  const origin = Array.isArray(req.headers['origin']) ? req.headers['origin'][0] : req.headers['origin'];
-  const userAgent = Array.isArray(req.headers['user-agent']) ? req.headers['user-agent'][0] : req.headers['user-agent'];
-  
-  console.log('   Headers:', JSON.stringify({
-    'content-type': req.headers['content-type'],
-    'x-api-key': apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING',
-    'authorization': req.headers['authorization'] ? 'PROVIDED' : 'MISSING',
-    'origin': origin,
-    'user-agent': userAgent,
-  }));
+
+  const origin = Array.isArray(req.headers['origin'])
+    ? req.headers['origin'][0]
+    : req.headers['origin'];
+  const userAgent = Array.isArray(req.headers['user-agent'])
+    ? req.headers['user-agent'][0]
+    : req.headers['user-agent'];
+
+  console.log(
+    '   Headers:',
+    JSON.stringify({
+      'content-type': req.headers['content-type'],
+      'x-api-key': apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING',
+      authorization: req.headers['authorization'] ? 'PROVIDED' : 'MISSING',
+      origin: origin,
+      'user-agent': userAgent,
+    }),
+  );
 
   if (!validApiKey) {
-    console.warn('⚠️  YTDL_INTERNAL_API_KEY not set - running without authentication!');
+    console.warn(
+      '⚠️  YTDL_INTERNAL_API_KEY not set - running without authentication!',
+    );
     return next();
   }
 
   if (!apiKey || apiKey !== validApiKey) {
     console.error('❌ Authentication FAILED - Invalid or missing API key');
-    
+
     // Build detailed error message with full diagnostics
-    const providedKeyPreview = apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'NONE';
-    const expectedKeyPreview = validApiKey ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}` : 'NOT SET';
-    const origin = Array.isArray(req.headers['origin']) ? req.headers['origin'][0] : req.headers['origin'];
-    
+    const providedKeyPreview = apiKey
+      ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`
+      : 'NONE';
+    const expectedKeyPreview = validApiKey
+      ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}`
+      : 'NOT SET';
+    const origin = Array.isArray(req.headers['origin'])
+      ? req.headers['origin'][0]
+      : req.headers['origin'];
+
     const detailedError = [
       apiKey ? 'Auth failed: Invalid API key' : 'Auth failed: Missing API key',
       `Provided: ${providedKeyPreview} (len: ${apiKey?.length || 0})`,
@@ -273,29 +339,33 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
       `Path: ${req.path}`,
       `Method: ${req.method}`,
     ].join(' | ');
-    
+
     // Update existing log entry if available, otherwise create new one
     if (db) {
       try {
         const logId = (req as any).logId;
-        
+
         if (logId) {
           // Update existing log entry
-          await db.update(generationLogs)
+          await db
+            .update(generationLogs)
             .set({
               status: 'failed',
               errorMessage: detailedError,
               completedAt: new Date(),
             })
             .where(eq(generationLogs.id, logId));
-          console.log(`📝 Updated existing log with auth failure (logId: ${logId})`);
+          console.log(
+            `📝 Updated existing log with auth failure (logId: ${logId})`,
+          );
         } else {
           // Fallback: create new log entry
           let requestInfo: any = {};
           if (req.body) {
-            requestInfo = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+            requestInfo =
+              typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
           }
-          
+
           await db.insert(generationLogs).values({
             userId: requestInfo.userId || null,
             source: requestInfo.source || 'unknown',
@@ -312,8 +382,10 @@ const authenticateApiKey = async (req: express.Request, res: express.Response, n
         console.error('Error logging rejected request:', error);
       }
     }
-    
-    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
+
+    return res
+      .status(401)
+      .json({ error: 'Unauthorized: Invalid or missing API key' });
   }
 
   console.log('✅ Authentication PASSED');
@@ -377,7 +449,7 @@ const appRouter = t.router({
         end: z.number(),
         userId: z.string().optional(),
         source: z.enum(['web', 'cli']).default('cli'),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const { videoUrl, start, end, userId, source } = input;
@@ -392,20 +464,24 @@ const appRouter = t.router({
           try {
             if (logId) {
               // Update existing log
-              await db.update(generationLogs)
+              await db
+                .update(generationLogs)
                 .set({ status: 'initiated' })
                 .where(eq(generationLogs.id, logId));
               console.log(`📝 Updated log to 'initiated' (logId: ${logId})`);
             } else {
               // Fallback: create new log if somehow we don't have logId
-              const [log] = await db.insert(generationLogs).values({
-                userId: userId || null,
-                source,
-                videoUrl,
-                start: start.toString(),
-                end: end.toString(),
-                status: 'initiated',
-              }).returning();
+              const [log] = await db
+                .insert(generationLogs)
+                .values({
+                  userId: userId || null,
+                  source,
+                  videoUrl,
+                  start: start.toString(),
+                  end: end.toString(),
+                  status: 'initiated',
+                })
+                .returning();
               logId = log?.id;
               console.log(`📝 Created new log (logId: ${logId})`);
             }
@@ -416,13 +492,20 @@ const appRouter = t.router({
         }
 
         console.log('Enqueueing task...');
-        const taskId = await videoProcessingQueue.add({ videoUrl, start, end, userId: userId || null, source });
+        const taskId = await videoProcessingQueue.add({
+          videoUrl,
+          start,
+          end,
+          userId: userId || null,
+          source,
+        });
         console.log('Task enqueued with taskId:', taskId);
 
         // Update log with taskId
         if (db && logId) {
           try {
-            await db.update(generationLogs)
+            await db
+              .update(generationLogs)
               .set({ taskId: String(taskId.id) })
               .where(eq(generationLogs.id, logId));
           } catch (error) {
@@ -433,14 +516,16 @@ const appRouter = t.router({
         return { taskId: taskId.id };
       } catch (error) {
         console.error('Error enqueuing task:', error);
-        
+
         // Update log with failure
         if (db && logId) {
           try {
-            await db.update(generationLogs)
-              .set({ 
+            await db
+              .update(generationLogs)
+              .set({
                 status: 'failed',
-                errorMessage: error instanceof Error ? error.message : String(error),
+                errorMessage:
+                  error instanceof Error ? error.message : String(error),
                 completedAt: new Date(),
               })
               .where(eq(generationLogs.id, logId));
@@ -448,7 +533,7 @@ const appRouter = t.router({
             console.error('Error updating log with failure:', logError);
           }
         }
-        
+
         throw new Error('Failed to enqueue task');
       }
     }),
@@ -465,7 +550,7 @@ const appRouter = t.router({
       const status = await job.getState();
       const progressValue = await job.progress();
       const progress = typeof progressValue === 'number' ? progressValue : 0;
-      
+
       console.log('Task status:', status, 'Progress:', progress);
 
       if (status === 'completed') {
@@ -481,13 +566,13 @@ const appRouter = t.router({
 
       return { status, progress };
     }),
-  
+
   vpnStatus: t.procedure.query(() => {
     const stats = downloadManager.getStats();
     return {
       enabled: stats.length > 0,
       mode: stats.length > 0 ? 'multi-vpn' : 'single-vpn',
-      vpns: stats.map(stat => ({
+      vpns: stats.map((stat) => ({
         proxy: stat.proxy,
         successRate: Math.round(stat.successRate * 100),
         totalAttempts: stat.total,
@@ -512,7 +597,7 @@ app.use(
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext,
-  })
+  }),
 );
 
 // ============================================================================
@@ -522,15 +607,15 @@ app.use(
 app.post('/admin/clear-queue', async (req, res) => {
   try {
     console.log('🗑️  Clearing all jobs from queue...');
-    
+
     // Clear all job states
     await videoProcessingQueue.empty(); // Remove waiting jobs
     await videoProcessingQueue.clean(0, 'completed'); // Remove completed jobs
     await videoProcessingQueue.clean(0, 'failed'); // Remove failed jobs
     await videoProcessingQueue.clean(0, 'delayed'); // Remove delayed jobs
-    
+
     console.log('✅ Queue cleared successfully');
-    
+
     res.json({
       success: true,
       message: 'Queue cleared successfully',
@@ -555,7 +640,9 @@ app.post('/admin/vpn/restart', async (req, res) => {
 
     try {
       await restartDockerContainer(GLUETUN_CONTAINER);
-      console.log(`   ✅ Container ${GLUETUN_CONTAINER} restarted successfully`);
+      console.log(
+        `   ✅ Container ${GLUETUN_CONTAINER} restarted successfully`,
+      );
       return res.json({
         success: true,
         message: `Container ${GLUETUN_CONTAINER} restarted. VPN will reconnect with a new server in 15-45 seconds.`,
@@ -584,12 +671,14 @@ app.post('/admin/vpn/restart', async (req, res) => {
       signal: AbortSignal.timeout(5000),
     });
     if (!stopRes.ok) {
-      throw new Error(`Failed to stop VPN: ${stopRes.status} ${await stopRes.text()}`);
+      throw new Error(
+        `Failed to stop VPN: ${stopRes.status} ${await stopRes.text()}`,
+      );
     }
     console.log(`   ⏹️  VPN stopped`);
 
     // Wait for clean shutdown
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     // Start VPN
     const startRes = await fetch(`${controlBase}/v1/openvpn/status`, {
@@ -599,7 +688,9 @@ app.post('/admin/vpn/restart', async (req, res) => {
       signal: AbortSignal.timeout(5000),
     });
     if (!startRes.ok) {
-      throw new Error(`Failed to start VPN: ${startRes.status} ${await startRes.text()}`);
+      throw new Error(
+        `Failed to start VPN: ${startRes.status} ${await startRes.text()}`,
+      );
     }
     console.log(`   ▶️  VPN started`);
 
@@ -620,7 +711,10 @@ app.post('/admin/vpn/restart', async (req, res) => {
 // VPN logs endpoint - fetches gluetun container logs via Docker socket API
 app.get('/admin/vpn/logs', async (req, res) => {
   const { tail = '100' } = req.query;
-  const tailLines = Math.min(Math.max(parseInt(tail as string) || 100, 10), 500);
+  const tailLines = Math.min(
+    Math.max(parseInt(tail as string) || 100, 10),
+    500,
+  );
 
   try {
     const logs = await fetchDockerLogs(GLUETUN_CONTAINER, tailLines);
@@ -654,8 +748,12 @@ function fetchDockerLogs(containerName: string, tail: number): Promise<string> {
     const req = http.request(options, (res) => {
       if (res.statusCode !== 200) {
         let body = '';
-        res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
-        res.on('end', () => reject(new Error(`Docker API returned ${res.statusCode}: ${body}`)));
+        res.on('data', (chunk: Buffer) => {
+          body += chunk.toString();
+        });
+        res.on('end', () =>
+          reject(new Error(`Docker API returned ${res.statusCode}: ${body}`)),
+        );
         return;
       }
 
@@ -671,7 +769,9 @@ function fetchDockerLogs(containerName: string, tail: number): Promise<string> {
         while (offset + 8 <= data.length) {
           const size = data.readUInt32BE(offset + 4);
           if (offset + 8 + size > data.length) break;
-          output += data.subarray(offset + 8, offset + 8 + size).toString('utf8');
+          output += data
+            .subarray(offset + 8, offset + 8 + size)
+            .toString('utf8');
           offset += 8 + size;
         }
 
@@ -681,7 +781,11 @@ function fetchDockerLogs(containerName: string, tail: number): Promise<string> {
     });
 
     req.on('error', (error) => {
-      reject(new Error(`Docker socket error: ${error.message}. Is /var/run/docker.sock mounted?`));
+      reject(
+        new Error(
+          `Docker socket error: ${error.message}. Is /var/run/docker.sock mounted?`,
+        ),
+      );
     });
     req.end();
   });
@@ -692,7 +796,10 @@ function fetchDockerLogs(containerName: string, tail: number): Promise<string> {
  * This is a "hard restart" that forces gluetun to go through its full startup
  * sequence, including fresh VPN server selection — reliably fixing AUTH_FAILED loops.
  */
-function restartDockerContainer(containerName: string, timeoutSeconds: number = 30): Promise<void> {
+function restartDockerContainer(
+  containerName: string,
+  timeoutSeconds: number = 30,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const options: http.RequestOptions = {
       socketPath: '/var/run/docker.sock',
@@ -702,7 +809,9 @@ function restartDockerContainer(containerName: string, timeoutSeconds: number = 
 
     const req = http.request(options, (res) => {
       let body = '';
-      res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      res.on('data', (chunk: Buffer) => {
+        body += chunk.toString();
+      });
       res.on('end', () => {
         if (res.statusCode === 204) {
           resolve();
@@ -713,7 +822,11 @@ function restartDockerContainer(containerName: string, timeoutSeconds: number = 
     });
 
     req.on('error', (error) => {
-      reject(new Error(`Docker socket error: ${error.message}. Is /var/run/docker.sock mounted?`));
+      reject(
+        new Error(
+          `Docker socket error: ${error.message}. Is /var/run/docker.sock mounted?`,
+        ),
+      );
     });
     req.end();
   });
@@ -730,12 +843,16 @@ app.get('/admin/docker/status', async (_req, res) => {
       };
       const req = http.request(options, (response) => {
         let body = '';
-        response.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        response.on('data', (chunk: Buffer) => {
+          body += chunk.toString();
+        });
         response.on('end', () => {
           if (response.statusCode === 200) {
             resolve(body);
           } else {
-            reject(new Error(`Docker API returned ${response.statusCode}: ${body}`));
+            reject(
+              new Error(`Docker API returned ${response.statusCode}: ${body}`),
+            );
           }
         });
       });
@@ -771,7 +888,9 @@ app.get('/admin/vpn/verify', async (_req, res) => {
 
   // 1. Check what IP our outbound traffic uses (should be VPN IP)
   try {
-    const outboundIp = execSync('curl -s --max-time 10 https://api.ipify.org', { encoding: 'utf8' }).trim();
+    const outboundIp = execSync('curl -s --max-time 10 https://api.ipify.org', {
+      encoding: 'utf8',
+    }).trim();
     results.outboundIp = outboundIp;
   } catch (e) {
     results.outboundIp = null;
@@ -799,7 +918,10 @@ app.get('/admin/vpn/verify', async (_req, res) => {
   }
 
   // 3. Compare: if both IPs match, traffic is correctly routed through VPN
-  const match = results.outboundIp && results.gluetunIp && results.outboundIp === results.gluetunIp;
+  const match =
+    results.outboundIp &&
+    results.gluetunIp &&
+    results.outboundIp === results.gluetunIp;
   results.vpnRoutingVerified = match;
   results.summary = match
     ? `✅ VPN routing confirmed! All traffic exits via ${results.outboundIp} (${results.gluetunCity || 'unknown'}, ${results.gluetunRegion || ''}, ${results.gluetunCountry || ''})`
@@ -822,14 +944,17 @@ app.post('/test/enqueue', async (req, res) => {
     let logId: string | undefined;
     if (db) {
       try {
-        const [log] = await db.insert(generationLogs).values({
-          userId: userId || null,
-          source: source || 'cli',
-          videoUrl,
-          start: String(start),
-          end: String(end),
-          status: 'initiated',
-        }).returning();
+        const [log] = await db
+          .insert(generationLogs)
+          .values({
+            userId: userId || null,
+            source: source || 'cli',
+            videoUrl,
+            start: String(start),
+            end: String(end),
+            status: 'initiated',
+          })
+          .returning();
         logId = log?.id;
         console.log(`📝 [/test/enqueue] Created DB log (logId: ${logId})`);
       } catch (dbError) {
@@ -837,22 +962,36 @@ app.post('/test/enqueue', async (req, res) => {
       }
     }
 
-    const job = await videoProcessingQueue.add({ videoUrl, start, end, userId: userId || null, source: source || 'cli' });
+    const job = await videoProcessingQueue.add({
+      videoUrl,
+      start,
+      end,
+      userId: userId || null,
+      source: source || 'cli',
+    });
 
     // Update log with taskId
     if (db && logId) {
       try {
-        await db.update(generationLogs)
+        await db
+          .update(generationLogs)
           .set({ taskId: String(job.id) })
           .where(eq(generationLogs.id, logId));
       } catch (dbError) {
-        console.error(`⚠️  [/test/enqueue] Failed to update DB log with taskId:`, dbError);
+        console.error(
+          `⚠️  [/test/enqueue] Failed to update DB log with taskId:`,
+          dbError,
+        );
       }
     }
 
     res.json({ success: true, taskId: String(job.id) });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    res
+      .status(500)
+      .json({
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
   }
 });
 
@@ -862,10 +1001,10 @@ app.get('/metrics', async (req, res) => {
     const vpnMetrics = metricsTracker.getAllVpnMetrics();
     const vpnSummary = metricsTracker.getSummary();
     const recentIpChanges = metricsTracker.getRecentIpChanges(20);
-    
+
     // Live VPN connection status
     const vpnConnectionStatus = await checkVpnConnectionStatus();
-    
+
     // Redis/Queue Metrics
     const queueStats = {
       waiting: await videoProcessingQueue.getWaitingCount(),
@@ -875,7 +1014,7 @@ app.get('/metrics', async (req, res) => {
       delayed: await videoProcessingQueue.getDelayedCount(),
       paused: await videoProcessingQueue.getPausedCount(),
     };
-    
+
     // Get active jobs (currently processing)
     const activeJobs = await videoProcessingQueue.getActive();
     const activeJobsDetails = await Promise.all(
@@ -887,9 +1026,9 @@ app.get('/metrics', async (req, res) => {
         attemptsMade: job.attemptsMade,
         timestamp: job.timestamp,
         processedOn: job.processedOn,
-      }))
+      })),
     );
-    
+
     // Get waiting jobs (in queue)
     const waitingJobs = await videoProcessingQueue.getWaiting();
     const waitingJobsDetails = waitingJobs.slice(0, 50).map((job) => ({
@@ -898,7 +1037,7 @@ app.get('/metrics', async (req, res) => {
       data: job.data,
       timestamp: job.timestamp,
     }));
-    
+
     // Get recent completed jobs
     const completedJobs = await videoProcessingQueue.getCompleted(0, 49);
     const completedJobsDetails = completedJobs.map((job) => ({
@@ -909,7 +1048,7 @@ app.get('/metrics', async (req, res) => {
       processedOn: job.processedOn,
       returnvalue: job.returnvalue,
     }));
-    
+
     // Get recent failed jobs
     const failedJobs = await videoProcessingQueue.getFailed(0, 49);
     const failedJobsDetails = failedJobs.map((job) => ({
@@ -920,7 +1059,7 @@ app.get('/metrics', async (req, res) => {
       finishedOn: job.finishedOn,
       attemptsMade: job.attemptsMade,
     }));
-    
+
     // Database Metrics - Recent Generation Logs
     let recentLogs: any[] = [];
     if (db) {
@@ -934,25 +1073,39 @@ app.get('/metrics', async (req, res) => {
         console.error('Failed to fetch recent logs from DB:', dbError);
       }
     }
-    
+
     // Combined Jobs List - All jobs with VPN attempts chronologically
     const allJobs = [
-      ...activeJobsDetails.map(job => ({ ...job, status: 'active' as const })),
-      ...waitingJobsDetails.map(job => ({ ...job, status: 'waiting' as const })),
-      ...completedJobsDetails.map(job => ({ ...job, status: 'completed' as const })),
-      ...failedJobsDetails.map(job => ({ ...job, status: 'failed' as const })),
+      ...activeJobsDetails.map((job) => ({
+        ...job,
+        status: 'active' as const,
+      })),
+      ...waitingJobsDetails.map((job) => ({
+        ...job,
+        status: 'waiting' as const,
+      })),
+      ...completedJobsDetails.map((job) => ({
+        ...job,
+        status: 'completed' as const,
+      })),
+      ...failedJobsDetails.map((job) => ({
+        ...job,
+        status: 'failed' as const,
+      })),
     ];
 
     // Enrich jobs with VPN attempt data
-    const enrichedJobs = allJobs.map(job => {
+    const enrichedJobs = allJobs.map((job) => {
       const taskId = String(job.id);
       const vpnAttempts = metricsTracker.getVpnAttemptsForTask(taskId);
       const jobAny = job as any;
-      
+
       // Derive rolled-up VPN summary fields
-      const vpnProxiesTried = [...new Set(vpnAttempts.map(a => a.proxy))];
-      const vpnProxiesFailed = [...new Set(vpnAttempts.filter(a => !a.success).map(a => a.proxy))];
-      const successfulAttempt = vpnAttempts.find(a => a.success);
+      const vpnProxiesTried = [...new Set(vpnAttempts.map((a) => a.proxy))];
+      const vpnProxiesFailed = [
+        ...new Set(vpnAttempts.filter((a) => !a.success).map((a) => a.proxy)),
+      ];
+      const successfulAttempt = vpnAttempts.find((a) => a.success);
 
       return {
         id: job.id,
@@ -964,14 +1117,18 @@ app.get('/metrics', async (req, res) => {
         endMs: job.data?.end || 0,
         status: job.status,
         errorMessage: jobAny.failedReason || null,
-        timestamp: jobAny.timestamp || jobAny.processedOn || jobAny.finishedOn || Date.now(),
+        timestamp:
+          jobAny.timestamp ||
+          jobAny.processedOn ||
+          jobAny.finishedOn ||
+          Date.now(),
         processedOn: jobAny.processedOn || null,
         finishedOn: jobAny.finishedOn || null,
         progress: jobAny.progress || 0,
         attemptsMade: jobAny.attemptsMade || 0,
         failedReason: jobAny.failedReason,
         // Detailed VPN attempt log
-        vpnAttempts: vpnAttempts.map(attempt => ({
+        vpnAttempts: vpnAttempts.map((attempt) => ({
           proxy: attempt.proxy,
           ip: attempt.ip || 'unknown',
           location: attempt.location || 'unknown',
@@ -986,13 +1143,15 @@ app.get('/metrics', async (req, res) => {
         vpnProxySuccess: successfulAttempt?.proxy || null,
         vpnIpAddress: successfulAttempt?.ip || null,
         vpnLocation: successfulAttempt?.location || null,
-        vpnSuccessful: vpnAttempts.some(a => a.success),
+        vpnSuccessful: vpnAttempts.some((a) => a.success),
       };
     });
 
     // Sort by timestamp (most recent first)
-    const sortedJobs = enrichedJobs.sort((a, b) => (b.timestamp as number) - (a.timestamp as number));
-    
+    const sortedJobs = enrichedJobs.sort(
+      (a, b) => (b.timestamp as number) - (a.timestamp as number),
+    );
+
     // System Metrics
     const systemMetrics = {
       uptime: process.uptime(),
@@ -1001,16 +1160,16 @@ app.get('/metrics', async (req, res) => {
       platform: process.platform,
       pid: process.pid,
     };
-    
+
     res.json({
       timestamp: new Date().toISOString(),
       system: systemMetrics,
       jobs: sortedJobs,
       vpnConnectionStatus,
-      
+
       vpn: {
         summary: vpnSummary,
-        proxies: vpnMetrics.map(m => ({
+        proxies: vpnMetrics.map((m) => ({
           proxy: m.proxy,
           currentIp: m.currentIp,
           currentLocation: m.currentLocation,
@@ -1020,19 +1179,27 @@ app.get('/metrics', async (req, res) => {
               requests: m.totalRequests,
               success: m.totalSuccess,
               failures: m.totalFailures,
-              successRate: m.totalRequests > 0 ? (m.totalSuccess / m.totalRequests * 100).toFixed(2) + '%' : 'N/A',
+              successRate:
+                m.totalRequests > 0
+                  ? ((m.totalSuccess / m.totalRequests) * 100).toFixed(2) + '%'
+                  : 'N/A',
             },
             currentIp: {
               requests: m.currentIpRequests,
               success: m.currentIpSuccess,
               failures: m.currentIpFailures,
-              successRate: m.currentIpRequests > 0 ? (m.currentIpSuccess / m.currentIpRequests * 100).toFixed(2) + '%' : 'N/A',
+              successRate:
+                m.currentIpRequests > 0
+                  ? ((m.currentIpSuccess / m.currentIpRequests) * 100).toFixed(
+                      2,
+                    ) + '%'
+                  : 'N/A',
             },
           },
           lastIpChange: m.lastIpChange,
           ipChangeCount: m.ipChanges.length,
           ipChanges: m.ipChanges,
-          ipHistory: m.ipHistory.map(h => ({
+          ipHistory: m.ipHistory.map((h) => ({
             ip: h.ip,
             location: h.location,
             firstSeen: h.firstSeen,
@@ -1040,13 +1207,16 @@ app.get('/metrics', async (req, res) => {
             requests: h.requestCount,
             success: h.successCount,
             failures: h.failureCount,
-            successRate: h.requestCount > 0 ? (h.successCount / h.requestCount * 100).toFixed(2) + '%' : 'N/A',
+            successRate:
+              h.requestCount > 0
+                ? ((h.successCount / h.requestCount) * 100).toFixed(2) + '%'
+                : 'N/A',
             recentRequests: h.requests.slice(-10), // Last 10 requests for this IP
           })),
         })),
         recentIpChanges,
       },
-      
+
       queue: {
         stats: queueStats,
         activeJobs: activeJobsDetails,
@@ -1054,10 +1224,10 @@ app.get('/metrics', async (req, res) => {
         recentCompleted: completedJobsDetails,
         recentFailed: failedJobsDetails,
       },
-      
+
       database: {
         connected: db !== null,
-        recentLogs: recentLogs.slice(0, 50).map(log => ({
+        recentLogs: recentLogs.slice(0, 50).map((log) => ({
           id: log.id,
           userId: log.userId,
           source: log.source,
@@ -1076,7 +1246,6 @@ app.get('/metrics', async (req, res) => {
         })),
       },
     });
-    
   } catch (error) {
     console.error('Error generating metrics:', error);
     res.status(500).json({
@@ -1106,7 +1275,7 @@ async function downloadAudioSlice(
   startMilliseconds: number,
   endMilliseconds: number,
   taskId?: string,
-  job?: any // Bull job for progress updates
+  job?: any, // Bull job for progress updates
 ): Promise<DownloadResult> {
   process.stdout.write(`[downloadAudioSlice] Called for taskId ${taskId}\n`);
   return await downloadManager.downloadAudio({
@@ -1130,24 +1299,30 @@ interface ValidJobData {
 }
 
 function validateJobData(data: any, jobId: string | number): ValidJobData {
-  process.stdout.write(`[VALIDATE] Job ${jobId} data: ${JSON.stringify(data)}\n`);
-  
+  process.stdout.write(
+    `[VALIDATE] Job ${jobId} data: ${JSON.stringify(data)}\n`,
+  );
+
   if (!data) {
     throw new Error(`Job ${jobId}: data is null or undefined`);
   }
-  
+
   if (!data.videoUrl || typeof data.videoUrl !== 'string') {
-    throw new Error(`Job ${jobId}: Missing or invalid videoUrl (got: ${typeof data.videoUrl})`);
+    throw new Error(
+      `Job ${jobId}: Missing or invalid videoUrl (got: ${typeof data.videoUrl})`,
+    );
   }
-  
+
   if (typeof data.start !== 'number' || data.start < 0) {
     throw new Error(`Job ${jobId}: Invalid start time (got: ${data.start})`);
   }
-  
+
   if (typeof data.end !== 'number' || data.end <= data.start) {
-    throw new Error(`Job ${jobId}: Invalid end time (got: ${data.end}, start: ${data.start})`);
+    throw new Error(
+      `Job ${jobId}: Invalid end time (got: ${data.end}, start: ${data.start})`,
+    );
   }
-  
+
   process.stdout.write(`[VALIDATE] ✅ Job ${jobId} data is valid\n`);
   return { videoUrl: data.videoUrl, start: data.start, end: data.end };
 }
@@ -1155,25 +1330,31 @@ function validateJobData(data: any, jobId: string | number): ValidJobData {
 console.log('🔧 Registering queue processor...');
 const processor = videoProcessingQueue.process(async (job) => {
   // Force immediate log flushing
-  process.stdout.write(`\n🎬 [START] Processing job ${job.id} at ${new Date().toISOString()}\n`);
-  
+  process.stdout.write(
+    `\n🎬 [START] Processing job ${job.id} at ${new Date().toISOString()}\n`,
+  );
+
   let validData: ValidJobData;
   let taskId: string;
-  
+
   // Stage 1: Validate job data
   try {
     validData = validateJobData(job.data, job.id);
     taskId = String(job.id);
-    
+
     process.stdout.write(`   Video: ${validData.videoUrl}\n`);
-    process.stdout.write(`   Range: ${validData.start}ms - ${validData.end}ms\n`);
+    process.stdout.write(
+      `   Range: ${validData.start}ms - ${validData.end}ms\n`,
+    );
   } catch (validationError) {
-    process.stdout.write(`❌ [VALIDATION ERROR] Job ${job.id}: ${validationError}\n`);
+    process.stdout.write(
+      `❌ [VALIDATION ERROR] Job ${job.id}: ${validationError}\n`,
+    );
     throw validationError;
   }
-  
+
   const { videoUrl, start, end } = validData;
-  
+
   // Stage 2: Update database status
   if (db) {
     try {
@@ -1181,32 +1362,44 @@ const processor = videoProcessingQueue.process(async (job) => {
         .update(generationLogs)
         .set({ status: 'active' })
         .where(eq(generationLogs.taskId, taskId));
-      process.stdout.write(`📝 [DB] Updated log to active (taskId: ${taskId})\n`);
+      process.stdout.write(
+        `📝 [DB] Updated log to active (taskId: ${taskId})\n`,
+      );
     } catch (dbError) {
       process.stdout.write(`⚠️  [DB ERROR] Failed to update log: ${dbError}\n`);
       // Don't fail the job if logging fails
     }
   }
-  
+
   // Stage 3: Download with VPN retry
   let downloadResult: DownloadResult;
   try {
     process.stdout.write(`   [CALLING] downloadAudioSlice...\n`);
-    downloadResult = await downloadAudioSlice(videoUrl, start, end, taskId, job);
-    process.stdout.write(`   [RETURNED] downloadAudioSlice completed successfully\n`);
+    downloadResult = await downloadAudioSlice(
+      videoUrl,
+      start,
+      end,
+      taskId,
+      job,
+    );
+    process.stdout.write(
+      `   [RETURNED] downloadAudioSlice completed successfully\n`,
+    );
   } catch (downloadError) {
-    process.stdout.write(`❌ [DOWNLOAD ERROR] Job ${job.id}: ${downloadError}\n`);
+    process.stdout.write(
+      `❌ [DOWNLOAD ERROR] Job ${job.id}: ${downloadError}\n`,
+    );
     if (downloadError instanceof Error) {
       process.stdout.write(`   Stack: ${downloadError.stack}\n`);
     }
     throw downloadError;
   }
-  
+
   // Stage 4: Log results
   try {
     console.log(formatVpnSummary(downloadResult));
     const vpnData = extractVpnLogData(downloadResult);
-    
+
     // Stage 5: Update database with completion
     if (db) {
       try {
@@ -1223,17 +1416,27 @@ const processor = videoProcessingQueue.process(async (job) => {
             vpnLocation: vpnData.vpnLocation,
           })
           .where(eq(generationLogs.taskId, taskId));
-        process.stdout.write(`✅ [DB] Updated log to completed (taskId: ${taskId})\n`);
-        process.stdout.write(`   VPN: ${vpnData.vpnProxySuccess || 'none'} (${vpnData.vpnLocation || vpnData.vpnIpAddress || 'unknown'})\n`);
-        process.stdout.write(`   Attempts: ${vpnData.vpnAttempts} (${vpnData.vpnProxiesFailed.length} failed)\n`);
+        process.stdout.write(
+          `✅ [DB] Updated log to completed (taskId: ${taskId})\n`,
+        );
+        process.stdout.write(
+          `   VPN: ${vpnData.vpnProxySuccess || 'none'} (${vpnData.vpnLocation || vpnData.vpnIpAddress || 'unknown'})\n`,
+        );
+        process.stdout.write(
+          `   Attempts: ${vpnData.vpnAttempts} (${vpnData.vpnProxiesFailed.length} failed)\n`,
+        );
       } catch (dbError) {
-        process.stdout.write(`⚠️  [DB ERROR] Failed to update completion log: ${dbError}\n`);
+        process.stdout.write(
+          `⚠️  [DB ERROR] Failed to update completion log: ${dbError}\n`,
+        );
       }
     }
-    
+
     return downloadResult.filename;
   } catch (loggingError) {
-    process.stdout.write(`⚠️  [LOGGING ERROR] Job ${job.id}: ${loggingError}\n`);
+    process.stdout.write(
+      `⚠️  [LOGGING ERROR] Job ${job.id}: ${loggingError}\n`,
+    );
     // Still return the result even if logging fails
     return downloadResult.filename;
   }
@@ -1249,7 +1452,7 @@ processor.catch((error: Error) => {
 videoProcessingQueue.on('failed', async (job, err) => {
   const taskId = job ? String(job.id) : 'unknown';
   process.stdout.write(`❌ [FAILED EVENT] Job ${taskId}: ${err.message}\n`);
-  
+
   // Update log to failed
   if (db && job) {
     try {
@@ -1261,9 +1464,13 @@ videoProcessingQueue.on('failed', async (job, err) => {
           completedAt: new Date(),
         })
         .where(eq(generationLogs.taskId, taskId));
-      process.stdout.write(`❌ [DB] Updated log to failed (taskId: ${taskId})\n`);
+      process.stdout.write(
+        `❌ [DB] Updated log to failed (taskId: ${taskId})\n`,
+      );
     } catch (logError) {
-      process.stdout.write(`⚠️  [DB ERROR] Failed to update failure log: ${logError}\n`);
+      process.stdout.write(
+        `⚠️  [DB ERROR] Failed to update failure log: ${logError}\n`,
+      );
     }
   }
 });
@@ -1274,9 +1481,13 @@ const port = Number.parseInt(process.env.PORT || '3001');
 app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${port}`);
   if (process.env.YTDL_INTERNAL_API_KEY) {
-    console.log(`✅ API Key configured: ${process.env.YTDL_INTERNAL_API_KEY.substring(0, 8)}***`);
+    console.log(
+      `✅ API Key configured: ${process.env.YTDL_INTERNAL_API_KEY.substring(0, 8)}***`,
+    );
   } else {
-    console.warn('⚠️  YTDL_INTERNAL_API_KEY not set - running without authentication!');
+    console.warn(
+      '⚠️  YTDL_INTERNAL_API_KEY not set - running without authentication!',
+    );
   }
   if (db) {
     console.log('✅ Database logging enabled');
