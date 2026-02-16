@@ -532,7 +532,7 @@ export default function MetricsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full max-w-full overflow-x-hidden p-3 sm:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Loading metrics...</div>
         </div>
@@ -568,7 +568,7 @@ export default function MetricsPage() {
     return (
       <Card key={cName} className={`border-l-4 ${accentColor}`}>
         {/* Header */}
-        <CardHeader className="pb-3 pt-4 px-5">
+        <CardHeader className="pb-3 pt-4 px-3 sm:px-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className={`inline-block h-2.5 w-2.5 rounded-full ${statusDotColor}`} />
@@ -590,7 +590,7 @@ export default function MetricsPage() {
           <p className="text-xs text-muted-foreground mt-1 font-mono">{cName}{gs.worker ? ` / ${gs.worker}` : ''}</p>
         </CardHeader>
 
-        <CardContent className="px-5 pb-4 pt-0 space-y-3">
+        <CardContent className="px-3 sm:px-5 pb-4 pt-0 space-y-3">
           {/* Status badges -- compact inline row */}
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant={containerRunning ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
@@ -615,11 +615,11 @@ export default function MetricsPage() {
 
           {/* Current job indicator */}
           {workerStats?.details.currentJob && (
-            <div className="flex items-center gap-2 text-xs bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5">
-              <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5 overflow-hidden">
+              <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
               <span className="font-medium text-blue-700">Processing Job #{workerStats.details.currentJob.taskId}</span>
-              <span className="text-blue-500 truncate max-w-[200px] font-mono">{workerStats.details.currentJob.videoUrl}</span>
-              <span className="text-blue-400 ml-auto whitespace-nowrap">since {new Date(workerStats.details.currentJob.startedAt).toLocaleTimeString()}</span>
+              <span className="text-blue-500 truncate font-mono min-w-0">{workerStats.details.currentJob.videoUrl}</span>
+              <span className="text-blue-400 whitespace-nowrap">since {new Date(workerStats.details.currentJob.startedAt).toLocaleTimeString()}</span>
             </div>
           )}
 
@@ -711,7 +711,7 @@ export default function MetricsPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="w-full max-w-full overflow-x-hidden p-3 sm:p-6 space-y-4 sm:space-y-6">
         <Card className="border-red-500">
           <CardHeader>
             <CardTitle className="text-red-600">ytdl Service Unreachable</CardTitle>
@@ -730,7 +730,7 @@ export default function MetricsPage() {
           {gluetunError ? (
             <p className="text-sm text-red-600">Could not reach manager: {gluetunError}</p>
           ) : gluetunStatuses.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
               {gluetunStatuses.map(renderGluetunCard)}
             </div>
           ) : (
@@ -754,57 +754,57 @@ export default function MetricsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full max-w-full overflow-x-hidden p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">VPN & System Metrics</h1>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-sm text-muted-foreground">
-              Last updated: {new Date(metrics.timestamp).toLocaleTimeString()}
-            </span>
-            <Separator orientation="vertical" className="h-4" />
-            <div className="flex items-center gap-1.5">
-              {metrics.queue.stats.active > 0 && (
-                <Badge variant="secondary" className="text-[11px] font-normal text-blue-700 bg-blue-50">{metrics.queue.stats.active} active</Badge>
-              )}
-              {metrics.queue.stats.waiting > 0 && (
-                <Badge variant="secondary" className="text-[11px] font-normal text-yellow-700 bg-yellow-50">{metrics.queue.stats.waiting} waiting</Badge>
-              )}
-              <Badge variant="secondary" className="text-[11px] font-normal text-green-700 bg-green-50">{metrics.queue.stats.completed} completed</Badge>
-              {metrics.queue.stats.failed > 0 && (
-                <Badge variant="secondary" className="text-[11px] font-normal text-red-700 bg-red-50">{metrics.queue.stats.failed} failed</Badge>
-              )}
-            </div>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl sm:text-3xl font-bold">VPN & System Metrics</h1>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button
+              variant={autoRefresh ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs sm:text-sm sm:h-9"
+              onClick={() => setAutoRefresh(!autoRefresh)}
+            >
+              {autoRefresh ? 'Auto: ON' : 'Auto: OFF'}
+            </Button>
+            <Button onClick={fetchMetrics} variant="outline" size="sm" className="h-7 text-xs sm:text-sm sm:h-9">
+              Refresh
+            </Button>
+            <Button 
+              onClick={clearQueue} 
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground hover:text-red-600"
+              disabled={clearing}
+            >
+              {clearing ? '...' : 'Clear'}
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={autoRefresh ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
-            {autoRefresh ? 'Auto-refresh: ON' : 'Auto-refresh: OFF'}
-          </Button>
-          <Button onClick={fetchMetrics} variant="outline" size="sm">
-            Refresh Now
-          </Button>
-          <Separator orientation="vertical" className="h-6" />
-          <Button 
-            onClick={clearQueue} 
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground hover:text-red-600"
-            disabled={clearing}
-          >
-            {clearing ? 'Clearing...' : 'Clear Queue'}
-          </Button>
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+          <span className="text-xs sm:text-sm text-muted-foreground">
+            {new Date(metrics.timestamp).toLocaleTimeString()}
+          </span>
+          <Separator orientation="vertical" className="h-3 sm:h-4" />
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+            {metrics.queue.stats.active > 0 && (
+              <Badge variant="secondary" className="text-[10px] sm:text-[11px] font-normal text-blue-700 bg-blue-50">{metrics.queue.stats.active} active</Badge>
+            )}
+            {metrics.queue.stats.waiting > 0 && (
+              <Badge variant="secondary" className="text-[10px] sm:text-[11px] font-normal text-yellow-700 bg-yellow-50">{metrics.queue.stats.waiting} waiting</Badge>
+            )}
+            <Badge variant="secondary" className="text-[10px] sm:text-[11px] font-normal text-green-700 bg-green-50">{metrics.queue.stats.completed} completed</Badge>
+            {metrics.queue.stats.failed > 0 && (
+              <Badge variant="secondary" className="text-[10px] sm:text-[11px] font-normal text-red-700 bg-red-50">{metrics.queue.stats.failed} failed</Badge>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Infrastructure Status Cards */}
       {infraStatuses.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {infraStatuses.map((infra) => {
             const running = infra.containerState?.running === true;
             const statusColor = running ? 'border-l-green-500' : 'border-l-red-500';
@@ -814,7 +814,7 @@ export default function MetricsPage() {
 
             return (
               <Card key={infra.container} className={`border-l-4 ${statusColor}`}>
-                <CardHeader className="pb-2 pt-3 px-4">
+                <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className={`inline-block h-2 w-2 rounded-full ${dotColor}`} />
@@ -826,7 +826,7 @@ export default function MetricsPage() {
                   </div>
                   <p className="text-[11px] text-muted-foreground font-mono">{infra.container}</p>
                 </CardHeader>
-                <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
+                <CardContent className="px-3 sm:px-4 pb-3 pt-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                     {infra.containerState?.health && (
                       <Badge variant="secondary" className="text-[10px] font-normal">{infra.containerState.health}</Badge>
@@ -908,7 +908,7 @@ export default function MetricsPage() {
 
       {/* VPN Worker Status Cards -- always visible via manager */}
       {gluetunStatuses.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
           {gluetunStatuses.map(renderGluetunCard)}
         </div>
       )}
@@ -928,7 +928,7 @@ export default function MetricsPage() {
                     {metrics.jobs.map((job) => {
                       const singleSuccess = job.vpnAttempts.length === 1 && job.vpnAttempts[0]!.success;
                       return (
-                        <div key={job.id} className="border rounded-lg p-4 space-y-2">
+                        <div key={job.id} className="border rounded-lg p-3 sm:p-4 space-y-2">
                           {/* Job Header */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
