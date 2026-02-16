@@ -125,38 +125,43 @@ export default function AdminPage() {
   const total = stats?.total || 0;
 
   return (
-    <div className='container mx-auto w-full max-w-[1600px] p-6'>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className='text-3xl font-bold'>Admin Dashboard</h1>
+    <div className='w-full max-w-[1600px] mx-auto p-3 sm:p-6 overflow-x-hidden'>
+      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+        <h1 className='text-2xl sm:text-3xl font-bold'>Admin Dashboard</h1>
         <Button 
           onClick={() => router.push('/admin/metrics')}
           variant="outline"
+          size="sm"
         >
           🌐 VPN Metrics
         </Button>
       </div>
 
       {/* Time Range Filter */}
-      <div className='mb-6 flex gap-2'>
+      <div className='mb-4 sm:mb-6 flex flex-wrap gap-2'>
         <Button
+          size="sm"
           variant={timeRange === '24h' ? 'default' : 'outline'}
           onClick={() => setTimeRange('24h')}
         >
           Last 24h
         </Button>
         <Button
+          size="sm"
           variant={timeRange === '7d' ? 'default' : 'outline'}
           onClick={() => setTimeRange('7d')}
         >
           Last 7 days
         </Button>
         <Button
+          size="sm"
           variant={timeRange === '30d' ? 'default' : 'outline'}
           onClick={() => setTimeRange('30d')}
         >
           Last 30 days
         </Button>
         <Button
+          size="sm"
           variant={timeRange === 'all' ? 'default' : 'outline'}
           onClick={() => setTimeRange('all')}
         >
@@ -173,7 +178,7 @@ export default function AdminPage() {
           <p className='text-sm'>{statsError.message}</p>
         </div>
       ) : stats ? (
-        <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-4'>
+        <div className='mb-8 grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4'>
           <div className='rounded-lg border bg-card p-4 text-card-foreground shadow-sm'>
             <h3 className='text-sm font-medium text-muted-foreground'>
               Total Requests
@@ -231,33 +236,37 @@ export default function AdminPage() {
       )}
 
       {/* Recent Activity Chart */}
-      {stats && stats.recentActivity.length > 0 && (
-        <div className='mb-8'>
-          <h2 className='mb-4 text-xl font-semibold'>Recent Activity</h2>
-          <div className='rounded-lg border bg-card p-4 shadow-sm'>
-            <div className='space-y-2'>
-              {stats.recentActivity.map((day) => (
-                <div key={day.date} className='flex items-center gap-4'>
-                  <span className='w-24 text-sm text-muted-foreground'>
-                    {day.date}
-                  </span>
-                  <div className='flex-1'>
-                    <div
-                      className='h-6 rounded bg-blue-500'
-                      style={{
-                        width: `${(day.count / (stats.recentActivity[0]?.count || 1)) * 100}%`,
-                      }}
-                    />
+      {stats && stats.recentActivity.length > 0 && (() => {
+        const maxCount = Math.max(...stats.recentActivity.map((d) => d.count), 1);
+        return (
+          <div className='mb-8'>
+            <h2 className='mb-4 text-xl font-semibold'>Recent Activity</h2>
+            <div className='rounded-lg border bg-card p-3 sm:p-4 shadow-sm'>
+              <div className='space-y-2'>
+                {stats.recentActivity.map((day) => (
+                  <div key={day.date} className='flex items-center gap-2 sm:gap-4 min-w-0'>
+                    <span className='w-20 sm:w-24 shrink-0 text-xs sm:text-sm text-muted-foreground'>
+                      {day.date}
+                    </span>
+                    <div className='flex-1 min-w-0'>
+                      <div
+                        className='h-5 sm:h-6 rounded bg-blue-500'
+                        style={{
+                          width: `${(day.count / maxCount) * 100}%`,
+                          minWidth: '4px',
+                        }}
+                      />
+                    </div>
+                    <span className='w-8 sm:w-12 shrink-0 text-right font-mono text-xs sm:text-sm'>
+                      {day.count}
+                    </span>
                   </div>
-                  <span className='w-12 text-right font-mono text-sm'>
-                    {day.count}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Recent Requests Log */}
       <div>
@@ -269,14 +278,14 @@ export default function AdminPage() {
         ) : logs && logs.length > 0 ? (
           <div className='rounded-lg border bg-card shadow-sm'>
             <div className='overflow-x-auto'>
-              <table className='w-full table-fixed'>
+              <table className='w-full'>
                 <thead>
                   <tr className='border-b'>
-                    <th className='w-[180px] p-3 text-left'>Time</th>
-                    <th className='w-[150px] p-3 text-left'>User</th>
-                    <th className='w-[280px] p-3 text-left'>Video</th>
-                    <th className='w-[180px] p-3 text-left'>Duration</th>
-                    <th className='p-3 text-left'>Status</th>
+                    <th className='p-2 sm:p-3 text-left text-xs sm:text-sm'>Time</th>
+                    <th className='p-2 sm:p-3 text-left text-xs sm:text-sm'>User</th>
+                    <th className='p-2 sm:p-3 text-left text-xs sm:text-sm hidden sm:table-cell'>Video</th>
+                    <th className='p-2 sm:p-3 text-left text-xs sm:text-sm hidden md:table-cell'>Duration</th>
+                    <th className='p-2 sm:p-3 text-left text-xs sm:text-sm'>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,10 +304,10 @@ export default function AdminPage() {
                         key={log.id}
                         className='border-b last:border-0 hover:bg-muted/50'
                       >
-                        <td className='whitespace-nowrap p-3 text-sm'>
-                          {new Date(log.createdAt).toLocaleString()}
+                        <td className='whitespace-nowrap p-2 sm:p-3 text-xs sm:text-sm'>
+                          {new Date(log.createdAt).toLocaleDateString()}
                         </td>
-                        <td className='p-3 text-sm'>
+                        <td className='p-2 sm:p-3 text-xs sm:text-sm'>
                           {log.username || (
                             <span className='flex items-center gap-1 text-muted-foreground'>
                               <span className='rounded bg-muted px-1.5 py-0.5 text-xs font-medium'>
@@ -307,12 +316,12 @@ export default function AdminPage() {
                             </span>
                           )}
                         </td>
-                        <td className='p-3 text-sm'>
+                        <td className='p-2 sm:p-3 text-xs sm:text-sm hidden sm:table-cell'>
                           <a
                             href={log.videoUrl}
                             target='_blank'
                             rel='noopener noreferrer'
-                            className='block truncate text-blue-500 hover:underline'
+                            className='block truncate max-w-[200px] lg:max-w-[300px] text-blue-500 hover:underline'
                             title={log.videoUrl}
                           >
                             {log.videoUrl.replace(
@@ -321,11 +330,11 @@ export default function AdminPage() {
                             )}
                           </a>
                         </td>
-                        <td className='whitespace-nowrap p-3 text-sm'>
+                        <td className='whitespace-nowrap p-2 sm:p-3 text-xs sm:text-sm hidden md:table-cell'>
                           {parseFloat(log.start).toFixed(1)}s -{' '}
                           {parseFloat(log.end).toFixed(1)}s
                         </td>
-                        <td className='p-3'>
+                        <td className='p-2 sm:p-3'>
                           <div className='flex flex-col gap-1'>
                             <div className='flex items-center gap-2'>
                               <span
