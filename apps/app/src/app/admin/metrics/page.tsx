@@ -192,6 +192,8 @@ export default function MetricsPage() {
   const [simulateBlockStatus, setSimulateBlockStatus] = useState<Record<string, boolean>>({});
   const [togglingBlock, setTogglingBlock] = useState<string | null>(null);
   const [infraStatuses, setInfraStatuses] = useState<InfraStatus[]>([]);
+  const [infraLogs, setInfraLogs] = useState<Record<string, string | null>>({});
+  const [loadingInfraLogs, setLoadingInfraLogs] = useState<string | null>(null);
 
   // Build a lookup from taskId -> worker currently processing it
   const activeJobWorker = useMemo(() => {
@@ -258,6 +260,48 @@ export default function MetricsPage() {
       }
     } catch {
       // Silently fail
+    }
+  };
+
+  const toggleInfraLogs = async (container: string) => {
+    if (infraLogs[container] !== undefined) {
+      setInfraLogs(prev => {
+        const next = { ...prev };
+        delete next[container];
+        return next;
+      });
+      return;
+    }
+    setLoadingInfraLogs(container);
+    try {
+      const response = await fetch(`${ytdlUrl}manager/infrastructure/logs?tail=150&container=${container}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch logs');
+      setInfraLogs(prev => ({ ...prev, [container]: data.logs }));
+    } catch (err) {
+      setInfraLogs(prev => ({
+        ...prev,
+        [container]: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      }));
+    } finally {
+      setLoadingInfraLogs(null);
+    }
+  };
+
+  const refreshInfraLogs = async (container: string) => {
+    setLoadingInfraLogs(container);
+    try {
+      const response = await fetch(`${ytdlUrl}manager/infrastructure/logs?tail=150&container=${container}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch logs');
+      setInfraLogs(prev => ({ ...prev, [container]: data.logs }));
+    } catch (err) {
+      setInfraLogs(prev => ({
+        ...prev,
+        [container]: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      }));
+    } finally {
+      setLoadingInfraLogs(null);
     }
   };
 
@@ -449,17 +493,29 @@ export default function MetricsPage() {
     }
   };
 
-  const filterLogs = (raw: string): string => {
-    if (!filterLogNoise) return raw;
-    return raw
-      .split('\n')
-      .filter((line) => {
-        // Filter out gluetun auth warnings and routine 200 GET /v1/publicip/ip lines
-        if (line.includes('is unprotected by default, please set up authentication')) return false;
-        if (line.includes('200 GET /v1/publicip/ip')) return false;
-        return true;
-      })
-      .join('\n');
+  const filterLogs = (raw: string): { text: string; filtered: number } => {
+    const lines = raw.split('\n');
+    if (!filterLogNoise) return { text: raw, filtered: 0 };
+    const kept: string[] = [];
+    let filtered = 0;
+    for (const line of lines) {
+      // Gluetun: auth warning
+      if (line.includes('is unprotected by default, please set up authentication')) { filtered++; continue; }
+      // Gluetun: routine health-check polling
+      if (line.includes('200 GET /v1/publicip/ip')) { filtered++; continue; }
+      if (line.includes('200 GET /v1/vpn/status')) { filtered++; continue; }
+      // Redis: routine background save chatter
+      if (line.includes('changes in') && line.includes('seconds. Saving...')) { filtered++; continue; }
+      if (line.includes('Background saving started by pid')) { filtered++; continue; }
+      if (line.includes('Background saving terminated with success')) { filtered++; continue; }
+      if (line.includes('BGSAVE done')) { filtered++; continue; }
+      if (line.includes('DB saved on disk')) { filtered++; continue; }
+      if (line.includes('Fork CoW for RDB')) { filtered++; continue; }
+      // Redis: auth warning
+      if (line.includes('Redis does not require authentication')) { filtered++; continue; }
+      kept.push(line);
+    }
+    return { text: kept.join('\n'), filtered };
   };
 
   useEffect(() => {
@@ -623,25 +679,31 @@ export default function MetricsPage() {
           </div>
 
           {/* Log viewer */}
-          {vpnLogs[cName] !== undefined && (
-            <div className="border-t pt-3 mt-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-muted-foreground">Container Logs</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <input type="checkbox" checked={filterLogNoise} onChange={(e) => setFilterLogNoise(e.target.checked)} className="h-3 w-3 rounded" />
-                    <span className="text-[11px] text-muted-foreground">Filter noise</span>
-                  </label>
+          {vpnLogs[cName] !== undefined && (() => {
+            const { text, filtered } = filterLogs(vpnLogs[cName] || '');
+            return (
+              <div className="border-t pt-3 mt-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-muted-foreground">Container Logs</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input type="checkbox" checked={filterLogNoise} onChange={(e) => setFilterLogNoise(e.target.checked)} className="h-3 w-3 rounded" />
+                      <span className="text-[11px] text-muted-foreground">Filter noise</span>
+                    </label>
+                    {filterLogNoise && filtered > 0 && (
+                      <span className="text-[10px] text-muted-foreground/60">{filtered} line{filtered !== 1 ? 's' : ''} hidden</span>
+                    )}
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => refreshVpnLogs(cName)} disabled={loadingLogs === cName} className="text-xs h-6 px-2">
+                    {loadingLogs === cName ? '...' : 'Refresh'}
+                  </Button>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => refreshVpnLogs(cName)} disabled={loadingLogs === cName} className="text-xs h-6 px-2">
-                  {loadingLogs === cName ? '...' : 'Refresh'}
-                </Button>
+                <pre className="text-[11px] leading-relaxed bg-gray-950 text-gray-100 p-4 rounded-lg overflow-x-auto max-h-72 overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                  {text || 'No logs available'}
+                </pre>
               </div>
-              <pre className="text-[11px] leading-relaxed bg-gray-950 text-gray-100 p-4 rounded-lg overflow-x-auto max-h-72 overflow-y-auto whitespace-pre-wrap break-all font-mono">
-                {filterLogs(vpnLogs[cName] || '') || 'No logs available'}
-              </pre>
-            </div>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
     );
@@ -805,6 +867,38 @@ export default function MetricsPage() {
                       )}
                     </div>
                   )}
+                  {/* Logs button */}
+                  <div className="pt-1">
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => toggleInfraLogs(infra.container)} disabled={loadingInfraLogs === infra.container}>
+                      {infraLogs[infra.container] !== undefined ? 'Hide Logs' : 'Logs'}
+                    </Button>
+                  </div>
+                  {/* Log viewer */}
+                  {infraLogs[infra.container] !== undefined && (() => {
+                    const { text, filtered } = filterLogs(infraLogs[infra.container] || '');
+                    return (
+                      <div className="border-t pt-2 mt-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-medium text-muted-foreground">Container Logs</span>
+                            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                              <input type="checkbox" checked={filterLogNoise} onChange={(e) => setFilterLogNoise(e.target.checked)} className="h-3 w-3 rounded" />
+                              <span className="text-[10px] text-muted-foreground">Filter noise</span>
+                            </label>
+                            {filterLogNoise && filtered > 0 && (
+                              <span className="text-[10px] text-muted-foreground/60">{filtered} line{filtered !== 1 ? 's' : ''} hidden</span>
+                            )}
+                          </div>
+                          <Button size="sm" variant="ghost" onClick={() => refreshInfraLogs(infra.container)} disabled={loadingInfraLogs === infra.container} className="text-[11px] h-5 px-2">
+                            {loadingInfraLogs === infra.container ? '...' : 'Refresh'}
+                          </Button>
+                        </div>
+                        <pre className="text-[10px] leading-relaxed bg-gray-950 text-gray-100 p-3 rounded-lg overflow-x-auto max-h-56 overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                          {text || 'No logs available'}
+                        </pre>
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );

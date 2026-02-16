@@ -13,6 +13,9 @@ services:
       - YTDL_PORT=3001
       - GLUETUN_CONTAINERS=gluetun-1-local,gluetun-2-local,gluetun-3-local
       - WORKER_CONTAINERS=worker-1-local,worker-2-local,worker-3-local
+      - MANAGER_CONTAINER=manager-local
+      - YTDL_CONTAINER=ytdl-local
+      - REDIS_CONTAINER=redis-local
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:

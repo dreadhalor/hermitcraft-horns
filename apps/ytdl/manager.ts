@@ -334,6 +334,36 @@ app.get('/manager/infrastructure/status', async (_req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /manager/infrastructure/logs -- logs for an infrastructure container
+// ---------------------------------------------------------------------------
+
+app.get('/manager/infrastructure/logs', async (req, res) => {
+  const container = req.query.container as string | undefined;
+  const allInfraNames = INFRA_CONTAINERS.map((c) => c.name);
+
+  if (!container || !allInfraNames.includes(container)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid container. Must be one of: ${allInfraNames.join(', ')}`,
+    });
+  }
+
+  const { tail = '100' } = req.query;
+  const tailLines = Math.min(Math.max(parseInt(tail as string) || 100, 10), 500);
+
+  try {
+    const logs = await fetchDockerLogs(container, tailLines);
+    res.json({ success: true, container, lines: tailLines, logs });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      hint: 'Is /var/run/docker.sock mounted?',
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // POST /manager/workers/simulate-block -- toggle simulated YouTube block
 // GET  /manager/workers/simulate-block -- get current simulate-block status
 // ---------------------------------------------------------------------------

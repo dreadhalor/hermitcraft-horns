@@ -69,6 +69,9 @@ jobs:
                   - YTDL_PORT=3001
                   - GLUETUN_CONTAINERS=gluetun-1,gluetun-2,gluetun-3
                   - WORKER_CONTAINERS=worker-1,worker-2,worker-3
+                  - MANAGER_CONTAINER=manager
+                  - YTDL_CONTAINER=ytdl
+                  - REDIS_CONTAINER=redis
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
                 depends_on:
