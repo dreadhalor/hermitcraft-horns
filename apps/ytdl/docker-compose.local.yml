@@ -28,6 +28,7 @@ services:
     networks:
       - ytdl-local
     restart: unless-stopped
+    mem_limit: 256m
 
   # ---- Primary ytdl server (API, tRPC, Bull queue, DB) ----
   # Runs on the bridge network directly -- does NOT need VPN.
@@ -50,6 +51,7 @@ services:
       - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
       - WORKER_ENDPOINTS=gluetun-1-local:3001,gluetun-2-local:3001,gluetun-3-local:3001
     restart: unless-stopped
+    mem_limit: 512m
 
   # ---- VPN containers (one per location) ----
 
@@ -71,6 +73,7 @@ services:
     volumes:
       - ./gluetun-1-data:/gluetun
     restart: unless-stopped
+    mem_limit: 256m
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
       interval: 30s
@@ -97,6 +100,7 @@ services:
     volumes:
       - ./gluetun-2-data:/gluetun
     restart: unless-stopped
+    mem_limit: 256m
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
       interval: 30s
@@ -123,6 +127,7 @@ services:
     volumes:
       - ./gluetun-3-data:/gluetun
     restart: unless-stopped
+    mem_limit: 256m
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
       interval: 30s
@@ -147,6 +152,7 @@ services:
       - WORKER_ID=worker-1
       - WORKER_PORT=3001
     restart: unless-stopped
+    mem_limit: 384m
 
   worker-2:
     build:
@@ -162,6 +168,7 @@ services:
       - WORKER_ID=worker-2
       - WORKER_PORT=3001
     restart: unless-stopped
+    mem_limit: 384m
 
   worker-3:
     build:
@@ -177,6 +184,7 @@ services:
       - WORKER_ID=worker-3
       - WORKER_PORT=3001
     restart: unless-stopped
+    mem_limit: 384m
 
   # ---- Redis ----
 
@@ -188,6 +196,7 @@ services:
     networks:
       - ytdl-local
     restart: unless-stopped
+    mem_limit: 128m
 
 networks:
   ytdl-local:

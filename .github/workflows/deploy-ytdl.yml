@@ -84,6 +84,7 @@ jobs:
                 networks:
                   - ytdl-network
                 restart: unless-stopped
+                mem_limit: 256m
 
               ytdl:
                 image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:IMAGE_TAG_PLACEHOLDER
@@ -102,6 +103,7 @@ jobs:
                   - DATABASE_URL=${DATABASE_URL}
                   - WORKER_ENDPOINTS=gluetun-1:3001,gluetun-2:3001,gluetun-3:3001
                 restart: unless-stopped
+                mem_limit: 512m
 
               gluetun-1:
                 image: qmcgaw/gluetun:v3.41.1
@@ -121,6 +123,7 @@ jobs:
                 volumes:
                   - ./gluetun-1-data:/gluetun
                 restart: unless-stopped
+                mem_limit: 256m
                 healthcheck:
                   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
                   interval: 30s
@@ -147,6 +150,7 @@ jobs:
                 volumes:
                   - ./gluetun-2-data:/gluetun
                 restart: unless-stopped
+                mem_limit: 256m
                 healthcheck:
                   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
                   interval: 30s
@@ -173,6 +177,7 @@ jobs:
                 volumes:
                   - ./gluetun-3-data:/gluetun
                 restart: unless-stopped
+                mem_limit: 256m
                 healthcheck:
                   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
                   interval: 30s
@@ -193,6 +198,7 @@ jobs:
                   - WORKER_ID=worker-1
                   - WORKER_PORT=3001
                 restart: unless-stopped
+                mem_limit: 384m
 
               worker-2:
                 image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:IMAGE_TAG_PLACEHOLDER
@@ -206,6 +212,7 @@ jobs:
                   - WORKER_ID=worker-2
                   - WORKER_PORT=3001
                 restart: unless-stopped
+                mem_limit: 384m
 
               worker-3:
                 image: 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl:IMAGE_TAG_PLACEHOLDER
@@ -219,11 +226,13 @@ jobs:
                   - WORKER_ID=worker-3
                   - WORKER_PORT=3001
                 restart: unless-stopped
+                mem_limit: 384m
 
               redis:
                 image: redis:alpine
                 container_name: redis
                 restart: unless-stopped
+                mem_limit: 128m
                 networks:
                   - ytdl-network
 
