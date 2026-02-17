@@ -18,6 +18,8 @@ services:
       - REDIS_CONTAINER=redis-local
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /proc/meminfo:/host/proc/meminfo:ro
+      - ./manager-data:/data
     depends_on:
       gluetun-1:
         condition: service_started
@@ -28,7 +30,7 @@ services:
     networks:
       - ytdl-local
     restart: unless-stopped
-    mem_limit: 256m
+    mem_limit: 512m  # higher locally due to Rosetta x86 emulation on ARM
 
   # ---- Primary ytdl server (API, tRPC, Bull queue, DB) ----
   # Runs on the bridge network directly -- does NOT need VPN.
@@ -191,8 +193,11 @@ services:
   redis:
     image: redis:alpine
     container_name: redis-local
+    command: ["redis-server", "--appendonly", "yes", "--dir", "/data"]
     ports:
       - "6379:6379"
+    volumes:
+      - ./redis-data:/data
     networks:
       - ytdl-local
     restart: unless-stopped

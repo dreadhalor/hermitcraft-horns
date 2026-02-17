@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -165,6 +165,36 @@ interface InfraStatus {
   };
 }
 
+interface ContainerMemory {
+  container: string;
+  memoryUsageMB: number;
+  memoryLimitMB: number;
+  memoryPercent: number;
+  error?: string;
+}
+
+interface MemorySnapshot {
+  timestamp: string;
+  memPercent: number;
+  swapPercent: number;
+}
+
+interface SystemHealth {
+  status: 'healthy' | 'warning' | 'critical';
+  timestamp: string;
+  host: {
+    memTotalMB: number;
+    memUsedMB: number;
+    memAvailableMB: number;
+    memPercent: number;
+    swapTotalMB: number;
+    swapUsedMB: number;
+    swapPercent: number;
+  } | null;
+  containers: ContainerMemory[];
+  memoryHistory: MemorySnapshot[];
+}
+
 export default function MetricsPage() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -194,6 +224,7 @@ export default function MetricsPage() {
   const [infraStatuses, setInfraStatuses] = useState<InfraStatus[]>([]);
   const [infraLogs, setInfraLogs] = useState<Record<string, string | null>>({});
   const [loadingInfraLogs, setLoadingInfraLogs] = useState<string | null>(null);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
 
   // Build a lookup from taskId -> worker currently processing it
   const activeJobWorker = useMemo(() => {
@@ -262,6 +293,28 @@ export default function MetricsPage() {
       // Silently fail
     }
   };
+
+  const fetchSystemHealth = async () => {
+    try {
+      const response = await fetch(`${ytdlUrl}manager/system/health`);
+      if (!response.ok) return;
+      const data = await response.json();
+      setSystemHealth(data);
+    } catch {
+      // Silently fail
+    }
+  };
+
+  // Build a lookup from container name -> memory stats
+  const memoryByContainer = useMemo(() => {
+    const map = new Map<string, ContainerMemory>();
+    if (systemHealth?.containers) {
+      for (const c of systemHealth.containers) {
+        map.set(c.container, c);
+      }
+    }
+    return map;
+  }, [systemHealth?.containers]);
 
   const toggleInfraLogs = async (container: string) => {
     if (infraLogs[container] !== undefined) {
@@ -523,12 +576,80 @@ export default function MetricsPage() {
     fetchGluetunStatus();
     fetchSimulateBlockStatus();
     fetchInfraStatus();
+    fetchSystemHealth();
     
     if (autoRefresh) {
-      const interval = setInterval(() => { fetchMetrics(); fetchGluetunStatus(); fetchSimulateBlockStatus(); fetchInfraStatus(); }, 5000);
+      const interval = setInterval(() => { fetchMetrics(); fetchGluetunStatus(); fetchSimulateBlockStatus(); fetchInfraStatus(); fetchSystemHealth(); }, 5000);
       return () => clearInterval(interval);
     }
   }, [autoRefresh]);
+
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const CHART_RANGES = [1, 6, 12, 24, 48] as const;
+  const [chartRangeHours, setChartRangeHours] = useState<number>(6);
+
+  const ramChartLayout = useMemo(() => ({
+    W: 600, H: 140, padTop: 20, padBottom: 24, padLeft: 30, padRight: 10,
+    get chartW() { return this.W - this.padLeft - this.padRight; },
+    get chartH() { return this.H - this.padTop - this.padBottom; },
+  }), []);
+
+  const ramChartData = useMemo(() => {
+    const allHistory = systemHealth?.memoryHistory ?? [];
+    if (allHistory.length < 2) return null;
+
+    // Filter to selected time window
+    const cutoff = Date.now() - chartRangeHours * 3_600_000;
+    const windowed = allHistory.filter(s => new Date(s.timestamp).getTime() >= cutoff);
+    if (windowed.length < 2) return null;
+
+    // Downsample: target ~150 points max for a readable chart
+    const MAX_DISPLAY_POINTS = 150;
+    let displayData: MemorySnapshot[];
+    if (windowed.length <= MAX_DISPLAY_POINTS) {
+      displayData = windowed;
+    } else {
+      const step = (windowed.length - 1) / (MAX_DISPLAY_POINTS - 1);
+      displayData = [];
+      for (let i = 0; i < MAX_DISPLAY_POINTS - 1; i++) {
+        displayData.push(windowed[Math.round(i * step)]!);
+      }
+      displayData.push(windowed[windowed.length - 1]!);
+    }
+
+    const { padLeft, padTop, chartW, chartH } = ramChartLayout;
+    const points = displayData.map((s, i) => {
+      const x = padLeft + (i / (displayData.length - 1)) * chartW;
+      const y = padTop + (1 - s.memPercent / 100) * chartH;
+      return { x, y, ...s };
+    });
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+    const areaPath = `${linePath} L${points[points.length - 1]!.x},${padTop + chartH} L${points[0]!.x},${padTop + chartH} Z`;
+    const oldest = new Date(displayData[0]!.timestamp);
+    const newest = new Date(displayData[displayData.length - 1]!.timestamp);
+    const spanMs = newest.getTime() - oldest.getTime();
+    const spanLabel = spanMs < 120_000 ? `${Math.round(spanMs / 1000)}s` :
+      spanMs < 7_200_000 ? `${Math.round(spanMs / 60_000)}m` :
+      `${(spanMs / 3_600_000).toFixed(1)}h`;
+    return { points, linePath, areaPath, oldest, newest, spanLabel, totalSamples: windowed.length, displayedSamples: displayData.length };
+  }, [systemHealth?.memoryHistory, ramChartLayout, chartRangeHours]);
+
+  const handleChartMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!ramChartData || !svgRef.current) return;
+    const svg = svgRef.current;
+    const rect = svg.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * ramChartLayout.W;
+    let closest = 0;
+    let closestDist = Infinity;
+    for (let i = 0; i < ramChartData.points.length; i++) {
+      const dist = Math.abs(ramChartData.points[i]!.x - svgX);
+      if (dist < closestDist) { closestDist = dist; closest = i; }
+    }
+    setHoveredPoint(closest);
+  }, [ramChartData, ramChartLayout]);
+
+  const handleChartMouseLeave = useCallback(() => setHoveredPoint(null), []);
 
   if (loading) {
     return (
@@ -617,7 +738,7 @@ export default function MetricsPage() {
           {workerStats?.details.currentJob && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5 overflow-hidden">
               <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
-              <span className="font-medium text-blue-700">Processing Job #{workerStats.details.currentJob.taskId}</span>
+              <span className="font-medium text-blue-700" title={`ID: ${workerStats.details.currentJob.taskId}`}>Processing Job</span>
               <span className="text-blue-500 truncate font-mono min-w-0">{workerStats.details.currentJob.videoUrl}</span>
               <span className="text-blue-400 whitespace-nowrap">since {new Date(workerStats.details.currentJob.startedAt).toLocaleTimeString()}</span>
             </div>
@@ -635,6 +756,24 @@ export default function MetricsPage() {
               <span className="font-mono">{(workerStats.successRate * 100).toFixed(0)}%</span>
               {workerStats.details.lastUsed && (
                 <span>last: {new Date(workerStats.details.lastUsed).toLocaleTimeString()}</span>
+              )}
+            </div>
+          )}
+
+          {/* Memory bars for gluetun + worker */}
+          {(memoryByContainer.has(cName) || memoryByContainer.has(gs.worker || '')) && (
+            <div className="space-y-1">
+              {memoryByContainer.has(cName) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-12 shrink-0">VPN</span>
+                  <div className="flex-1"><MemoryBar mem={memoryByContainer.get(cName)} /></div>
+                </div>
+              )}
+              {gs.worker && memoryByContainer.has(gs.worker) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-12 shrink-0">Worker</span>
+                  <div className="flex-1"><MemoryBar mem={memoryByContainer.get(gs.worker!)} /></div>
+                </div>
               )}
             </div>
           )}
@@ -753,6 +892,165 @@ export default function MetricsPage() {
     return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
   };
 
+  const memoryBarColor = (percent: number) => {
+    if (percent > 90) return 'bg-red-500';
+    if (percent > 80) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  const RamChart = ({ history }: { history: MemorySnapshot[] }) => {
+    if (history.length < 2) return (
+      <p className="text-[11px] text-muted-foreground italic">Collecting data... ({history.length} sample{history.length !== 1 ? 's' : ''}, updates every 60s)</p>
+    );
+    if (!ramChartData) return null;
+
+    const { W, H, padTop, padLeft, chartW, chartH } = ramChartLayout;
+    const { points, linePath, areaPath, oldest, newest, spanLabel, totalSamples, displayedSamples } = ramChartData;
+    const hp = hoveredPoint !== null ? points[hoveredPoint] : null;
+
+    return (
+      <div className="w-full">
+        <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+          <span className="text-[11px] font-medium text-muted-foreground">
+            Host RAM — last {spanLabel}
+            {totalSamples !== displayedSamples
+              ? ` (${displayedSamples} of ${totalSamples} samples)`
+              : ` (${totalSamples} samples)`}
+          </span>
+          <div className="flex items-center gap-0.5">
+            {hp && (
+              <span className="text-[11px] font-mono text-muted-foreground mr-2">
+                {new Date(hp.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {' — '}
+                <span className={`font-semibold ${hp.memPercent > 85 ? 'text-red-600' : hp.memPercent > 70 ? 'text-yellow-600' : 'text-green-600'}`}>
+                  {hp.memPercent}% RAM
+                </span>
+                {hp.swapPercent > 0 && <span>, {hp.swapPercent}% swap</span>}
+              </span>
+            )}
+            {CHART_RANGES.map((h) => (
+              <button
+                key={h}
+                onClick={() => { setChartRangeHours(h); setHoveredPoint(null); }}
+                className={`px-1.5 py-0.5 text-[10px] rounded transition-colors ${
+                  chartRangeHours === h
+                    ? 'bg-blue-500 text-white font-semibold'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                {h}h
+              </button>
+            ))}
+          </div>
+        </div>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full h-auto cursor-crosshair"
+          preserveAspectRatio="xMidYMid meet"
+          onMouseMove={handleChartMouseMove}
+          onMouseLeave={handleChartMouseLeave}
+        >
+          {/* Warning/critical threshold zones */}
+          <rect x={padLeft} y={padTop} width={chartW} height={(1 - 0.85) * chartH} fill="rgb(239 68 68 / 0.15)" />
+          <rect x={padLeft} y={padTop + (1 - 0.85) * chartH} width={chartW} height={0.15 * chartH} fill="rgb(234 179 8 / 0.15)" />
+
+          {/* Grid lines */}
+          {[0, 25, 50, 75, 100].map((pct) => {
+            const y = padTop + (1 - pct / 100) * chartH;
+            return (
+              <g key={pct}>
+                <line x1={padLeft} x2={padLeft + chartW} y1={y} y2={y} stroke="currentColor" strokeOpacity={0.1} strokeDasharray="3,3" />
+                <text x={padLeft - 4} y={y + 3} textAnchor="end" fontSize={8} fill="currentColor" fillOpacity={0.4}>{pct}%</text>
+              </g>
+            );
+          })}
+
+          {/* Area fill */}
+          <path d={areaPath} fill="url(#ramGradient)" />
+          <defs>
+            <linearGradient id="ramGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgb(59 130 246)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="rgb(59 130 246)" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+
+          {/* Line */}
+          <path d={linePath} fill="none" stroke="rgb(59 130 246)" strokeWidth={2} strokeLinejoin="round" />
+
+          {/* Data point dots */}
+          {points.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={hoveredPoint === i ? 4 : 2}
+              fill={hoveredPoint === i ? 'rgb(59 130 246)' : 'rgb(59 130 246 / 0.4)'}
+              className="transition-all duration-100"
+            />
+          ))}
+
+          {/* Hover crosshair */}
+          {hp && (
+            <g>
+              <line x1={hp.x} x2={hp.x} y1={padTop} y2={padTop + chartH} stroke="rgb(59 130 246)" strokeOpacity={0.5} strokeDasharray="2,2" />
+              <line x1={padLeft} x2={padLeft + chartW} y1={hp.y} y2={hp.y} stroke="rgb(59 130 246)" strokeOpacity={0.3} strokeDasharray="2,2" />
+            </g>
+          )}
+
+          {/* Current value label (rightmost point, shown when not hovering) */}
+          {hoveredPoint === null && points.length > 0 && (() => {
+            const last = points[points.length - 1]!;
+            return (
+              <text x={last.x - 6} y={last.y - 8} textAnchor="end" fontSize={10} fontWeight="bold"
+                fill={last.memPercent > 85 ? 'rgb(239 68 68)' : last.memPercent > 70 ? 'rgb(234 179 8)' : 'rgb(34 197 94)'}>
+                {last.memPercent}%
+              </text>
+            );
+          })()}
+
+          {/* Hovered point value label */}
+          {hp && (
+            <text
+              x={hp.x < padLeft + chartW / 2 ? hp.x + 6 : hp.x - 6}
+              y={hp.y - 8}
+              textAnchor={hp.x < padLeft + chartW / 2 ? 'start' : 'end'}
+              fontSize={10}
+              fontWeight="bold"
+              fill={hp.memPercent > 85 ? 'rgb(239 68 68)' : hp.memPercent > 70 ? 'rgb(234 179 8)' : 'rgb(34 197 94)'}
+            >
+              {hp.memPercent}%
+            </text>
+          )}
+
+          {/* Time labels */}
+          <text x={padLeft} y={H - 2} fontSize={8} fill="currentColor" fillOpacity={0.4}>
+            {oldest.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </text>
+          <text x={padLeft + chartW} y={H - 2} textAnchor="end" fontSize={8} fill="currentColor" fillOpacity={0.4}>
+            {newest.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </text>
+        </svg>
+      </div>
+    );
+  };
+
+  const MemoryBar = ({ mem }: { mem: ContainerMemory | undefined }) => {
+    if (!mem || mem.memoryLimitMB === 0) return null;
+    const pct = Math.min(mem.memoryPercent, 100);
+    return (
+      <div className="space-y-0.5">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>Memory</span>
+          <span className="font-mono">{mem.memoryUsageMB} / {mem.memoryLimitMB} MB ({pct}%)</span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${memoryBarColor(pct)}`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-full overflow-x-hidden p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
@@ -801,6 +1099,63 @@ export default function MetricsPage() {
           </div>
         </div>
       </div>
+
+      {/* System Health Accordion */}
+      {systemHealth && (
+        <Accordion type="single" collapsible>
+          <AccordionItem value="health" className={`rounded-lg border px-3 sm:px-4 ${
+            systemHealth.status === 'critical' ? 'border-red-300 bg-red-50 dark:bg-red-950/20' :
+            systemHealth.status === 'warning' ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20' :
+            'border-green-300 bg-green-50 dark:bg-green-950/20'
+          }`}>
+            <AccordionTrigger className="w-full py-2.5 sm:py-3 hover:no-underline [&[data-state=open]>svg]:rotate-180" noRotate>
+              <div className="flex flex-1 flex-wrap items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${
+                    systemHealth.status === 'critical' ? 'bg-red-500 animate-pulse' :
+                    systemHealth.status === 'warning' ? 'bg-yellow-500' :
+                    'bg-green-500'
+                  }`} />
+                  <span className={`text-sm font-semibold ${
+                    systemHealth.status === 'critical' ? 'text-red-700 dark:text-red-400' :
+                    systemHealth.status === 'warning' ? 'text-yellow-700 dark:text-yellow-400' :
+                    'text-green-700 dark:text-green-400'
+                  }`}>
+                    System {systemHealth.status === 'critical' ? 'Critical' : systemHealth.status === 'warning' ? 'Warning' : 'Healthy'}
+                  </span>
+                </div>
+                {systemHealth.host && (
+                  <>
+                    <Separator orientation="vertical" className="h-4 hidden sm:block" />
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <span>RAM:</span>
+                        <span className="font-mono">{(systemHealth.host.memUsedMB / 1024).toFixed(1)} / {(systemHealth.host.memTotalMB / 1024).toFixed(1)} GB</span>
+                        <span className={`font-semibold ${systemHealth.host.memPercent > 85 ? 'text-red-600' : systemHealth.host.memPercent > 70 ? 'text-yellow-600' : 'text-green-600'}`}>
+                          ({systemHealth.host.memPercent}%)
+                        </span>
+                      </div>
+                      {systemHealth.host.swapTotalMB > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <span>Swap:</span>
+                          <span className="font-mono">{(systemHealth.host.swapUsedMB / 1024).toFixed(1)} / {(systemHealth.host.swapTotalMB / 1024).toFixed(1)} GB</span>
+                          <span className={`font-semibold ${systemHealth.host.swapPercent > 50 ? 'text-red-600' : systemHealth.host.swapPercent > 20 ? 'text-yellow-600' : 'text-green-600'}`}>
+                            ({systemHealth.host.swapPercent}%)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+            </AccordionTrigger>
+            <AccordionContent className="pb-3 sm:pb-4 pt-0">
+              <RamChart history={systemHealth.memoryHistory} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
 
       {/* Infrastructure Status Cards */}
       {infraStatuses.length > 0 && (
@@ -867,6 +1222,8 @@ export default function MetricsPage() {
                       )}
                     </div>
                   )}
+                  {/* Memory bar */}
+                  <MemoryBar mem={memoryByContainer.get(infra.container)} />
                   {/* Logs button */}
                   <div className="pt-1">
                     <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => toggleInfraLogs(infra.container)} disabled={loadingInfraLogs === infra.container}>
@@ -925,14 +1282,14 @@ export default function MetricsPage() {
               <AccordionContent>
                 <CardContent className="pt-0">
                   <div className="space-y-4">
-                    {metrics.jobs.map((job) => {
+                    {metrics.jobs.map((job, jobIdx) => {
                       const singleSuccess = job.vpnAttempts.length === 1 && job.vpnAttempts[0]!.success;
                       return (
                         <div key={job.id} className="border rounded-lg p-3 sm:p-4 space-y-2">
                           {/* Job Header */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-semibold">Job #{job.taskId}</span>
+                              <span className="font-mono font-semibold">Job #{metrics.jobs.length - jobIdx}</span>
                               <Badge 
                                 variant={
                                   job.status === 'completed' ? 'default' :
@@ -962,6 +1319,7 @@ export default function MetricsPage() {
                               {new Date(job.timestamp).toLocaleString()}
                             </span>
                           </div>
+                          <p className="text-[10px] font-mono text-muted-foreground/60 -mt-1 truncate">ID: {job.taskId}</p>
 
                           {/* Video Info */}
                           <div className="text-sm space-y-1">

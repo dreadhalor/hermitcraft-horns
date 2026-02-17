@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import express from 'express';
 import * as trpcExpress from '@trpc/server/adapters/express';
 import {
@@ -493,28 +494,32 @@ const appRouter = t.router({
         }
 
         console.log('Enqueueing task...');
-        const taskId = await videoProcessingQueue.add({
-          videoUrl,
-          start,
-          end,
-          userId: userId || null,
-          source,
-        });
-        console.log('Task enqueued with taskId:', taskId);
+        const jobId = randomUUID();
+        const task = await videoProcessingQueue.add(
+          {
+            videoUrl,
+            start,
+            end,
+            userId: userId || null,
+            source,
+          },
+          { jobId },
+        );
+        console.log('Task enqueued with jobId:', task.id);
 
         // Update log with taskId
         if (db && logId) {
           try {
             await db
               .update(generationLogs)
-              .set({ taskId: String(taskId.id) })
+              .set({ taskId: String(task.id) })
               .where(eq(generationLogs.id, logId));
           } catch (error) {
             console.error('Error updating log with taskId:', error);
           }
         }
 
-        return { taskId: taskId.id };
+        return { taskId: task.id };
       } catch (error) {
         console.error('Error enqueuing task:', error);
 
@@ -693,13 +698,17 @@ app.post('/test/enqueue', async (req, res) => {
       }
     }
 
-    const job = await videoProcessingQueue.add({
-      videoUrl,
-      start,
-      end,
-      userId: userId || null,
-      source: source || 'cli',
-    });
+    const jobId = randomUUID();
+    const job = await videoProcessingQueue.add(
+      {
+        videoUrl,
+        start,
+        end,
+        userId: userId || null,
+        source: source || 'cli',
+      },
+      { jobId },
+    );
 
     // Update log with taskId
     if (db && logId) {

@@ -633,6 +633,189 @@ app.get('/manager/gluetun/logs', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /manager/system/health -- system-wide memory and health overview
+// ---------------------------------------------------------------------------
+
+import fs from 'fs';
+
+interface ContainerMemory {
+  container: string;
+  memoryUsageMB: number;
+  memoryLimitMB: number;
+  memoryPercent: number;
+  error?: string;
+}
+
+interface MemorySnapshot {
+  timestamp: string;
+  memPercent: number;
+  swapPercent: number;
+}
+
+const MAX_HISTORY = 2880; // 48 hours at 1 sample/min
+const SAMPLE_INTERVAL_MS = 60_000; // 1 minute
+const PERSIST_INTERVAL_MS = 5 * 60_000; // write to disk every 5 minutes
+const HISTORY_FILE = '/data/memory-history.json';
+const memoryHistory: MemorySnapshot[] = [];
+let lastSampleTime = 0;
+let lastPersistTime = 0;
+
+// Restore memory history from disk on startup
+try {
+  const raw = fs.readFileSync(HISTORY_FILE, 'utf8');
+  const parsed: MemorySnapshot[] = JSON.parse(raw);
+  const cutoff = Date.now() - MAX_HISTORY * SAMPLE_INTERVAL_MS;
+  const valid = parsed.filter(
+    (s) => new Date(s.timestamp).getTime() >= cutoff,
+  );
+  memoryHistory.push(...valid);
+  if (valid.length > 0) {
+    lastSampleTime = new Date(valid[valid.length - 1]!.timestamp).getTime();
+  }
+  console.log(
+    `[manager] Restored ${valid.length} memory history samples from disk (${parsed.length - valid.length} expired)`,
+  );
+} catch {
+  // No file or invalid JSON — start fresh
+}
+
+function persistMemoryHistory() {
+  try {
+    fs.mkdirSync('/data', { recursive: true });
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(memoryHistory));
+  } catch (err) {
+    console.error('[manager] Failed to persist memory history:', err);
+  }
+}
+
+interface SystemHealth {
+  status: 'healthy' | 'warning' | 'critical';
+  timestamp: string;
+  host: {
+    memTotalMB: number;
+    memUsedMB: number;
+    memAvailableMB: number;
+    memPercent: number;
+    swapTotalMB: number;
+    swapUsedMB: number;
+    swapPercent: number;
+  } | null;
+  containers: ContainerMemory[];
+  memoryHistory: MemorySnapshot[];
+}
+
+function parseMeminfo(): SystemHealth['host'] {
+  try {
+    const raw = fs.readFileSync('/host/proc/meminfo', 'utf8');
+    const get = (key: string): number => {
+      const match = raw.match(new RegExp(`^${key}:\\s+(\\d+)`, 'm'));
+      return match ? parseInt(match[1]!, 10) : 0;
+    };
+    const totalKB = get('MemTotal');
+    const availableKB = get('MemAvailable');
+    const swapTotalKB = get('SwapTotal');
+    const swapFreeKB = get('SwapFree');
+    const usedKB = totalKB - availableKB;
+    const swapUsedKB = swapTotalKB - swapFreeKB;
+    return {
+      memTotalMB: Math.round(totalKB / 1024),
+      memUsedMB: Math.round(usedKB / 1024),
+      memAvailableMB: Math.round(availableKB / 1024),
+      memPercent: totalKB > 0 ? Math.round((usedKB / totalKB) * 100) : 0,
+      swapTotalMB: Math.round(swapTotalKB / 1024),
+      swapUsedMB: Math.round(swapUsedKB / 1024),
+      swapPercent: swapTotalKB > 0 ? Math.round((swapUsedKB / swapTotalKB) * 100) : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchContainerMemory(containerName: string): Promise<ContainerMemory> {
+  try {
+    const { statusCode, body } = await dockerRequest(
+      'GET',
+      `/containers/${containerName}/stats?stream=false`,
+    );
+    if (statusCode === 200) {
+      const stats = JSON.parse(body);
+      const usageBytes = stats.memory_stats?.usage ?? 0;
+      const cacheBytes = stats.memory_stats?.stats?.cache ?? 0;
+      const actualUsage = usageBytes - cacheBytes;
+      const limitBytes = stats.memory_stats?.limit ?? 0;
+      const usageMB = Math.round(actualUsage / 1024 / 1024);
+      const limitMB = Math.round(limitBytes / 1024 / 1024);
+      return {
+        container: containerName,
+        memoryUsageMB: usageMB,
+        memoryLimitMB: limitMB,
+        memoryPercent: limitMB > 0 ? Math.round((usageMB / limitMB) * 100) : 0,
+      };
+    }
+    return { container: containerName, memoryUsageMB: 0, memoryLimitMB: 0, memoryPercent: 0, error: `Docker API returned ${statusCode}` };
+  } catch (err) {
+    return { container: containerName, memoryUsageMB: 0, memoryLimitMB: 0, memoryPercent: 0, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+app.get('/manager/system/health', async (_req, res) => {
+  const allContainers = [
+    ...INFRA_CONTAINERS.map((c) => c.name),
+    ...GLUETUN_CONTAINERS,
+    ...WORKER_CONTAINERS,
+  ];
+
+  const [host, ...containerResults] = await Promise.all([
+    Promise.resolve(parseMeminfo()),
+    ...allContainers.map((name) => fetchContainerMemory(name)),
+  ]);
+
+  const containers = containerResults as ContainerMemory[];
+
+  // Compute overall status based on host memory only.
+  // Container memory is bounded by Docker limits — if a container hits its
+  // ceiling Docker kills and restarts it automatically, so it doesn't threaten
+  // the host. High container % under emulation (Rosetta) is expected.
+  let status: SystemHealth['status'] = 'healthy';
+
+  const hostMem = host as SystemHealth['host'];
+  if (hostMem) {
+    if (hostMem.memPercent > 85 || hostMem.swapPercent > 50) status = 'critical';
+    else if (hostMem.memPercent > 70 || hostMem.swapPercent > 20) status = 'warning';
+  }
+
+  // Record to history ring buffer (one sample per minute)
+  const now = Date.now();
+  if (hostMem && now - lastSampleTime >= SAMPLE_INTERVAL_MS) {
+    lastSampleTime = now;
+    memoryHistory.push({
+      timestamp: new Date().toISOString(),
+      memPercent: hostMem.memPercent,
+      swapPercent: hostMem.swapPercent,
+    });
+    if (memoryHistory.length > MAX_HISTORY) {
+      memoryHistory.splice(0, memoryHistory.length - MAX_HISTORY);
+    }
+
+    // Persist to disk every 5 minutes
+    if (now - lastPersistTime >= PERSIST_INTERVAL_MS) {
+      lastPersistTime = now;
+      persistMemoryHistory();
+    }
+  }
+
+  const result: SystemHealth = {
+    status,
+    timestamp: new Date().toISOString(),
+    host: hostMem,
+    containers,
+    memoryHistory,
+  };
+
+  res.json(result);
+});
+
+// ---------------------------------------------------------------------------
 // Reverse proxy -- forward everything else to ytdl primary (direct bridge)
 // ---------------------------------------------------------------------------
 

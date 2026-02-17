@@ -74,6 +74,8 @@ jobs:
                   - REDIS_CONTAINER=redis
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
+                  - /proc/meminfo:/host/proc/meminfo:ro
+                  - ./manager-data:/data
                 depends_on:
                   gluetun-1:
                     condition: service_started
@@ -231,6 +233,9 @@ jobs:
               redis:
                 image: redis:alpine
                 container_name: redis
+                command: ["redis-server", "--appendonly", "yes", "--dir", "/data"]
+                volumes:
+                  - ./redis-data:/data
                 restart: unless-stopped
                 mem_limit: 128m
                 networks:
@@ -264,7 +269,8 @@ jobs:
             docker container prune -f
             docker image prune -f
             docker images 851725492026.dkr.ecr.us-east-1.amazonaws.com/ytdl --format "{{.ID}} {{.Tag}}" | grep -v "$IMAGE_TAG" | awk '{print $1}' | xargs -r docker rmi -f || true
-            docker volume prune -f
+            # NOTE: do NOT run `docker volume prune -f` here — it destroys
+            # persistent bind-mount data (Redis AOF, manager history) between deploys
             echo "✅ Cleanup complete"
             
             # Log in to ECR and pull latest images

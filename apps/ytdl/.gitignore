@@ -11,3 +11,7 @@ cache
 # Gluetun data
 gluetun/
 gluetun-*-data/
+
+# Persistent data directories
+manager-data/
+redis-data/
