@@ -47,7 +47,7 @@ export function BuildBadge() {
 
   return (
     <p
-      className='mt-auto pt-4 text-center font-mono text-[10px] text-white/40'
+      className='mt-auto px-4 pt-4 text-center font-mono text-[10px] leading-relaxed text-white/40'
       suppressHydrationWarning
     >
       {isDev ? (
