@@ -18,7 +18,7 @@ export const getGenerationLogs = publicProcedure
   .input(
     z.object({
       adminUserId: z.string(),
-      limit: z.number().default(100),
+      limit: z.number().default(25),
       offset: z.number().default(0),
     }),
   )
@@ -27,28 +27,41 @@ export const getGenerationLogs = publicProcedure
       throw new Error('Unauthorized: Admin access required');
     }
 
-    const logs = await db
-      .select({
-        id: schema.generationLogs.id,
-        userId: schema.generationLogs.userId,
-        source: schema.generationLogs.source,
-        username: schema.users.username,
-        videoUrl: schema.generationLogs.videoUrl,
-        start: schema.generationLogs.start,
-        end: schema.generationLogs.end,
-        status: schema.generationLogs.status,
-        errorMessage: schema.generationLogs.errorMessage,
-        taskId: schema.generationLogs.taskId,
-        createdAt: schema.generationLogs.createdAt,
-        completedAt: schema.generationLogs.completedAt,
-      })
-      .from(schema.generationLogs)
-      .leftJoin(schema.users, eq(schema.generationLogs.userId, schema.users.id))
-      .orderBy(desc(schema.generationLogs.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const [totalResult, logs] = await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(schema.generationLogs),
+      db
+        .select({
+          id: schema.generationLogs.id,
+          userId: schema.generationLogs.userId,
+          source: schema.generationLogs.source,
+          username: schema.users.username,
+          videoUrl: schema.generationLogs.videoUrl,
+          start: schema.generationLogs.start,
+          end: schema.generationLogs.end,
+          status: schema.generationLogs.status,
+          errorMessage: schema.generationLogs.errorMessage,
+          taskId: schema.generationLogs.taskId,
+          createdAt: schema.generationLogs.createdAt,
+          completedAt: schema.generationLogs.completedAt,
+        })
+        .from(schema.generationLogs)
+        .leftJoin(
+          schema.users,
+          eq(schema.generationLogs.userId, schema.users.id),
+        )
+        .orderBy(desc(schema.generationLogs.createdAt))
+        .limit(limit)
+        .offset(offset),
+    ]);
 
-    return logs;
+    return {
+      logs,
+      total: totalResult[0]?.count || 0,
+      limit,
+      offset,
+    };
   });
 
 export const getGenerationStats = publicProcedure

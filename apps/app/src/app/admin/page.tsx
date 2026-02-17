@@ -14,6 +14,8 @@ export default function AdminPage() {
     '7d',
   );
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 25;
 
   const toggleError = (id: string) => {
     setExpandedErrors((prev) => {
@@ -100,17 +102,22 @@ export default function AdminPage() {
     }
   }, [stats, statsError, statsLoading, user, isAdmin]);
 
-  const { data: logs, isLoading: logsLoading } =
+  const { data: logsData, isLoading: logsLoading } =
     trpc.getGenerationLogs.useQuery(
       {
         adminUserId: user?.id || '',
-        limit: 50,
-        offset: 0,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
       },
       {
         enabled: !!user && isAdmin,
+        keepPreviousData: true,
       },
     );
+
+  const logs = logsData?.logs;
+  const totalLogs = logsData?.total ?? 0;
+  const totalPages = Math.ceil(totalLogs / PAGE_SIZE);
 
   if (!isLoaded || !isAdmin) {
     return null;
@@ -268,10 +275,10 @@ export default function AdminPage() {
         );
       })()}
 
-      {/* Recent Requests Log */}
+      {/* Generation Requests */}
       <div>
         <h2 className='mb-4 text-xl font-semibold'>
-          Recent Generation Requests
+          Generation Requests {totalLogs > 0 && <span className="text-sm font-normal text-muted-foreground">({totalLogs} total)</span>}
         </h2>
         {logsLoading ? (
           <div>Loading logs...</div>
@@ -394,6 +401,52 @@ export default function AdminPage() {
         ) : (
           <div className='rounded-lg border bg-card p-8 text-center text-muted-foreground'>
             No generation requests yet
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className='mt-4 flex items-center justify-between'>
+            <span className='text-sm text-muted-foreground'>
+              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalLogs)} of {totalLogs}
+            </span>
+            <div className='flex items-center gap-2'>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+              >
+                First
+              </Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                Previous
+              </Button>
+              <span className='text-sm font-medium px-2'>
+                Page {page + 1} of {totalPages}
+              </span>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                Next
+              </Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+              >
+                Last
+              </Button>
+            </div>
           </div>
         )}
       </div>
