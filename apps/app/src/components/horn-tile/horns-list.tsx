@@ -220,7 +220,7 @@ export const HornsList = ({
   };
 
   if (isLoading || !clips) {
-    return <div>Loading...</div>;
+    return <div className='min-h-[200px]'>Loading...</div>;
   }
 
   return (
