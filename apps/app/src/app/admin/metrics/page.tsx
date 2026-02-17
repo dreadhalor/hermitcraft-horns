@@ -1289,7 +1289,7 @@ export default function MetricsPage() {
                           {/* Job Header */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-semibold">Job #{metrics.jobs.length - jobIdx}</span>
+                              <span className="font-mono font-semibold">Job #{metrics.jobs!.length - jobIdx}</span>
                               <Badge 
                                 variant={
                                   job.status === 'completed' ? 'default' :
