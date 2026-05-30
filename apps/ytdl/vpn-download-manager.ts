@@ -55,6 +55,18 @@ interface WorkerStats {
   lastUsed: string | null;
   lastError: string | null;
   currentJob: { taskId: string; videoUrl: string; startedAt: string } | null;
+  // Stats scoped to the worker's *current* VPN IP. These reset whenever the
+  // worker's exit IP changes (hard restart, soft reconnect, or gluetun
+  // rotation), so they answer "is this worker actually working on the IP it's
+  // on right now?" — unlike the lifetime counters above, which blend in
+  // results from old IPs that may have worked fine before YouTube blocked them.
+  currentIp: string | null;
+  currentLocation: string | null;
+  currentIpSince: string | null;
+  currentIpAttempts: number;
+  currentIpSuccesses: number;
+  currentIpFailures: number;
+  currentIpBlocks: number;
 }
 
 export class VpnDownloadManager {
@@ -83,6 +95,13 @@ export class VpnDownloadManager {
         lastUsed: null,
         lastError: null,
         currentJob: null,
+        currentIp: null,
+        currentLocation: null,
+        currentIpSince: null,
+        currentIpAttempts: 0,
+        currentIpSuccesses: 0,
+        currentIpFailures: 0,
+        currentIpBlocks: 0,
       });
       return { id, host: host!, port };
     });
@@ -137,6 +156,21 @@ export class VpnDownloadManager {
       attempt.ip = vpnInfo.ip || undefined;
       attempt.location = vpnInfo.location || undefined;
 
+      // If the exit IP changed since we last saw this worker, reset the
+      // current-IP stat window so the numbers reflect only this IP.
+      if (vpnInfo.ip && vpnInfo.ip !== workerStat.currentIp) {
+        workerStat.currentIp = vpnInfo.ip;
+        workerStat.currentLocation = vpnInfo.location;
+        workerStat.currentIpSince = new Date().toISOString();
+        workerStat.currentIpAttempts = 0;
+        workerStat.currentIpSuccesses = 0;
+        workerStat.currentIpFailures = 0;
+        workerStat.currentIpBlocks = 0;
+      }
+      // Only count toward the current-IP window when we actually have an IP
+      // (a down VPN has no IP to attribute the attempt to).
+      if (vpnInfo.ip) workerStat.currentIpAttempts++;
+
       process.stdout.write(`📥 [downloadAudio] Trying ${worker.id} (${worker.host}:${worker.port}) — attempt ${i + 1}/${this.workers.length}\n`);
       if (vpnInfo.ip) {
         process.stdout.write(`   VPN IP: ${vpnInfo.ip} (${vpnInfo.location || 'unknown location'})\n`);
@@ -174,6 +208,7 @@ export class VpnDownloadManager {
 
         attempt.success = true;
         workerStat.successes++;
+        if (vpnInfo.ip) workerStat.currentIpSuccesses++;
         workerStat.currentJob = null;
         attempts.push(attempt);
 
@@ -199,6 +234,7 @@ export class VpnDownloadManager {
         attempts.push(attempt);
 
         workerStat.failures++;
+        if (vpnInfo.ip) workerStat.currentIpFailures++;
         workerStat.lastError = message;
         workerStat.currentJob = null;
 
@@ -207,7 +243,10 @@ export class VpnDownloadManager {
         );
 
         const isBlock = message.includes('403') || message.includes('blocked');
-        if (isBlock) workerStat.blocks++;
+        if (isBlock) {
+          workerStat.blocks++;
+          if (vpnInfo.ip) workerStat.currentIpBlocks++;
+        }
 
         process.stdout.write(`❌ [downloadAudio] ${worker.id} failed: ${message}\n`);
 
@@ -339,11 +378,23 @@ export class VpnDownloadManager {
   /**
    * Get per-worker download statistics.
    */
-  getStats(): Array<{ proxy: string; successRate: number; total: number; details: WorkerStats }> {
+  getStats(): Array<{
+    proxy: string;
+    successRate: number;
+    total: number;
+    currentIpSuccessRate: number;
+    currentIpTotal: number;
+    details: WorkerStats;
+  }> {
     return Array.from(this.stats.entries()).map(([id, stat]) => ({
       proxy: id,
       successRate: stat.attempts > 0 ? stat.successes / stat.attempts : 0,
       total: stat.attempts,
+      currentIpSuccessRate:
+        stat.currentIpAttempts > 0
+          ? stat.currentIpSuccesses / stat.currentIpAttempts
+          : 0,
+      currentIpTotal: stat.currentIpAttempts,
       details: stat,
     }));
   }

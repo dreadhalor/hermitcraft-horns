@@ -54,6 +54,8 @@ interface MetricsData {
     proxy: string;
     successRate: number;
     total: number;
+    currentIpSuccessRate: number;
+    currentIpTotal: number;
     details: {
       endpoint: string;
       attempts: number;
@@ -63,6 +65,13 @@ interface MetricsData {
       lastUsed: string | null;
       lastError: string | null;
       currentJob: { taskId: string; videoUrl: string; startedAt: string } | null;
+      currentIp: string | null;
+      currentLocation: string | null;
+      currentIpSince: string | null;
+      currentIpAttempts: number;
+      currentIpSuccesses: number;
+      currentIpFailures: number;
+      currentIpBlocks: number;
     };
   }>;
   database?: {
@@ -744,21 +753,63 @@ export default function MetricsPage() {
             </div>
           )}
 
-          {/* Worker download stats */}
-          {workerStats && workerStats.total > 0 && (
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-              <span>{workerStats.details.attempts} attempts</span>
-              <span className="text-green-600">{workerStats.details.successes} ok</span>
-              <span className="text-red-600">{workerStats.details.failures} fail</span>
-              {workerStats.details.blocks > 0 && (
-                <span className="text-orange-600">{workerStats.details.blocks} blocked</span>
-              )}
-              <span className="font-mono">{(workerStats.successRate * 100).toFixed(0)}%</span>
-              {workerStats.details.lastUsed && (
-                <span>last: {new Date(workerStats.details.lastUsed).toLocaleTimeString()}</span>
-              )}
-            </div>
-          )}
+          {/* Worker download stats -- current IP first (the number that actually
+              tells you if this worker works *right now*), lifetime muted below. */}
+          {workerStats && (workerStats.currentIpTotal > 0 || workerStats.total > 0) && (() => {
+            const d = workerStats.details;
+            const curRate = workerStats.currentIpSuccessRate;
+            const curRateColor =
+              d.currentIpAttempts === 0
+                ? 'text-muted-foreground'
+                : curRate >= 0.8
+                  ? 'text-green-600'
+                  : curRate >= 0.5
+                    ? 'text-yellow-600'
+                    : 'text-red-600';
+            return (
+              <div className="space-y-1">
+                {/* Current-IP window (resets when the exit IP changes) */}
+                {d.currentIpAttempts > 0 ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                    <span className="font-medium text-foreground/80">On current IP:</span>
+                    <span className="text-muted-foreground">{d.currentIpAttempts} attempts</span>
+                    <span className="text-green-600">{d.currentIpSuccesses} ok</span>
+                    <span className="text-red-600">{d.currentIpFailures} fail</span>
+                    {d.currentIpBlocks > 0 && (
+                      <span className="text-orange-600">{d.currentIpBlocks} blocked</span>
+                    )}
+                    <span className={`font-mono font-semibold ${curRateColor}`}>
+                      {(curRate * 100).toFixed(0)}%
+                    </span>
+                    {d.currentIpAttempts > 0 && d.currentIpSuccesses === 0 && (
+                      <span className="text-red-600 font-medium">⚠ failing on this IP</span>
+                    )}
+                    {d.currentIpSince && (
+                      <span className="text-muted-foreground/70">since {new Date(d.currentIpSince).toLocaleTimeString()}</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-muted-foreground italic">
+                    No download attempts on current IP yet
+                  </div>
+                )}
+                {/* Lifetime totals -- de-emphasized; spans old IPs that may have worked */}
+                {d.attempts > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-muted-foreground/60">
+                    <span>lifetime:</span>
+                    <span>{d.attempts} attempts</span>
+                    <span>{d.successes} ok</span>
+                    <span>{d.failures} fail</span>
+                    {d.blocks > 0 && <span>{d.blocks} blocked</span>}
+                    <span className="font-mono">{(workerStats.successRate * 100).toFixed(0)}%</span>
+                    {d.lastUsed && (
+                      <span>last: {new Date(d.lastUsed).toLocaleTimeString()}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Memory bars for gluetun + worker */}
           {(memoryByContainer.has(cName) || memoryByContainer.has(gs.worker || '')) && (
