@@ -270,6 +270,27 @@ Generation logs are stored in the `generationLogs` table:
 - **Database Logs**: All generation attempts tracked with VPN routing details
 - **Sentry**: Error tracking (frontend)
 
+### CLI
+
+`scripts/ytdl-status.py` wraps the manager's read-only endpoints. It is
+GET-only — nothing in it can change the service.
+
+```bash
+./scripts/ytdl-status.py                 # summary; exits 1 if anything is degraded
+./scripts/ytdl-status.py workers         # per-worker VPN exit IPs
+./scripts/ytdl-status.py gluetun         # tunnel state, restart counts, uptime
+./scripts/ytdl-status.py system          # container memory; flags stopped containers
+./scripts/ytdl-status.py logs gluetun-1  # routed to the right endpoint, noise filtered
+./scripts/ytdl-status.py logs worker-2 --raw --tail 400
+```
+
+Stdlib only, no install. Point it elsewhere with `YTDL_URL`, e.g.
+`YTDL_URL=http://localhost:3001/ ./scripts/ytdl-status.py`.
+
+The noise filter matters more than it sounds: gluetun logs two lines per
+control-server request, which is most of any tail you fetch. Use `--raw` only
+when you specifically want them.
+
 ## Troubleshooting
 
 ### YouTube Download Failures
