@@ -29,6 +29,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "postgres": "^3.4.4",
     "ts-node": "^10.9.2",
+    "typescript": "5.4.5",
     "ytdl-core": "^4.11.5",
     "zod": "^3.23.5"
   },
