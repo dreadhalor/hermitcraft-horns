@@ -58,7 +58,7 @@ services:
   # ---- VPN containers (one per location) ----
 
   gluetun-1:
-    image: qmcgaw/gluetun:v3.41.1
+    image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun-1-local
     cap_add:
       - NET_ADMIN
@@ -70,22 +70,21 @@ services:
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=New York
       - LOG_LEVEL=info
+      # Access logs are pure noise and evict real tunnel events from the tail
+      - HTTP_CONTROL_SERVER_LOG=off
+      # Refresh the embedded server list; frozen at build date otherwise
+      - UPDATER_PERIOD=480h
       - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
       - FIREWALL_INPUT_PORTS=3001
     volumes:
       - ./gluetun-1-data:/gluetun
     restart: unless-stopped
     mem_limit: 256m
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     networks:
       - ytdl-local
 
   gluetun-2:
-    image: qmcgaw/gluetun:v3.41.1
+    image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun-2-local
     cap_add:
       - NET_ADMIN
@@ -97,22 +96,21 @@ services:
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=Chicago
       - LOG_LEVEL=info
+      # Access logs are pure noise and evict real tunnel events from the tail
+      - HTTP_CONTROL_SERVER_LOG=off
+      # Refresh the embedded server list; frozen at build date otherwise
+      - UPDATER_PERIOD=480h
       - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
       - FIREWALL_INPUT_PORTS=3001
     volumes:
       - ./gluetun-2-data:/gluetun
     restart: unless-stopped
     mem_limit: 256m
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     networks:
       - ytdl-local
 
   gluetun-3:
-    image: qmcgaw/gluetun:v3.41.1
+    image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun-3-local
     cap_add:
       - NET_ADMIN
@@ -124,17 +122,16 @@ services:
       - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
       - SERVER_CITIES=Los Angeles
       - LOG_LEVEL=info
+      # Access logs are pure noise and evict real tunnel events from the tail
+      - HTTP_CONTROL_SERVER_LOG=off
+      # Refresh the embedded server list; frozen at build date otherwise
+      - UPDATER_PERIOD=480h
       - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
       - FIREWALL_INPUT_PORTS=3001
     volumes:
       - ./gluetun-3-data:/gluetun
     restart: unless-stopped
     mem_limit: 256m
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://www.google.com"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     networks:
       - ytdl-local
 
@@ -149,7 +146,7 @@ services:
     network_mode: "service:gluetun-1"
     depends_on:
       gluetun-1:
-        condition: service_started
+        condition: service_healthy
     environment:
       - WORKER_ID=worker-1
       - WORKER_PORT=3001
@@ -165,7 +162,7 @@ services:
     network_mode: "service:gluetun-2"
     depends_on:
       gluetun-2:
-        condition: service_started
+        condition: service_healthy
     environment:
       - WORKER_ID=worker-2
       - WORKER_PORT=3001
@@ -181,7 +178,7 @@ services:
     network_mode: "service:gluetun-3"
     depends_on:
       gluetun-3:
-        condition: service_started
+        condition: service_healthy
     environment:
       - WORKER_ID=worker-3
       - WORKER_PORT=3001

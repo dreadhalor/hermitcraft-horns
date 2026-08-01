@@ -132,7 +132,8 @@ Most container management is done through the `/admin/metrics` UI:
 - View real-time status of all workers, VPN connections, and infrastructure
 - Soft restart (reconnect VPN) or hard restart (recreate container) individual workers
 - Stop VPN or stop container for individual workers
-- View container logs with noise filtering
+- View gluetun logs *and* worker logs with noise filtering — yt-dlp's own stderr
+  only ever appears in the worker logs, never the gluetun ones
 - Simulate YouTube IP blocks for testing failover
 - Monitor job processing, VPN attempts, and download stats
 
@@ -190,7 +191,34 @@ Each worker runs inside its paired gluetun container's network via `network_mode
 - Credentials: AWS Secrets Manager (prod) or `.env` (local)
 - `FIREWALL_OUTBOUND_SUBNETS`: Whitelists private Docker subnets for internal traffic
 - `FIREWALL_INPUT_PORTS=3001`: Allows incoming connections to the worker
-- Auto-reconnects on connection drops
+- `UPDATER_PERIOD=480h`: Refreshes the server list every 20 days (see below)
+- `HTTP_CONTROL_SERVER_LOG=off`: Suppresses per-request control-server access logs
+
+### Reconnection behaviour
+
+Gluetun self-heals on its own: it checks the tunnel every minute (ICMP/DNS) and
+every 5 minutes (TCP+TLS), and restarts the VPN client when a check fails. That
+internal restart does **not** tear down the network namespace, so the paired
+worker keeps its interface and only sees traffic pause.
+
+Two consequences worth knowing:
+
+- **Do not override gluetun's healthcheck.** The image ships its own, which
+  queries the internal health server. A custom `healthcheck:` in compose does
+  not disable self-healing, but it makes the container's reported health
+  meaningless — and every auto-heal tool keys off exactly that signal.
+- **A stale server list breaks reconnection permanently.** The server list is
+  embedded in the image. If it goes stale and the provider decommissions those
+  hosts, gluetun retries dead endpoints forever and no restart helps, because a
+  restart reloads the same list. `UPDATER_PERIOD` refreshes it — but the update
+  runs *through the tunnel*, so it cannot rescue a container that is already
+  stuck. Recovering one of those means pulling a newer gluetun image.
+
+Restarting the gluetun **container** (as opposed to gluetun's internal VPN
+restart) destroys the network namespace and leaves the paired worker orphaned
+with no network at all. The worker cannot recover on its own. Only
+`/manager/gluetun/restart` with `mode: hard` fixes this, because it is the one
+code path that restarts both halves of the pair.
 
 ### Switching VPN IPs
 
@@ -258,6 +286,25 @@ Generation logs are stored in the `generationLogs` table:
 - Check if gluetun containers are running and healthy
 - VPN auth failures (rate limiting) can cause all workers to fail — try hard restarting one at a time
 - If persistent, wait a few minutes and redeploy
+
+### A Worker Has No IP And Never Recovers
+
+Check the gluetun logs first — with access logging off, tunnel events are
+actually visible now. Three different causes look identical from the dashboard:
+
+| Log evidence | Cause | Fix |
+|---|---|---|
+| Repeated dial failures against the same hosts | Stale embedded server list | Pull a newer gluetun image — restarting will not help |
+| `AUTH_FAILED` | Credentials or NordVPN rate limiting | Wait, then hard restart one at a time |
+| Gluetun healthy with an IP, but the worker reports none | Worker orphaned from a destroyed network namespace | Hard restart (restarts the pair) |
+
+The generation log distinguishes these too: `vpnProxiesFailed` records the
+reason alongside the proxy, so `"worker-3 [ip]: VPN is down (no IP) — skipping"`
+is distinguishable from a 403 block after the fact.
+
+Note that a dead worker does **not** produce failed jobs. Jobs fail over to a
+peer and complete, so the pool silently runs at reduced capacity. Watch
+`vpnAttempts > 1` in the generation logs as the early warning.
 
 ### Out of Disk Space
 - The deploy workflow prunes old images automatically
