@@ -57,12 +57,13 @@ export const useTask = () => {
           setTaskError('Failed to download audio from YouTube. Please try a different video or try again later.');
           startTimeRef.current = null;
           
-          // Update generation log
+          // Update generation log. Deliberately no errorMessage: the ytdl
+          // service already recorded which workers failed and why, and a
+          // generic string here would be strictly worse than what it wrote.
           if (taskId) {
             updateLogMutation.mutate({
               taskId,
               status: 'failed',
-              errorMessage: 'YouTube download failed',
             });
           }
           

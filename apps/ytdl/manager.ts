@@ -364,6 +364,39 @@ app.get('/manager/infrastructure/logs', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /manager/workers/logs -- logs for a specific worker container
+//
+// yt-dlp's actual stderr only ever lands in the worker's stdout. Without this
+// the dashboard can show that a worker failed but never why.
+// ---------------------------------------------------------------------------
+
+app.get('/manager/workers/logs', async (req, res) => {
+  const container = req.query.container as string | undefined;
+  const containerName = container ?? WORKER_CONTAINERS[0];
+
+  if (!containerName || !WORKER_CONTAINERS.includes(containerName)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid container. Must be one of: ${WORKER_CONTAINERS.join(', ')}`,
+    });
+  }
+
+  const { tail = '100' } = req.query;
+  const tailLines = Math.min(Math.max(parseInt(tail as string) || 100, 10), 500);
+
+  try {
+    const logs = await fetchDockerLogs(containerName, tailLines);
+    res.json({ success: true, container: containerName, lines: tailLines, logs });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      hint: 'Is /var/run/docker.sock mounted?',
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // POST /manager/workers/simulate-block -- toggle simulated YouTube block
 // GET  /manager/workers/simulate-block -- get current simulate-block status
 // ---------------------------------------------------------------------------

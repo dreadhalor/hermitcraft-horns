@@ -227,6 +227,8 @@ export default function MetricsPage() {
   }, [allUsers]);
   const [vpnLogs, setVpnLogs] = useState<Record<string, string | null>>({});
   const [loadingLogs, setLoadingLogs] = useState<string | null>(null);
+  const [workerLogs, setWorkerLogs] = useState<Record<string, string | null>>({});
+  const [loadingWorkerLogs, setLoadingWorkerLogs] = useState<string | null>(null);
   const [filterLogNoise, setFilterLogNoise] = useState(true);
   const [simulateBlockStatus, setSimulateBlockStatus] = useState<Record<string, boolean>>({});
   const [togglingBlock, setTogglingBlock] = useState<string | null>(null);
@@ -555,6 +557,37 @@ export default function MetricsPage() {
     }
   };
 
+  // Worker logs are where yt-dlp's own stderr lands -- the gluetun logs next
+  // to them only ever explain tunnel problems, never download failures.
+  const loadWorkerLogs = async (worker: string) => {
+    setLoadingWorkerLogs(worker);
+    try {
+      const response = await fetch(`${ytdlUrl}manager/workers/logs?tail=150&container=${worker}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch logs');
+      setWorkerLogs(prev => ({ ...prev, [worker]: data.logs }));
+    } catch (err) {
+      setWorkerLogs(prev => ({
+        ...prev,
+        [worker]: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      }));
+    } finally {
+      setLoadingWorkerLogs(null);
+    }
+  };
+
+  const toggleWorkerLogs = async (worker: string) => {
+    if (workerLogs[worker] !== undefined) {
+      setWorkerLogs(prev => {
+        const next = { ...prev };
+        delete next[worker];
+        return next;
+      });
+      return;
+    }
+    await loadWorkerLogs(worker);
+  };
+
   const filterLogs = (raw: string): { text: string; filtered: number } => {
     const lines = raw.split('\n');
     if (!filterLogNoise) return { text: raw, filtered: 0 };
@@ -838,8 +871,13 @@ export default function MetricsPage() {
               {restartingVpn === cName ? 'Restarting...' : 'Hard Restart'}
             </Button>
             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fetchVpnLogs(cName)} disabled={loadingLogs === cName}>
-              {vpnLogs[cName] !== undefined ? 'Hide Logs' : 'Logs'}
+              {vpnLogs[cName] !== undefined ? 'Hide VPN Logs' : 'VPN Logs'}
             </Button>
+            {gs.worker && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleWorkerLogs(gs.worker!)} disabled={loadingWorkerLogs === gs.worker}>
+                {workerLogs[gs.worker] !== undefined ? 'Hide Worker Logs' : 'Worker Logs'}
+              </Button>
+            )}
 
             {(vpnRunning || containerRunning) && (
               <Separator orientation="vertical" className="h-4 mx-0.5" />
@@ -894,6 +932,23 @@ export default function MetricsPage() {
               </div>
             );
           })()}
+
+          {/* Worker log viewer -- yt-dlp stderr lives here, not in the VPN logs */}
+          {gs.worker && workerLogs[gs.worker] !== undefined && (
+            <div className="border-t pt-3 mt-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Worker Logs <span className="font-mono text-[10px]">({gs.worker})</span>
+                </span>
+                <Button size="sm" variant="ghost" onClick={() => loadWorkerLogs(gs.worker!)} disabled={loadingWorkerLogs === gs.worker} className="text-xs h-6 px-2">
+                  {loadingWorkerLogs === gs.worker ? '...' : 'Refresh'}
+                </Button>
+              </div>
+              <pre className="text-[11px] leading-relaxed bg-gray-950 text-gray-100 p-4 rounded-lg overflow-x-auto max-h-72 overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                {workerLogs[gs.worker] || 'No logs available'}
+              </pre>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

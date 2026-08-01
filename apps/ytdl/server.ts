@@ -23,9 +23,17 @@ import {
   timestamp,
   index,
 } from 'drizzle-orm/pg-core';
-import { eq, desc } from 'drizzle-orm';
-import { VpnDownloadManager, DownloadResult } from './vpn-download-manager';
-import { extractVpnLogData, formatVpnSummary } from './vpn-logger';
+import { eq, desc, and, isNull } from 'drizzle-orm';
+import {
+  VpnDownloadManager,
+  DownloadResult,
+  AllWorkersFailedError,
+} from './vpn-download-manager';
+import {
+  extractVpnLogData,
+  extractVpnLogDataFromAttempts,
+  formatVpnSummary,
+} from './vpn-logger';
 import { metricsTracker } from './metrics-tracker';
 
 // Database schema for generationLogs table
@@ -189,12 +197,14 @@ app.use(
       return next();
     }
 
-    console.log('📨 INCOMING REQUEST:');
-    console.log('   Path:', req.path);
-    console.log('   Method:', req.method);
-    console.log('   Origin:', req.headers['origin'] || 'none');
-    console.log('   User-Agent:', req.headers['user-agent'] || 'none');
-    console.log('   Body:', JSON.stringify(req.body).substring(0, 500)); // Limit body log length
+    // checkTaskStatus is polled once a second per in-flight job. Logging it at
+    // the same volume as everything else buries the download diagnostics --
+    // a 500-line tail (the manager's cap) ends up covering ~25 seconds.
+    if (!req.path.includes('/checkTaskStatus')) {
+      console.log(
+        `📨 ${req.method} ${req.path} origin=${req.headers['origin'] || 'none'} ua=${req.headers['user-agent'] || 'none'}`,
+      );
+    }
 
     // Try to extract tRPC input and log to database immediately
     if (db && req.path.includes('/enqueueTask')) {
@@ -274,43 +284,13 @@ const authenticateApiKey = async (
       : undefined;
   const validApiKey = process.env.YTDL_INTERNAL_API_KEY;
 
-  // Log ALL incoming requests for debugging
-  console.log('🔐 Authentication Check:');
-  console.log('   Path:', req.path);
-  console.log('   Method:', req.method);
-  console.log('   API Key Provided:', !!apiKey);
-  console.log('   API Key Length:', apiKey?.length || 0);
-  console.log(
-    '   API Key Preview:',
-    apiKey
-      ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`
-      : 'NONE',
-  );
-  console.log(
-    '   Valid Key Expected:',
-    validApiKey
-      ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}`
-      : 'NOT SET',
-  );
-  console.log('   Keys Match:', apiKey === validApiKey);
-
   const origin = Array.isArray(req.headers['origin'])
     ? req.headers['origin'][0]
     : req.headers['origin'];
-  const userAgent = Array.isArray(req.headers['user-agent'])
-    ? req.headers['user-agent'][0]
-    : req.headers['user-agent'];
 
-  console.log(
-    '   Headers:',
-    JSON.stringify({
-      'content-type': req.headers['content-type'],
-      'x-api-key': apiKey ? `${apiKey.substring(0, 8)}...` : 'MISSING',
-      authorization: req.headers['authorization'] ? 'PROVIDED' : 'MISSING',
-      origin: origin,
-      'user-agent': userAgent,
-    }),
-  );
+  // Successful auth is the boring case -- stay silent so the logs are readable.
+  // Never log key material (not even a prefix): these logs are surfaced
+  // verbatim in the admin dashboard.
 
   if (!validApiKey) {
     console.warn(
@@ -320,27 +300,17 @@ const authenticateApiKey = async (
   }
 
   if (!apiKey || apiKey !== validApiKey) {
-    console.error('❌ Authentication FAILED - Invalid or missing API key');
-
-    // Build detailed error message with full diagnostics
-    const providedKeyPreview = apiKey
-      ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`
-      : 'NONE';
-    const expectedKeyPreview = validApiKey
-      ? `${validApiKey.substring(0, 8)}...${validApiKey.substring(validApiKey.length - 4)}`
-      : 'NOT SET';
-    const origin = Array.isArray(req.headers['origin'])
-      ? req.headers['origin'][0]
-      : req.headers['origin'];
-
+    // Describe the mismatch without echoing either key -- a length delta is
+    // enough to tell a truncated/absent key from a genuinely wrong one.
     const detailedError = [
       apiKey ? 'Auth failed: Invalid API key' : 'Auth failed: Missing API key',
-      `Provided: ${providedKeyPreview} (len: ${apiKey?.length || 0})`,
-      `Expected: ${expectedKeyPreview} (len: ${validApiKey?.length || 0})`,
+      `Provided length: ${apiKey?.length || 0} (expected ${validApiKey?.length || 0})`,
       `Origin: ${origin || 'none'}`,
       `Path: ${req.path}`,
       `Method: ${req.method}`,
     ].join(' | ');
+
+    console.error(`❌ ${detailedError}`);
 
     // Update existing log entry if available, otherwise create new one
     if (db) {
@@ -390,7 +360,6 @@ const authenticateApiKey = async (
       .json({ error: 'Unauthorized: Invalid or missing API key' });
   }
 
-  console.log('✅ Authentication PASSED');
   next();
 };
 
@@ -1150,6 +1119,38 @@ const processor = videoProcessingQueue.process(async (job) => {
     if (downloadError instanceof Error) {
       process.stdout.write(`   Stack: ${downloadError.stack}\n`);
     }
+
+    // Record the per-worker breakdown *here*, while the live error object is
+    // still in hand. The queue's 'failed' event only carries err.message, so
+    // this is the last point where the structured attempts survive.
+    if (db && downloadError instanceof AllWorkersFailedError) {
+      try {
+        const vpnData = extractVpnLogDataFromAttempts(downloadError.attempts);
+        await db
+          .update(generationLogs)
+          .set({
+            status: 'failed',
+            completedAt: new Date(),
+            errorMessage: downloadError.message,
+            vpnAttempts: vpnData.vpnAttempts.toString(),
+            vpnProxiesTried: vpnData.vpnProxiesTried,
+            vpnProxiesFailed: vpnData.vpnProxiesFailed,
+            vpnProxySuccess: null,
+          })
+          .where(eq(generationLogs.taskId, taskId));
+        process.stdout.write(
+          `📝 [DB] Recorded failure with ${vpnData.vpnAttempts} attempt(s) (taskId: ${taskId})\n`,
+        );
+        for (const failure of vpnData.vpnProxiesFailed) {
+          process.stdout.write(`   ✗ ${failure}\n`);
+        }
+      } catch (dbError) {
+        process.stdout.write(
+          `⚠️  [DB ERROR] Failed to record failure detail: ${dbError}\n`,
+        );
+      }
+    }
+
     throw downloadError;
   }
 
@@ -1228,17 +1229,28 @@ videoProcessingQueue.on('failed', async (job, err) => {
   const taskId = job ? String(job.id) : 'unknown';
   process.stdout.write(`❌ [FAILED EVENT] Job ${taskId}: ${err.message}\n`);
 
-  // Update log to failed
+  // Update log to failed. The download path may already have written a richer
+  // record (full per-worker breakdown); only fill in the message if nothing
+  // has claimed it, so this handler can never flatten better diagnostics.
   if (db && job) {
     try {
       await db
         .update(generationLogs)
-        .set({
-          status: 'failed',
-          errorMessage: err instanceof Error ? err.message : 'Unknown error',
-          completedAt: new Date(),
-        })
+        .set({ status: 'failed', completedAt: new Date() })
         .where(eq(generationLogs.taskId, taskId));
+
+      await db
+        .update(generationLogs)
+        .set({
+          errorMessage: err instanceof Error ? err.message : 'Unknown error',
+        })
+        .where(
+          and(
+            eq(generationLogs.taskId, taskId),
+            isNull(generationLogs.errorMessage),
+          ),
+        );
+
       process.stdout.write(
         `❌ [DB] Updated log to failed (taskId: ${taskId})\n`,
       );

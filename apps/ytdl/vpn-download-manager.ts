@@ -40,6 +40,22 @@ export interface DownloadOptions {
   onProgress?: (progress: DownloadProgress) => void;
 }
 
+/**
+ * Thrown when every worker in the pool failed. Carries the per-attempt
+ * breakdown so the failure path can persist the same VPN diagnostics the
+ * success path does -- otherwise the only record of *why* a job died is a
+ * flattened string in the queue's failedReason.
+ */
+export class AllWorkersFailedError extends Error {
+  readonly attempts: VpnAttempt[];
+
+  constructor(message: string, attempts: VpnAttempt[]) {
+    super(message);
+    this.name = 'AllWorkersFailedError';
+    this.attempts = attempts;
+  }
+}
+
 interface WorkerEndpoint {
   id: string;
   host: string;
@@ -260,7 +276,10 @@ export class VpnDownloadManager {
     const summary = attempts
       .map((a) => `${a.proxy}: ${a.error || 'unknown error'}`)
       .join('\n  ');
-    throw new Error(`All ${this.workers.length} workers failed:\n  ${summary}`);
+    throw new AllWorkersFailedError(
+      `All ${this.workers.length} workers failed:\n  ${summary}`,
+      attempts,
+    );
   }
 
   /**
