@@ -1,7 +1,8 @@
 /**
  * Lightweight download worker.
  *
- * Runs behind a gluetun VPN container (network_mode: "service:gluetun-N").
+ * Runs behind a gluetun VPN container (network_mode: "service:gluetun-N"),
+ * or directly on the bridge network with VPN_MODE=off (residential egress).
  * Accepts download requests via HTTP, executes yt-dlp, and streams the
  * resulting audio file back in the response.
  */
@@ -17,6 +18,24 @@ app.use(express.json());
 const PORT = parseInt(process.env.WORKER_PORT || '3001');
 const WORKER_ID = process.env.WORKER_ID || 'worker';
 const OUTPUT_DIR = 'media-output';
+// 'gluetun' (default) = require the VPN control server on localhost:8000;
+// 'off' = direct egress, no VPN layer at all
+const VPN_MODE = (process.env.VPN_MODE || 'gluetun').toLowerCase();
+
+// In direct mode the egress IP never changes; fetch once and cache.
+let directEgressIp: string | null = null;
+async function fetchDirectEgressIp(): Promise<string | null> {
+  if (directEgressIp) return directEgressIp;
+  try {
+    const r = await fetch('https://api.ipify.org?format=json', {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (r.ok) directEgressIp = ((await r.json()) as any).ip ?? null;
+  } catch {
+    // non-fatal: direct mode works without knowing its own IP
+  }
+  return directEgressIp;
+}
 
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -126,6 +145,13 @@ app.get('/health', async (_req, res) => {
     timestamp: new Date().toISOString(),
   };
 
+  if (VPN_MODE === 'off') {
+    // public_ip keeps the shape VpnDownloadManager expects for per-IP stats
+    result.vpn = { mode: 'direct', public_ip: await fetchDirectEgressIp() };
+    result.vpnStatus = { mode: 'direct' };
+    return res.json(result);
+  }
+
   // Fetch VPN IP from gluetun control server (localhost:8000 via shared network)
   try {
     const ipRes = await fetch('http://localhost:8000/v1/publicip/ip', {
@@ -170,8 +196,11 @@ app.post('/download', async (req, res) => {
     return res.status(400).json({ error: 'Missing videoUrl, startMs, or endMs' });
   }
 
-  // Pre-flight VPN check — fail fast if VPN tunnel is down
-  try {
+  // Pre-flight VPN check — fail fast if VPN tunnel is down.
+  // Skipped entirely in direct mode: there is no tunnel to be down.
+  if (VPN_MODE === 'off') {
+    console.log(`[${WORKER_ID}] Direct mode — skipping VPN pre-flight`);
+  } else try {
     const vpnCheck = await fetch('http://localhost:8000/v1/publicip/ip', {
       signal: AbortSignal.timeout(3000),
     });

@@ -21,11 +21,17 @@ const YTDL_HOST = process.env.YTDL_HOST || 'ytdl-local';
 const YTDL_PORT = parseInt(process.env.YTDL_PORT || '3001');
 const YTDL_TARGET = `http://${YTDL_HOST}:${YTDL_PORT}`;
 
+// 'gluetun' (default) = orchestrate VPN containers; 'off' = no VPN layer
+// (an empty GLUETUN_CONTAINERS env var alone can't express this — empty
+// string is falsy, so the || fallback would resurrect the defaults)
+const VPN_MODE = (process.env.VPN_MODE || 'gluetun').toLowerCase();
+
 // Gluetun containers: comma-separated names (for Docker socket operations)
-const GLUETUN_CONTAINERS = (process.env.GLUETUN_CONTAINERS || 'gluetun-1-local,gluetun-2-local,gluetun-3-local')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+const GLUETUN_CONTAINERS = VPN_MODE === 'off' ? [] :
+  (process.env.GLUETUN_CONTAINERS || 'gluetun-1-local,gluetun-2-local,gluetun-3-local')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 // Worker containers: comma-separated names (paired 1:1 with gluetun containers)
 const WORKER_CONTAINERS = (process.env.WORKER_CONTAINERS || 'worker-1-local,worker-2-local,worker-3-local')

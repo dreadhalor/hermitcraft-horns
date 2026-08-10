@@ -1,6 +1,8 @@
-# Use the specified Node.js version on Alpine Linux
+# Use the specified Node.js version on Alpine Linux.
+# No hardcoded platform: CI passes --platform linux/amd64 explicitly (EC2),
+# while a bare local build produces a native image (arm64 on Apple Silicon).
 ARG NODE_VERSION=20
-FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine as base
+FROM node:${NODE_VERSION}-alpine as base
 ARG PNPM_VERSION=8.15.1
 
 # Set the working directory

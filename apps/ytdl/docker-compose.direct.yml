@@ -1,0 +1,92 @@
+# Direct-egress variant — no VPN layer (VPN_MODE=off).
+# For hosts whose own IP is fine for YouTube (residential). Datacenter hosts
+# (EC2 etc.) must keep using the gluetun compose — YouTube blocks their IPs.
+# Two workers instead of three: without per-worker VPN exit IPs there is no
+# IP diversity to gain from a third.
+# Requires .env with YTDL_INTERNAL_API_KEY and DATABASE_URL.
+# Build the image locally first:  docker build -t hermitcraft-ytdl:direct .
+
+services:
+  manager:
+    image: hermitcraft-ytdl:direct
+    container_name: manager
+    command: ["npx", "ts-node", "manager.ts"]
+    ports:
+      - "3001:3001"
+    environment:
+      - MANAGER_PORT=3001
+      - VPN_MODE=off
+      - YTDL_HOST=ytdl
+      - YTDL_PORT=3001
+      - WORKER_CONTAINERS=worker-1,worker-2
+      - MANAGER_CONTAINER=manager
+      - YTDL_CONTAINER=ytdl
+      - REDIS_CONTAINER=redis
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc/meminfo:/host/proc/meminfo:ro
+      - ./manager-data:/data
+    networks:
+      - ytdl-network
+    restart: unless-stopped
+    mem_limit: 512m
+
+  ytdl:
+    image: hermitcraft-ytdl:direct
+    container_name: ytdl
+    networks:
+      - ytdl-network
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - YTDL_INTERNAL_API_KEY=${YTDL_INTERNAL_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - WORKER_ENDPOINTS=worker-1:3001,worker-2:3001
+    restart: unless-stopped
+    mem_limit: 640m
+
+  worker-1:
+    image: hermitcraft-ytdl:direct
+    container_name: worker-1
+    command: ["npx", "ts-node", "worker.ts"]
+    environment:
+      - WORKER_ID=worker-1
+      - WORKER_PORT=3001
+      - VPN_MODE=off
+    networks:
+      - ytdl-network
+    restart: unless-stopped
+    mem_limit: 768m
+
+  worker-2:
+    image: hermitcraft-ytdl:direct
+    container_name: worker-2
+    command: ["npx", "ts-node", "worker.ts"]
+    environment:
+      - WORKER_ID=worker-2
+      - WORKER_PORT=3001
+      - VPN_MODE=off
+    networks:
+      - ytdl-network
+    restart: unless-stopped
+    mem_limit: 768m
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes", "--dir", "/data"]
+    volumes:
+      - ./redis-data:/data
+    restart: unless-stopped
+    mem_limit: 128m
+    networks:
+      - ytdl-network
+
+networks:
+  ytdl-network:
+    driver: bridge
