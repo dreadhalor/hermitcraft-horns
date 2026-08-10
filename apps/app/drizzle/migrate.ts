@@ -1,4 +1,4 @@
-import { migrate } from 'drizzle-orm/vercel-postgres/migrator';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { db } from './db';
 import path from 'path';
 

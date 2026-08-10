@@ -1,11 +1,17 @@
 import './env-config';
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { sql as vercelSql } from '@vercel/postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as schema from './schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { EditClipSchema } from '@/schemas';
 
-export const db = drizzle(vercelSql, { schema });
+// Plain-Postgres client (self-hosted). POSTGRES_URL falls back to DATABASE_URL
+// so the app and ytdl can share one env var.
+const connectionString =
+  process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
+const queryClient = postgres(connectionString, { max: 10 });
+
+export const db = drizzle(queryClient, { schema });
 
 export * from './db-fxns/user';
 export * from './db-fxns/get-clips';

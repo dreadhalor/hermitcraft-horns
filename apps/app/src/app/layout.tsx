@@ -9,8 +9,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { MainNav } from '@/components/main-nav';
 import { UserProvider } from '@/providers/user-provider';
 import { Toaster } from 'sonner';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+import Script from 'next/script';
 import { AppProviderServer } from '@/providers/app-provider-server';
 
 const fontSans = FontSans({
@@ -55,8 +54,13 @@ export default function RootLayout({
               </TooltipProvider>
             </AppProviderServer>
           </TRPCProvider>
-          <Analytics />
-          <SpeedInsights />
+          {/* Cloudflare Web Analytics (self-hosted replacement for Vercel
+              Analytics + Speed Insights) — RUM pageviews + Core Web Vitals */}
+          <Script
+            defer
+            src='https://static.cloudflareinsights.com/beacon.min.js'
+            data-cf-beacon='{"token": "1439d25f74084cb7bd9186cdbc49318f"}'
+          />
         </body>
       </html>
     </ClerkProvider>
