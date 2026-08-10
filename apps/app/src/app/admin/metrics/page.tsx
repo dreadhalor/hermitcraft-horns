@@ -17,11 +17,16 @@ import { trpc } from '@/trpc/client';
 interface VpnConnectionStatus {
   proxy: string;
   connected: boolean;
+  mode?: 'vpn' | 'direct';
   ip: string | null;
   location: string | null;
   responseTimeMs: number | null;
   error?: string;
 }
+
+// A worker's attempt/proxy label only mentions gluetun when it ran through a
+// VPN netns — anything else was a direct (pass-through) download.
+const isDirectProxy = (proxy: string) => !proxy.includes('gluetun');
 
 interface MetricsData {
   timestamp: string;
@@ -132,6 +137,9 @@ interface GluetunStatus {
   container: string;
   worker?: string | null;
   timestamp: string;
+  /** Synthetic entry for a VPN-less worker (VPN_MODE=off) — no gluetun
+      container exists, so docker/VPN actions are hidden for these. */
+  direct?: boolean;
   containerState?: {
     status?: string;
     running?: boolean;
@@ -703,6 +711,25 @@ export default function MetricsPage() {
     );
   }
 
+  // In direct mode (VPN_MODE=off) the manager has no gluetun containers, so
+  // synthesize worker cards from the /metrics vpnConnectionStatus entries —
+  // same card, DIRECT badge, docker/VPN actions hidden.
+  const directWorkerCards: GluetunStatus[] = (metrics?.vpnConnectionStatus ?? [])
+    .filter((v) => v.mode === 'direct')
+    .map((v) => {
+      const worker = v.proxy.split(' ')[0]!;
+      return {
+        container: worker,
+        worker,
+        direct: true,
+        timestamp: metrics?.timestamp ?? '',
+        containerState: { running: true, health: 'healthy', status: 'running (direct)' },
+        vpnStatus: { status: 'running' },
+        publicIp: { public_ip: v.ip ?? undefined, city: v.location ?? undefined },
+      };
+    });
+  const workerCards = gluetunStatuses.length > 0 ? gluetunStatuses : directWorkerCards;
+
   // Reusable card for a single gluetun/worker pair
   const renderGluetunCard = (gs: GluetunStatus, idx: number) => {
     const vpnRunning = gs.vpnStatus?.status === 'running';
@@ -738,6 +765,9 @@ export default function MetricsPage() {
               <CardTitle className="text-base font-semibold">Worker {idx + 1}</CardTitle>
             </div>
             <div className="flex items-center gap-1.5">
+              {gs.direct && (
+                <Badge variant="outline" className="text-sky-700 border-sky-300 bg-sky-50 text-xs font-normal">Direct pass-through</Badge>
+              )}
               {isBlocked && (
                 <Badge variant="outline" className="text-orange-700 border-orange-400 bg-orange-50 text-xs font-normal">Simulating Block</Badge>
               )}
@@ -756,15 +786,23 @@ export default function MetricsPage() {
         <CardContent className="px-3 sm:px-5 pb-4 pt-0 space-y-3">
           {/* Status badges -- compact inline row */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant={containerRunning ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
-              {gs.containerState?.status || 'unknown'}
-            </Badge>
-            <Badge variant={healthy ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
-              {gs.containerState?.health || 'no health'}
-            </Badge>
-            <Badge variant={vpnRunning ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
-              VPN: {gs.vpnStatus?.status || gs.vpnStatus?.error || 'unknown'}
-            </Badge>
+            {gs.direct ? (
+              <Badge variant="secondary" className="text-[11px] font-normal">
+                no VPN — residential egress
+              </Badge>
+            ) : (
+              <>
+                <Badge variant={containerRunning ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
+                  {gs.containerState?.status || 'unknown'}
+                </Badge>
+                <Badge variant={healthy ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
+                  {gs.containerState?.health || 'no health'}
+                </Badge>
+                <Badge variant={vpnRunning ? 'secondary' : 'destructive'} className="text-[11px] font-normal">
+                  VPN: {gs.vpnStatus?.status || gs.vpnStatus?.error || 'unknown'}
+                </Badge>
+              </>
+            )}
             {publicIp && (
               <span className="text-[11px] font-mono text-muted-foreground">{publicIp}</span>
             )}
@@ -847,7 +885,7 @@ export default function MetricsPage() {
           {/* Memory bars for gluetun + worker */}
           {(memoryByContainer.has(cName) || memoryByContainer.has(gs.worker || '')) && (
             <div className="space-y-1">
-              {memoryByContainer.has(cName) && (
+              {!gs.direct && memoryByContainer.has(cName) && (
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground w-12 shrink-0">VPN</span>
                   <div className="flex-1"><MemoryBar mem={memoryByContainer.get(cName)} /></div>
@@ -862,8 +900,11 @@ export default function MetricsPage() {
             </div>
           )}
 
-          {/* Action buttons */}
+          {/* Action buttons -- VPN/docker actions have no target for direct
+              workers (no gluetun container exists); worker logs still work */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            {!gs.direct && (
+              <>
             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => restartVpn(cName, 'soft')} disabled={restartingVpn === cName}>
               {restartingVpn === cName ? 'Restarting...' : 'Soft Restart'}
             </Button>
@@ -873,17 +914,19 @@ export default function MetricsPage() {
             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fetchVpnLogs(cName)} disabled={loadingLogs === cName}>
               {vpnLogs[cName] !== undefined ? 'Hide VPN Logs' : 'VPN Logs'}
             </Button>
+              </>
+            )}
             {gs.worker && (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleWorkerLogs(gs.worker!)} disabled={loadingWorkerLogs === gs.worker}>
                 {workerLogs[gs.worker] !== undefined ? 'Hide Worker Logs' : 'Worker Logs'}
               </Button>
             )}
 
-            {(vpnRunning || containerRunning) && (
+            {!gs.direct && (vpnRunning || containerRunning) && (
               <Separator orientation="vertical" className="h-4 mx-0.5" />
             )}
 
-            {containerRunning && (
+            {!gs.direct && containerRunning && (
               <Button
                 size="sm"
                 variant={isBlocked ? 'default' : 'ghost'}
@@ -894,12 +937,12 @@ export default function MetricsPage() {
                 {togglingBlock === cName ? '...' : isBlocked ? 'Unblock' : 'Simulate Block'}
               </Button>
             )}
-            {vpnRunning && (
+            {!gs.direct && vpnRunning && (
               <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground hover:text-orange-600" onClick={() => stopVpn(cName)} disabled={stoppingVpn === cName}>
                 {stoppingVpn === cName ? 'Stopping...' : 'Stop VPN'}
               </Button>
             )}
-            {containerRunning && (
+            {!gs.direct && containerRunning && (
               <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground hover:text-orange-600" onClick={() => stopContainer(cName)} disabled={stoppingContainer === cName}>
                 {stoppingContainer === cName ? 'Stopping...' : 'Stop Container'}
               </Button>
@@ -1369,10 +1412,11 @@ export default function MetricsPage() {
         </div>
       )}
 
-      {/* VPN Worker Status Cards -- always visible via manager */}
-      {gluetunStatuses.length > 0 && (
+      {/* Worker Status Cards -- gluetun pairs via manager, or synthetic
+          direct-mode cards when no VPN layer is running */}
+      {workerCards.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-          {gluetunStatuses.map(renderGluetunCard)}
+          {workerCards.map(renderGluetunCard)}
         </div>
       )}
 
@@ -1459,6 +1503,9 @@ export default function MetricsPage() {
                               <Badge variant="outline" className="bg-green-50 text-green-700 text-xs gap-1">
                                 <span>✅</span> {job.vpnAttempts[0]!.proxy}
                               </Badge>
+                              {isDirectProxy(job.vpnAttempts[0]!.proxy) && (
+                                <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-300 text-xs">direct</Badge>
+                              )}
                               {job.vpnAttempts[0]!.ip && (
                                 <span className="font-mono text-muted-foreground">{job.vpnAttempts[0]!.ip}</span>
                               )}
@@ -1479,6 +1526,9 @@ export default function MetricsPage() {
                                       <div className="flex items-center gap-2">
                                         <span>{attempt.success ? '✅' : '❌'}</span>
                                         <span className="font-mono">{attempt.proxy}</span>
+                                        {isDirectProxy(attempt.proxy) && (
+                                          <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-300 text-[10px] px-1 py-0">direct</Badge>
+                                        )}
                                         {attempt.ip && (
                                           <Badge variant="outline" className="text-xs">
                                             {attempt.ip}

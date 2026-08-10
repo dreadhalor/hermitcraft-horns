@@ -94,6 +94,7 @@ async function checkVpnConnectionStatus(): Promise<
   Array<{
     proxy: string;
     connected: boolean;
+    mode?: 'vpn' | 'direct';
     ip: string | null;
     location: string | null;
     responseTimeMs: number | null;
@@ -126,6 +127,7 @@ async function checkVpnConnectionStatus(): Promise<
           return {
             proxy: `${workerId} (${endpoint})`,
             connected: !!ip && vpnStatus === 'running',
+            mode: (vpn.mode === 'direct' ? 'direct' : 'vpn') as 'vpn' | 'direct',
             ip,
             location,
             responseTimeMs: Date.now() - startTime,

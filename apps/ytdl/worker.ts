@@ -22,19 +22,36 @@ const OUTPUT_DIR = 'media-output';
 // 'off' = direct egress, no VPN layer at all
 const VPN_MODE = (process.env.VPN_MODE || 'gluetun').toLowerCase();
 
-// In direct mode the egress IP never changes; fetch once and cache.
-let directEgressIp: string | null = null;
-async function fetchDirectEgressIp(): Promise<string | null> {
-  if (directEgressIp) return directEgressIp;
+// In direct mode the egress IP never changes; fetch ip + geo once and cache.
+// Mirrors the shape gluetun's control server returns (public_ip/country/
+// region/city) so the manager/UI render direct workers with no special cases.
+type DirectEgressInfo = {
+  public_ip: string | null;
+  country?: string;
+  region?: string;
+  city?: string;
+};
+let directEgressInfo: DirectEgressInfo | null = null;
+async function fetchDirectEgressInfo(): Promise<DirectEgressInfo> {
+  if (directEgressInfo?.public_ip) return directEgressInfo;
   try {
-    const r = await fetch('https://api.ipify.org?format=json', {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (r.ok) directEgressIp = ((await r.json()) as any).ip ?? null;
+    const r = await fetch(
+      'http://ip-api.com/json?fields=query,country,regionName,city',
+      { signal: AbortSignal.timeout(3000) },
+    );
+    if (r.ok) {
+      const j = (await r.json()) as any;
+      directEgressInfo = {
+        public_ip: j.query ?? null,
+        country: j.country,
+        region: j.regionName,
+        city: j.city,
+      };
+    }
   } catch {
     // non-fatal: direct mode works without knowing its own IP
   }
-  return directEgressIp;
+  return directEgressInfo ?? { public_ip: null };
 }
 
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -146,9 +163,12 @@ app.get('/health', async (_req, res) => {
   };
 
   if (VPN_MODE === 'off') {
-    // public_ip keeps the shape VpnDownloadManager expects for per-IP stats
-    result.vpn = { mode: 'direct', public_ip: await fetchDirectEgressIp() };
-    result.vpnStatus = { mode: 'direct' };
+    // Same shape as gluetun's publicip payload + status 'running', so the
+    // manager's connected-check and the metrics UI treat direct workers as
+    // first-class (they ARE running — there's just no tunnel).
+    const egress = await fetchDirectEgressInfo();
+    result.vpn = { mode: 'direct', ...egress };
+    result.vpnStatus = { status: 'running', mode: 'direct' };
     return res.json(result);
   }
 
