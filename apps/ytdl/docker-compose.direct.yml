@@ -16,6 +16,7 @@ services:
     environment:
       - MANAGER_PORT=3001
       - VPN_MODE=off
+      - POT_PROVIDER_URL=http://pot-provider:4416
       - YTDL_HOST=ytdl
       - YTDL_PORT=3001
       - WORKER_CONTAINERS=worker-1,worker-2
@@ -58,6 +59,7 @@ services:
       - WORKER_ID=worker-1
       - WORKER_PORT=3001
       - VPN_MODE=off
+      - POT_PROVIDER_URL=http://pot-provider:4416
     networks:
       - ytdl-network
     restart: unless-stopped
@@ -71,10 +73,24 @@ services:
       - WORKER_ID=worker-2
       - WORKER_PORT=3001
       - VPN_MODE=off
+      - POT_PROVIDER_URL=http://pot-provider:4416
     networks:
       - ytdl-network
     restart: unless-stopped
     mem_limit: 768m
+
+  # PO token provider. Without it YouTube answers the entire web client family
+  # with "Only images are available", which collapses yt-dlp's usable client pool
+  # down to one -- and a single client means a single point of failure (the
+  # 8/19-8/20 outage). Keep its version in sync with POT_PLUGIN_VERSION in the
+  # Dockerfile. Stateless; safe to restart at any time.
+  pot-provider:
+    image: brainicism/bgutil-ytdlp-pot-provider:1.3.2
+    container_name: pot-provider
+    restart: unless-stopped
+    mem_limit: 512m
+    networks:
+      - ytdl-network
 
   redis:
     image: redis:alpine

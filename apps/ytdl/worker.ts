@@ -22,6 +22,41 @@ const OUTPUT_DIR = 'media-output';
 // 'off' = direct egress, no VPN layer at all
 const VPN_MODE = (process.env.VPN_MODE || 'gluetun').toLowerCase();
 
+// --- Extraction resilience -------------------------------------------------
+// PO token provider. Without one YouTube serves "Only images are available" to
+// the whole web client family, which is how this service ended up resting on a
+// SINGLE working client (visionos) with no fallback -- the 8/19-8/20 outage.
+const POT_BASE_URL = process.env.POT_PROVIDER_URL || 'http://pot-provider:4416';
+
+// The extraction ladder. Each rung is a genuinely DIFFERENT YouTube client, so a
+// block on one does not imply a block on the next -- that diversity is the entire
+// point. Retrying the same command on a second worker (what we used to do) shares
+// the yt-dlp build, the args and the egress IP, so it could only ever fail twice.
+// '' = let yt-dlp choose, which is the fast path and usually succeeds first try.
+//
+// Verified working against a live video on 2026-08-22. Clients that returned only
+// images or no audio formats that day -- web, web_safari, ios, android, tv -- are
+// deliberately omitted. Re-probe with scripts/probe-clients.sh before editing this
+// list; YouTube changes which clients work, so trust a fresh probe over the order
+// written here.
+const DEFAULT_CLIENT_LADDER = ['', 'mweb', 'tv_embedded', 'web_embedded', 'visionos', 'android_vr_no_auth'];
+
+// Overridable at runtime so a shifting YouTube block can be worked around by
+// editing compose and restarting, with no rebuild and no code change. Comma
+// separated; use "default" for the no-override rung.
+//   YTDLP_CLIENT_LADDER=default,mweb,tv_embedded
+const CLIENT_LADDER = (process.env.YTDLP_CLIENT_LADDER
+  ? process.env.YTDLP_CLIENT_LADDER.split(',')
+      .map((c) => c.trim())
+      .filter(Boolean)
+      .map((c) => (c.toLowerCase() === 'default' ? '' : c))
+  : DEFAULT_CLIENT_LADDER);
+
+// The manager gives each worker 120s (vpn-download-manager.ts). Stay inside that
+// so a slow ladder never turns into a manager-side timeout with no error detail.
+const ATTEMPT_TIMEOUT_MS = 35_000;
+const LADDER_BUDGET_MS = 100_000;
+
 // In direct mode the egress IP never changes; fetch ip + geo once and cache.
 // Mirrors the shape gluetun's control server returns (public_ip/country/
 // region/city) so the manager/UI render direct workers with no special cases.
@@ -78,8 +113,9 @@ function buildYtDlpArgs(
   startTime: string,
   endTime: string,
   outputFilename: string,
+  client: string,
 ): string[] {
-  return [
+  const args = [
     '--download-sections',
     `*${startTime}-${endTime}`,
     '--force-keyframes-at-cuts',
@@ -94,20 +130,35 @@ function buildYtDlpArgs(
     'ffmpeg:-af loudnorm=I=-16:LRA=11:TP=-1.5',
     '--no-cache-dir',
     '--newline',
-    '-o',
-    outputFilename,
-    videoUrl,
   ];
+  if (POT_BASE_URL) {
+    args.push('--extractor-args', `youtubepot-bgutilhttp:base_url=${POT_BASE_URL}`);
+  }
+  // '' means "no override" -- let yt-dlp pick its own default client.
+  if (client) {
+    args.push('--extractor-args', `youtube:player_client=${client}`);
+  }
+  args.push('-o', outputFilename, videoUrl);
+  return args;
 }
 
 function executeDownload(
   args: string[],
+  timeoutMs: number,
 ): Promise<{ stderrOutput: string }> {
   return new Promise((resolve, reject) => {
     console.log(`[${WORKER_ID}] Executing: yt-dlp ${args.join(' ')}`);
 
     const ytdlpProcess = spawn('yt-dlp', args);
     let stderrOutput = '';
+    let timedOut = false;
+
+    // A hung extraction must not eat the whole ladder budget and starve the
+    // remaining clients -- that would reproduce the "one path, no fallback" bug.
+    const timer = setTimeout(() => {
+      timedOut = true;
+      ytdlpProcess.kill('SIGKILL');
+    }, timeoutMs);
 
     ytdlpProcess.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
@@ -124,8 +175,16 @@ function executeDownload(
       stderrOutput += data.toString();
     });
 
+    ytdlpProcess.on('error', (err: Error) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
     ytdlpProcess.on('close', (code: number) => {
-      if (code === 0) {
+      clearTimeout(timer);
+      if (timedOut) {
+        reject(new Error(`yt-dlp timed out after ${timeoutMs}ms`));
+      } else if (code === 0) {
         console.log(`[${WORKER_ID}] yt-dlp finished successfully`);
         resolve({ stderrOutput });
       } else {
@@ -267,61 +326,97 @@ app.post('/download', async (req, res) => {
 
   const startTime = formatTime(startMs);
   const endTime = formatTime(endMs);
-  const outputFilename = path.join(OUTPUT_DIR, `download_${WORKER_ID}_${Date.now()}.mp3`);
 
   console.log(`[${WORKER_ID}] Download request: ${videoUrl} [${startTime} - ${endTime}]`);
 
-  try {
-    const args = buildYtDlpArgs(videoUrl, startTime, endTime, outputFilename);
-    await executeDownload(args);
+  // Walk the client ladder. First rung that produces a file wins; we only pay for
+  // the extra rungs when YouTube is actually refusing one of them.
+  const ladderStart = Date.now();
+  const failures: string[] = [];
 
-    // Verify the file exists
-    if (!fs.existsSync(outputFilename)) {
-      return res.status(500).json({ error: 'Download succeeded but output file not found' });
+  for (let rung = 0; rung < CLIENT_LADDER.length; rung++) {
+    const client = CLIENT_LADDER[rung]!;
+    const label = client || 'default';
+    const elapsed = Date.now() - ladderStart;
+
+    if (rung > 0 && elapsed > LADDER_BUDGET_MS) {
+      failures.push(`(budget exhausted before "${label}")`);
+      break;
     }
 
-    const stat = fs.statSync(outputFilename);
-    console.log(`[${WORKER_ID}] Streaming ${stat.size} bytes back to caller`);
+    const outputFilename = path.join(
+      OUTPUT_DIR,
+      `download_${WORKER_ID}_${Date.now()}_${label}.mp3`,
+    );
 
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Length', stat.size);
-    res.setHeader('X-Worker-Id', WORKER_ID);
+    try {
+      const attemptTimeout = Math.max(
+        10_000,
+        Math.min(ATTEMPT_TIMEOUT_MS, LADDER_BUDGET_MS - elapsed),
+      );
+      await executeDownload(
+        buildYtDlpArgs(videoUrl, startTime, endTime, outputFilename, client),
+        attemptTimeout,
+      );
 
-    const stream = fs.createReadStream(outputFilename);
-    stream.pipe(res);
-
-    stream.on('end', () => {
-      // Clean up temp file after streaming
-      fs.unlink(outputFilename, () => {});
-    });
-
-    stream.on('error', (err) => {
-      console.error(`[${WORKER_ID}] Stream error:`, err);
-      fs.unlink(outputFilename, () => {});
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Failed to stream file' });
+      if (!fs.existsSync(outputFilename)) {
+        throw new Error('yt-dlp reported success but produced no output file');
       }
-    });
-  } catch (err) {
-    // Clean up temp file on error
-    fs.unlink(outputFilename, () => {});
 
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`[${WORKER_ID}] Download failed:`, message);
+      const stat = fs.statSync(outputFilename);
+      if (rung > 0) {
+        console.log(
+          `[${WORKER_ID}] RECOVERED on client "${label}" (rung ${rung + 1}/${CLIENT_LADDER.length}) after ${rung} failed client(s)`,
+        );
+      }
+      console.log(`[${WORKER_ID}] Streaming ${stat.size} bytes back to caller`);
 
-    // Detect YouTube blocks specifically
-    const isYouTubeBlock =
-      message.includes('403') ||
-      message.includes('Sign in to confirm') ||
-      message.includes('bot') ||
-      message.includes('blocked');
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('X-Worker-Id', WORKER_ID);
+      // Which rung actually worked -- so a shifting YouTube block is visible in
+      // logs/metrics well before it becomes a user-facing failure.
+      res.setHeader('X-Ytdlp-Client', label);
 
-    res.status(isYouTubeBlock ? 403 : 500).json({
-      error: message,
-      blocked: isYouTubeBlock,
-      worker: WORKER_ID,
-    });
+      const stream = fs.createReadStream(outputFilename);
+      stream.pipe(res);
+      stream.on('end', () => {
+        fs.unlink(outputFilename, () => {});
+      });
+      stream.on('error', (err) => {
+        console.error(`[${WORKER_ID}] Stream error:`, err);
+        fs.unlink(outputFilename, () => {});
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to stream file' });
+        }
+      });
+      return;
+    } catch (err) {
+      fs.unlink(outputFilename, () => {});
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[${WORKER_ID}] client "${label}" failed: ${message.slice(-200)}`);
+      failures.push(`${label}: ${message.slice(-200)}`);
+    }
   }
+
+  // Every distinct client refused -- this is a real outage, not a flaky rung.
+  const combined = failures.join(' | ');
+  console.error(
+    `[${WORKER_ID}] Download failed: all ${CLIENT_LADDER.length} clients refused`,
+  );
+
+  const isYouTubeBlock =
+    combined.includes('403') ||
+    combined.includes('Sign in to confirm') ||
+    combined.includes('bot') ||
+    combined.includes('blocked');
+
+  res.status(isYouTubeBlock ? 403 : 500).json({
+    error: `All extraction clients failed -- ${combined}`,
+    blocked: isYouTubeBlock,
+    worker: WORKER_ID,
+    clientsTried: CLIENT_LADDER.map((c) => c || 'default'),
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -331,4 +426,8 @@ app.post('/download', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`[${WORKER_ID}] Running on port ${PORT}`);
   console.log(`[${WORKER_ID}] Output dir: ${OUTPUT_DIR}`);
+  console.log(
+    `[${WORKER_ID}] Client ladder: ${CLIENT_LADDER.map((c) => c || 'default').join(' -> ')}`,
+  );
+  console.log(`[${WORKER_ID}] PO token provider: ${POT_BASE_URL || '(none)'}`);
 });
