@@ -208,8 +208,20 @@ app.use(
       );
     }
 
-    // Try to extract tRPC input and log to database immediately
-    if (db && req.path.includes('/enqueueTask')) {
+    // Create a row only for a request that could be a real job: a POST to
+    // enqueueTask that PRESENTS an API key (right or wrong -- a misconfigured
+    // key on the app side is exactly the failure we want visible here) and
+    // names a video. Keyless requests are never the app; they are internet
+    // scanners, and they must leave no trace in generationLogs.
+    const presentsApiKey = Boolean(
+      req.headers['x-api-key'] || req.headers['authorization'],
+    );
+    if (
+      db &&
+      req.method === 'POST' &&
+      presentsApiKey &&
+      req.path.includes('/enqueueTask')
+    ) {
       try {
         let requestData: any = {};
 
@@ -231,7 +243,11 @@ app.use(
         }
 
         // Extract fields - they should be at the top level since Next.js sends raw JSON
-        const videoUrl = requestData.videoUrl || 'N/A';
+        if (!requestData.videoUrl) {
+          console.warn('⚠️  enqueueTask without a videoUrl -- not logging a row');
+          return next();
+        }
+        const videoUrl = requestData.videoUrl;
         const start = requestData.start || requestData.startTime || 0;
         const end = requestData.end || requestData.endTime || 0;
         const userId = requestData.userId || null;
@@ -624,7 +640,9 @@ app.get('/admin/vpn/verify', async (_req, res) => {
 });
 
 // Simple REST endpoint for testing (bypasses tRPC complexity)
-app.post('/test/enqueue', async (req, res) => {
+// Same key as /trpc: this endpoint creates generationLogs rows and real
+// downloads, so it must never be reachable keyless.
+app.post('/test/enqueue', authenticateApiKey, async (req, res) => {
   try {
     const { videoUrl, start, end, userId, source } = req.body;
     if (!videoUrl || start == null || end == null) {
