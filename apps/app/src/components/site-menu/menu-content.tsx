@@ -23,6 +23,8 @@ import GoatHornSVG from '@/assets/goat-horn-icon.svg';
 import { usePathname, useRouter } from 'next/navigation';
 import { SheetClose } from '@ui/sheet';
 import { BuildBadge } from './build-badge';
+import { useIsAdmin } from '@/hooks/use-is-admin';
+import { MdAdminPanelSettings } from 'react-icons/md';
 
 const hermitClockFont = Noto_Sans({
   subsets: ['latin'],
@@ -143,6 +145,7 @@ const MenuExternalLinkItem = ({
 );
 
 export const MenuContent = () => {
+  const { isAdmin } = useIsAdmin();
   return (
     <div className='flex h-full w-full flex-col overflow-auto pb-4 text-white'>
       <a
@@ -207,6 +210,15 @@ export const MenuContent = () => {
         <FaYoutube />
         Recent Videos
       </MenuSamePageLinkItem>
+      {isAdmin && (
+        <>
+          <MenuSectionHeader className='mt-4'>Admin</MenuSectionHeader>
+          <MenuLinkItem href='/admin'>
+            <MdAdminPanelSettings size={20} />
+            Admin Panel
+          </MenuLinkItem>
+        </>
+      )}
       <MenuSectionHeader className='mt-4'>Socials</MenuSectionHeader>
       <MenuExternalLinkItem href='https://www.scottjhetrick.com'>
         <IoPizzaSharp size={20} />
