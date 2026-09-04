@@ -204,7 +204,7 @@ app.use(
     // a 500-line tail (the manager's cap) ends up covering ~25 seconds.
     if (!req.path.includes('/checkTaskStatus')) {
       console.log(
-        `📨 ${req.method} ${req.path} origin=${req.headers['origin'] || 'none'} ua=${req.headers['user-agent'] || 'none'}`,
+        `📨 ${req.method} ${req.path} ip=${req.headers['cf-connecting-ip'] || req.ip || 'none'} origin=${req.headers['origin'] || 'none'} ua=${req.headers['user-agent'] || 'none'}`,
       );
     }
 
@@ -314,13 +314,16 @@ const authenticateApiKey = async (
 
     console.error(`❌ ${detailedError}`);
 
-    // Update existing log entry if available, otherwise create new one
+    // Only annotate a log row that the request logger already created (an
+    // enqueueTask with a body). Never create a row here: any unauthenticated
+    // GET /trpc/* -- typically an internet vulnerability scanner probing paths
+    // -- would otherwise land in generationLogs as a phantom "failed download"
+    // with no user, no video, and a 0-0 range (seen 2026-09-04).
     if (db) {
       try {
         const logId = (req as any).logId;
 
         if (logId) {
-          // Update existing log entry
           await db
             .update(generationLogs)
             .set({
@@ -332,25 +335,6 @@ const authenticateApiKey = async (
           console.log(
             `📝 Updated existing log with auth failure (logId: ${logId})`,
           );
-        } else {
-          // Fallback: create new log entry
-          let requestInfo: any = {};
-          if (req.body) {
-            requestInfo =
-              typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-          }
-
-          await db.insert(generationLogs).values({
-            userId: requestInfo.userId || null,
-            source: requestInfo.source || 'unknown',
-            videoUrl: requestInfo.videoUrl || 'N/A',
-            start: requestInfo.start?.toString() || '0',
-            end: requestInfo.end?.toString() || '0',
-            status: 'failed',
-            errorMessage: detailedError,
-            completedAt: new Date(),
-          });
-          console.log('📝 Created new log for auth failure (no logId found)');
         }
       } catch (error) {
         console.error('Error logging rejected request:', error);
